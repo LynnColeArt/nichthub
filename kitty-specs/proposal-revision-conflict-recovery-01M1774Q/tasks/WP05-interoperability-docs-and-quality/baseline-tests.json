@@ -1,0 +1,13 @@
+{
+  "wp_id": "WP05",
+  "captured_at": "2026-08-29T18:15:28Z",
+  "base_branch": "chore/spec-kitty-bootstrap",
+  "base_commit": "75e0274545878a54563df9acad2d5568fabe51aa",
+  "test_runner": "pytest",
+  "total": 0,
+  "passed": 0,
+  "failed": 0,
+  "skipped": 0,
+  "failures": [],
+  "source_identity": "GateCoverageScopeSource/junit_xml"
+}
