@@ -1,0 +1,61 @@
+schema_version: 1.0.0
+mission: software-dev
+profile: minimal
+answers:
+  project_intent: >-
+    Build Nichthub as the distributed collaboration protocol that complements
+    Git: repository-native, server-independent issues, proposals, reviews,
+    policy decisions, and CI attestations whose history is signed, portable,
+    and independently verifiable.
+  languages_frameworks: >-
+    Use Go 1.26 and the standard library for the native nh CLI. Keep Git as the
+    content store and transport rather than introducing a service database or
+    mandatory hosted component.
+  testing_requirements: >-
+    Develop observable protocol behavior with Go unit and integration tests,
+    including temporary repositories and bare remotes for distributed flows.
+    Run the race detector for concurrency-sensitive changes and add regression
+    tests for trust boundaries, malformed input, conflicts, and partial failure.
+  quality_gates: >-
+    Require gofmt-clean code, go test -race ./..., go vet ./..., go build ./...,
+    git diff --check, protocol documentation updates for wire or trust-semantic
+    changes, and Spec Kitty review before a work package is approved.
+  review_policy: >-
+    Develop on focused feature branches with narrowly staged commits. Review
+    each Spec Kitty work package before approval; when Nichthub can represent
+    the change itself, also dogfood its signed proposal, review, CI, decision,
+    and merge path without treating self-approval as proof of independent trust.
+  performance_targets: >-
+    Prioritize deterministic correctness and bounded resource use over premature
+    optimization. Keep ordinary local metadata commands perceptibly immediate,
+    stream or bound untrusted data where practical, and establish benchmarks
+    before adopting numeric performance gates.
+  deployment_constraints: >-
+    Ship a native CLI with no Docker requirement and no mandatory central
+    service. Core collaboration requires only Git; hardened Linux CI execution
+    may require Bubblewrap, while unsafe host execution stays explicit and
+    opt-in. Preserve offline-first operation and avoid hidden network access.
+selected_paradigms:
+  - domain-driven-design
+  - deep-module-design
+  - execution-lanes
+  - specification-by-example
+selected_directives:
+  - DIRECTIVE_001
+  - DIRECTIVE_003
+  - DIRECTIVE_010
+  - DIRECTIVE_024
+  - DIRECTIVE_028
+  - DIRECTIVE_030
+  - DIRECTIVE_033
+  - DIRECTIVE_034
+  - DIRECTIVE_036
+  - DIRECTIVE_037
+  - DIRECTIVE_041
+  - DIRECTIVE_044
+selected_tactics: []
+available_tools:
+  - spec-kitty
+  - git
+agent_profile:
+agent_role:

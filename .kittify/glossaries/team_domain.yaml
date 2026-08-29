@@ -1,0 +1,35 @@
+terms:
+  - surface: proposal
+    definition: >-
+      An immutable signed collaboration event that requests review and policy
+      evaluation of one exact Git head relative to one exact Git base.
+    confidence: 1.0
+    status: active
+  - surface: proposal revision
+    definition: >-
+      A new immutable proposal that identifies exactly one predecessor proposal,
+      carries a newly resolved base and head, and preserves the predecessor and
+      its evidence as historical records rather than modifying them.
+    confidence: 1.0
+    status: active
+  - surface: superseded proposal
+    definition: >-
+      A proposal for which the local verified event view contains a valid
+      author-signed proposal revision. It remains addressable for history but is
+      no longer eligible for a new acceptance decision or merge in that view.
+    confidence: 1.0
+    status: active
+  - surface: proposal evidence
+    definition: >-
+      A signed review, run request, run result, policy digest, or decision bound
+      to an exact proposal and its exact code and governance inputs. Evidence is
+      not transferable to a proposal revision.
+    confidence: 1.0
+    status: active
+  - surface: conflict recovery
+    definition: >-
+      The workflow in which a proposal author resolves divergence against a new
+      base commit, creates a new head commit, and publishes a proposal revision
+      whose review, CI, and acceptance evidence is gathered again.
+    confidence: 1.0
+    status: active
