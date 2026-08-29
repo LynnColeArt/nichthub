@@ -1,0 +1,415 @@
+package main
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"sort"
+	"strings"
+)
+
+const (
+	policyVersion = "nh.policy/0"
+	maxPolicySize = 1 << 20
+)
+
+type PolicyDocument struct {
+	Version     string                    `json:"version"`
+	Maintainers []string                  `json:"maintainers"`
+	Proposals   ProposalPolicy            `json:"proposals"`
+	Pipelines   map[string]PipelinePolicy `json:"pipelines"`
+}
+
+type ProposalPolicy struct {
+	RequiredApprovals   int      `json:"requiredApprovals"`
+	RequiredAccepts     int      `json:"requiredAccepts"`
+	TrustedReviewers    []string `json:"trustedReviewers"`
+	AllowAuthorApproval bool     `json:"allowAuthorApproval"`
+}
+
+type PipelinePolicy struct {
+	RequiredResults int      `json:"requiredResults"`
+	TrustedRunners  []string `json:"trustedRunners"`
+}
+
+type PipelineEvaluation struct {
+	Name     string
+	Required int
+	Passed   []StoredEvent
+	Failed   []StoredEvent
+}
+
+type ProposalEvaluation struct {
+	Proposal        *StoredEvent
+	Policy          PolicyDocument
+	PolicyDigest    string
+	CodeAvailable   bool
+	CodeMatches     bool
+	Approvals       []StoredEvent
+	ChangeRequests  []StoredEvent
+	Pipelines       []PipelineEvaluation
+	AcceptDecisions []StoredEvent
+	RejectDecisions []StoredEvent
+	MergeEvents     []StoredEvent
+	Ready           bool
+	Accepted        bool
+	Rejected        bool
+	Merged          bool
+	Evidence        []string
+}
+
+func loadPolicy(commit string) (PolicyDocument, []byte, string, error) {
+	encoded, err := gitOutput("show", commit+":.nh/policy.json")
+	if err != nil {
+		return PolicyDocument{}, nil, "", fmt.Errorf("no .nh/policy.json at base commit %s", shortOID(commit))
+	}
+	if len(encoded) > maxPolicySize {
+		return PolicyDocument{}, nil, "", fmt.Errorf("policy exceeds %d bytes", maxPolicySize)
+	}
+	decoder := json.NewDecoder(bytes.NewReader(encoded))
+	decoder.DisallowUnknownFields()
+	var policy PolicyDocument
+	if err := decoder.Decode(&policy); err != nil {
+		return PolicyDocument{}, nil, "", fmt.Errorf("parse policy: %w", err)
+	}
+	if err := ensureJSONEnd(decoder); err != nil {
+		return PolicyDocument{}, nil, "", fmt.Errorf("parse policy: %w", err)
+	}
+	if err := validatePolicy(policy); err != nil {
+		return PolicyDocument{}, nil, "", err
+	}
+	return policy, encoded, eventID(encoded), nil
+}
+
+func validatePolicy(policy PolicyDocument) error {
+	if policy.Version != policyVersion {
+		return fmt.Errorf("unsupported policy version %q", policy.Version)
+	}
+	if len(policy.Maintainers) == 0 {
+		return fmt.Errorf("policy requires at least one maintainer")
+	}
+	if err := validateActorList("maintainers", policy.Maintainers); err != nil {
+		return err
+	}
+	if policy.Proposals.RequiredApprovals < 0 || policy.Proposals.RequiredApprovals > 64 {
+		return fmt.Errorf("requiredApprovals must be between 0 and 64")
+	}
+	if policy.Proposals.RequiredAccepts < 1 || policy.Proposals.RequiredAccepts > len(policy.Maintainers) {
+		return fmt.Errorf("requiredAccepts must be between 1 and the number of maintainers")
+	}
+	if err := validateActorList("trustedReviewers", policy.Proposals.TrustedReviewers); err != nil {
+		return err
+	}
+	if policy.Proposals.RequiredApprovals > len(policy.Proposals.TrustedReviewers) {
+		return fmt.Errorf("requiredApprovals exceeds the number of trusted reviewers")
+	}
+	for name, pipeline := range policy.Pipelines {
+		if !validPipelineName(name) {
+			return fmt.Errorf("policy has invalid pipeline name %q", name)
+		}
+		if pipeline.RequiredResults < 1 || pipeline.RequiredResults > 64 {
+			return fmt.Errorf("pipeline %q requiredResults must be between 1 and 64", name)
+		}
+		if err := validateActorList("pipeline "+name+" trustedRunners", pipeline.TrustedRunners); err != nil {
+			return err
+		}
+		if pipeline.RequiredResults > len(pipeline.TrustedRunners) {
+			return fmt.Errorf("pipeline %q requiredResults exceeds its trusted runner count", name)
+		}
+	}
+	return nil
+}
+
+func validateActorList(name string, actors []string) error {
+	seen := make(map[string]bool)
+	for _, actor := range actors {
+		if !validActorID(actor) {
+			return fmt.Errorf("%s contains invalid actor %q", name, actor)
+		}
+		if seen[actor] {
+			return fmt.Errorf("%s contains duplicate actor %s", name, shortID(actor))
+		}
+		seen[actor] = true
+	}
+	return nil
+}
+
+func actorListed(actor string, actors []string) bool {
+	for _, candidate := range actors {
+		if candidate == actor {
+			return true
+		}
+	}
+	return false
+}
+
+func evaluateProposal(proposal *StoredEvent, events []StoredEvent) (*ProposalEvaluation, error) {
+	if proposal.Event.Kind != "proposal.open" {
+		return nil, fmt.Errorf("%s is not a proposal", shortID(proposal.ID))
+	}
+	policy, _, digest, err := loadPolicy(proposal.Event.Base)
+	if err != nil {
+		return nil, err
+	}
+	evaluation := &ProposalEvaluation{Proposal: proposal, Policy: policy, PolicyDigest: digest}
+	head, exists, err := proposalHead(proposal.ID)
+	if err != nil {
+		return nil, err
+	}
+	evaluation.CodeAvailable = exists
+	evaluation.CodeMatches = exists && head == proposal.Event.Head
+
+	for _, review := range currentReviews(events, proposal.ID) {
+		if !actorListed(review.Event.Actor, policy.Proposals.TrustedReviewers) {
+			continue
+		}
+		if !policy.Proposals.AllowAuthorApproval && review.Event.Actor == proposal.Event.Actor {
+			continue
+		}
+		if review.Event.Verdict == "approve" {
+			evaluation.Approvals = append(evaluation.Approvals, review)
+		} else {
+			evaluation.ChangeRequests = append(evaluation.ChangeRequests, review)
+		}
+	}
+
+	pipelineNames := make([]string, 0, len(policy.Pipelines))
+	for name := range policy.Pipelines {
+		pipelineNames = append(pipelineNames, name)
+	}
+	sort.Strings(pipelineNames)
+	for _, name := range pipelineNames {
+		pipelinePolicy := policy.Pipelines[name]
+		expectedDefinition := ""
+		if evaluation.CodeMatches {
+			_, _, definition, err := loadPipeline(proposal.Event.Head, name)
+			if err != nil {
+				return nil, fmt.Errorf("required pipeline %q: %w", name, err)
+			}
+			expectedDefinition = definition
+		}
+		latestByRunner := make(map[string]StoredEvent)
+		for _, request := range events {
+			if request.Event.Kind != "run.request" || request.Event.Subject != proposal.ID || request.Event.Pipeline != name ||
+				request.Event.Definition != expectedDefinition || !actorListed(request.Event.Actor, policy.Maintainers) {
+				continue
+			}
+			for _, result := range currentRunResults(events, request.ID) {
+				if !actorListed(result.Event.Actor, pipelinePolicy.TrustedRunners) {
+					continue
+				}
+				previous, found := latestByRunner[result.Event.Actor]
+				if !found || result.Event.Sequence > previous.Event.Sequence {
+					latestByRunner[result.Event.Actor] = result
+				}
+			}
+		}
+		pipelineEvaluation := PipelineEvaluation{Name: name, Required: pipelinePolicy.RequiredResults}
+		for _, result := range latestByRunner {
+			if result.Event.Outcome == "passed" {
+				pipelineEvaluation.Passed = append(pipelineEvaluation.Passed, result)
+			} else {
+				pipelineEvaluation.Failed = append(pipelineEvaluation.Failed, result)
+			}
+		}
+		sortStoredEvents(pipelineEvaluation.Passed)
+		sortStoredEvents(pipelineEvaluation.Failed)
+		evaluation.Pipelines = append(evaluation.Pipelines, pipelineEvaluation)
+	}
+
+	currentDecisions := make(map[string]StoredEvent)
+	for _, stored := range events {
+		if stored.Event.Kind != "proposal.decision" || stored.Event.Subject != proposal.ID || stored.Event.Policy != digest || !actorListed(stored.Event.Actor, policy.Maintainers) {
+			continue
+		}
+		previous, exists := currentDecisions[stored.Event.Actor]
+		if !exists || stored.Event.Sequence > previous.Event.Sequence {
+			currentDecisions[stored.Event.Actor] = stored
+		}
+	}
+	for _, decision := range currentDecisions {
+		if decision.Event.Verdict == "accept" {
+			evaluation.AcceptDecisions = append(evaluation.AcceptDecisions, decision)
+		} else {
+			evaluation.RejectDecisions = append(evaluation.RejectDecisions, decision)
+		}
+	}
+	sortStoredEvents(evaluation.AcceptDecisions)
+	sortStoredEvents(evaluation.RejectDecisions)
+	for _, stored := range events {
+		if stored.Event.Kind == "proposal.merged" && stored.Event.Subject == proposal.ID && stored.Event.Policy == digest {
+			evaluation.MergeEvents = append(evaluation.MergeEvents, stored)
+		}
+	}
+	sortStoredEvents(evaluation.MergeEvents)
+
+	evaluation.Ready = evaluation.CodeMatches && len(evaluation.Approvals) >= policy.Proposals.RequiredApprovals
+	for _, pipeline := range evaluation.Pipelines {
+		if len(pipeline.Passed) < pipeline.Required {
+			evaluation.Ready = false
+		}
+	}
+	for _, approval := range evaluation.Approvals {
+		evaluation.Evidence = append(evaluation.Evidence, approval.ID)
+	}
+	for _, pipeline := range evaluation.Pipelines {
+		for _, result := range pipeline.Passed {
+			evaluation.Evidence = append(evaluation.Evidence, result.ID)
+		}
+	}
+	sort.Strings(evaluation.Evidence)
+	evaluation.Rejected = len(evaluation.RejectDecisions) > 0
+	evaluation.Accepted = !evaluation.Rejected && len(evaluation.AcceptDecisions) >= policy.Proposals.RequiredAccepts
+	evaluation.Merged = len(evaluation.MergeEvents) > 0
+	return evaluation, nil
+}
+
+func validateDecisionEvent(decision, proposal StoredEvent, byID map[string]StoredEvent) error {
+	policy, _, digest, err := loadPolicy(proposal.Event.Base)
+	if err != nil {
+		return fmt.Errorf("decision %s: %w", shortID(decision.ID), err)
+	}
+	if decision.Event.Policy != digest || !actorListed(decision.Event.Actor, policy.Maintainers) {
+		return fmt.Errorf("decision %s is not authorized by the proposal policy", shortID(decision.ID))
+	}
+	if decision.Event.Verdict == "reject" {
+		return nil
+	}
+	approvers := make(map[string]bool)
+	pipelineRunners := make(map[string]map[string]bool)
+	pipelineDefinitions := make(map[string]string)
+	for name := range policy.Pipelines {
+		pipelineRunners[name] = make(map[string]bool)
+		_, _, definition, err := loadPipeline(proposal.Event.Head, name)
+		if err != nil {
+			return fmt.Errorf("decision %s required pipeline %q: %w", shortID(decision.ID), name, err)
+		}
+		pipelineDefinitions[name] = definition
+	}
+	for _, evidenceID := range decision.Event.Evidence {
+		evidence, exists := byID[evidenceID]
+		if !exists {
+			return fmt.Errorf("decision %s references unavailable evidence %s", shortID(decision.ID), shortID(evidenceID))
+		}
+		switch evidence.Event.Kind {
+		case "review.submit":
+			if evidence.Event.Subject == proposal.ID && evidence.Event.Verdict == "approve" && actorListed(evidence.Event.Actor, policy.Proposals.TrustedReviewers) &&
+				(policy.Proposals.AllowAuthorApproval || evidence.Event.Actor != proposal.Event.Actor) {
+				approvers[evidence.Event.Actor] = true
+			}
+		case "run.result":
+			request, exists := byID[evidence.Event.Subject]
+			if !exists || request.Event.Kind != "run.request" || request.Event.Subject != proposal.ID || !actorListed(request.Event.Actor, policy.Maintainers) || evidence.Event.Outcome != "passed" {
+				continue
+			}
+			pipelinePolicy, exists := policy.Pipelines[request.Event.Pipeline]
+			if exists && request.Event.Definition == pipelineDefinitions[request.Event.Pipeline] && actorListed(evidence.Event.Actor, pipelinePolicy.TrustedRunners) {
+				pipelineRunners[request.Event.Pipeline][evidence.Event.Actor] = true
+			}
+		}
+	}
+	if len(approvers) < policy.Proposals.RequiredApprovals {
+		return fmt.Errorf("decision %s lacks required approval evidence", shortID(decision.ID))
+	}
+	for name, pipelinePolicy := range policy.Pipelines {
+		if len(pipelineRunners[name]) < pipelinePolicy.RequiredResults {
+			return fmt.Errorf("decision %s lacks required %s results", shortID(decision.ID), name)
+		}
+	}
+	return nil
+}
+
+func validateMergeEvent(merge, proposal StoredEvent, byID map[string]StoredEvent) error {
+	policy, _, digest, err := loadPolicy(proposal.Event.Base)
+	if err != nil {
+		return fmt.Errorf("merge %s: %w", shortID(merge.ID), err)
+	}
+	if merge.Event.Policy != digest || !actorListed(merge.Event.Actor, policy.Maintainers) {
+		return fmt.Errorf("merge %s is not authorized by the proposal policy", shortID(merge.ID))
+	}
+	acceptors := make(map[string]bool)
+	for _, evidenceID := range merge.Event.Evidence {
+		decision, exists := byID[evidenceID]
+		if !exists || decision.Event.Kind != "proposal.decision" || decision.Event.Subject != proposal.ID ||
+			decision.Event.Policy != digest || decision.Event.Verdict != "accept" || !actorListed(decision.Event.Actor, policy.Maintainers) {
+			continue
+		}
+		acceptors[decision.Event.Actor] = true
+	}
+	if len(acceptors) < policy.Proposals.RequiredAccepts {
+		return fmt.Errorf("merge %s lacks required acceptance evidence", shortID(merge.ID))
+	}
+	return nil
+}
+
+func proposalStatus(evaluation *ProposalEvaluation) string {
+	switch {
+	case evaluation.Merged:
+		return "merged"
+	case evaluation.Rejected:
+		return "rejected"
+	case evaluation.Accepted:
+		return "accepted"
+	case evaluation.Ready:
+		return "ready for decision"
+	default:
+		return "blocked"
+	}
+}
+
+func cmdProposalStatus(query string) error {
+	events, err := collectEvents()
+	if err != nil {
+		return err
+	}
+	proposal, err := resolveEvent(events, query)
+	if err != nil {
+		return err
+	}
+	evaluation, err := evaluateProposal(proposal, events)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Proposal: %s  %s\n", shortID(proposal.ID), oneLine(proposal.Event.Title))
+	fmt.Printf("Policy:   %s from base %s\n", shortID(evaluation.PolicyDigest), shortOID(proposal.Event.Base))
+	if evaluation.CodeMatches {
+		fmt.Printf("Code:     ✓ signed head available and matched\n")
+	} else if evaluation.CodeAvailable {
+		fmt.Printf("Code:     ✗ proposal ref does not match signed head\n")
+	} else {
+		fmt.Printf("Code:     ✗ proposal code unavailable\n")
+	}
+	fmt.Printf("Reviews:  %d/%d trusted approvals", len(evaluation.Approvals), evaluation.Policy.Proposals.RequiredApprovals)
+	if len(evaluation.ChangeRequests) > 0 {
+		fmt.Printf("; %d trusted change request(s)", len(evaluation.ChangeRequests))
+	}
+	fmt.Println()
+	for _, pipeline := range evaluation.Pipelines {
+		fmt.Printf("Pipeline: %s %d/%d trusted passes", oneLine(pipeline.Name), len(pipeline.Passed), pipeline.Required)
+		if len(pipeline.Failed) > 0 {
+			fmt.Printf("; %d trusted failure(s)", len(pipeline.Failed))
+		}
+		fmt.Println()
+	}
+	fmt.Printf("Decision: %d/%d accepts; %d rejects\n", len(evaluation.AcceptDecisions), evaluation.Policy.Proposals.RequiredAccepts, len(evaluation.RejectDecisions))
+	fmt.Printf("Status:   %s\n", proposalStatus(evaluation))
+	return nil
+}
+
+func sortedDecisionIDs(decisions []StoredEvent) []string {
+	ids := make([]string, 0, len(decisions))
+	for _, decision := range decisions {
+		ids = append(ids, decision.ID)
+	}
+	sort.Strings(ids)
+	return ids
+}
+
+func policySummary(policy PolicyDocument) string {
+	pipelines := make([]string, 0, len(policy.Pipelines))
+	for name := range policy.Pipelines {
+		pipelines = append(pipelines, name)
+	}
+	sort.Strings(pipelines)
+	return strings.Join(pipelines, ",")
+}

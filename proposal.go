@@ -8,7 +8,7 @@ import (
 
 func cmdProposal(args []string) error {
 	if len(args) == 0 {
-		return usageError("usage: nh proposal <open|list|show>")
+		return usageError("usage: nh proposal <open|list|show|status>")
 	}
 	switch args[0] {
 	case "open":
@@ -23,6 +23,11 @@ func cmdProposal(args []string) error {
 			return usageError("usage: nh proposal show PROPOSAL")
 		}
 		return cmdProposalShow(args[1])
+	case "status":
+		if len(args) != 2 {
+			return usageError("usage: nh proposal status PROPOSAL")
+		}
+		return cmdProposalStatus(args[1])
 	default:
 		return fmt.Errorf("unknown proposal command %q", args[0])
 	}

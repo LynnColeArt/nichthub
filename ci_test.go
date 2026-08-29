@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestDistributedPipelineRun(t *testing.T) {
@@ -164,7 +166,7 @@ func TestDistributedPipelineRun(t *testing.T) {
 	if result.Event.Log != eventID(result.Attachments["log.txt"]) {
 		t.Fatal("result log digest does not match attachment")
 	}
-	if _, err := exec.LookPath("bwrap"); err == nil {
+	if sandboxUsableForTest(t) {
 		if err := cmdRunExecute([]string{shortID(request.ID), "--backend", "sandbox", "--rerun"}); err != nil {
 			t.Fatal(err)
 		}
@@ -200,4 +202,17 @@ func TestDistributedPipelineRun(t *testing.T) {
 	if len(finalResults) != 1 || finalResults[0].ID != result.ID {
 		t.Fatalf("Alice did not receive Bob's result %s", result.ID)
 	}
+}
+
+func sandboxUsableForTest(t *testing.T) bool {
+	t.Helper()
+	backend := newBubblewrapBackend()
+	if err := backend.Available(); err != nil {
+		return false
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	root := t.TempDir()
+	environment := runnerEnvironment("/home/nh", "/tmp", "test", sandboxPath())
+	return backend.RunStep(ctx, root, PipelineStep{Name: "Probe", Command: "true"}, environment, io.Discard) == nil
 }

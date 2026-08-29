@@ -278,6 +278,22 @@ func validateEventRelationships(events []StoredEvent) error {
 				request.Event.Commit != event.Commit || request.Event.Pipeline != event.Pipeline || request.Event.Definition != event.Definition {
 				return fmt.Errorf("run result %s does not match an available request", shortID(stored.ID))
 			}
+		case "proposal.decision":
+			proposal, exists := byID[event.Subject]
+			if !exists || proposal.Event.Kind != "proposal.open" {
+				return fmt.Errorf("decision %s does not reference an available proposal", shortID(stored.ID))
+			}
+			if err := validateDecisionEvent(stored, proposal, byID); err != nil {
+				return err
+			}
+		case "proposal.merged":
+			proposal, exists := byID[event.Subject]
+			if !exists || proposal.Event.Kind != "proposal.open" || event.Head != proposal.Event.Head {
+				return fmt.Errorf("merge %s does not match an available proposal", shortID(stored.ID))
+			}
+			if err := validateMergeEvent(stored, proposal, byID); err != nil {
+				return err
+			}
 		}
 	}
 	return nil

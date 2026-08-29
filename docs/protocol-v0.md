@@ -40,6 +40,7 @@ dependent event concerns. Proposal events add `base` and `head` Git commit
 object IDs. Review events add a `verdict` of `approve` or `request-changes`.
 Run events use `pipeline`, `definition`, `commit`, `outcome`, `exitCode`,
 `durationMs`, `log`, `backend`, `platform`, and `runner` as described below.
+Governance events use `policy` and an ordered set of `evidence` event IDs.
 
 The implemented event kinds are:
 
@@ -50,6 +51,8 @@ proposal.open
 review.submit
 run.request
 run.result
+proposal.decision
+proposal.merged
 ```
 
 The event identifier is independent of Git's configured object hash:
@@ -125,8 +128,19 @@ the SHA-256 ID of its attached log, and signed claims about its backend,
 platform, and runner implementation.
 
 These events are attestations, not proofs of honest execution. A signature says
-which runner made the claim and protects its contents. Project policy must
-eventually decide which runner identities and execution environments count.
+which runner made the claim and protects its contents. Project policy decides
+which runner identities and execution environments count.
+
+## Governance events
+
+A `proposal.decision` references a proposal, the SHA-256 ID of the exact base
+policy bytes, and an `accept` or `reject` verdict. Accept decisions include the
+signed review and run-result event IDs that satisfy the policy. Rejections
+require an explanation.
+
+A `proposal.merged` event binds the proposal, original proposed head, resulting
+Git commit, base policy digest, and acceptance-decision IDs. It is emitted only
+after Git creates the merge commit.
 
 ## Synchronization
 

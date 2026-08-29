@@ -14,30 +14,32 @@ import (
 const protocolVersion = "nh/0"
 
 type Event struct {
-	Protocol   string `json:"protocol"`
-	Kind       string `json:"kind"`
-	Actor      string `json:"actor"`
-	ActorName  string `json:"actorName"`
-	PublicKey  string `json:"publicKey"`
-	Sequence   uint64 `json:"sequence"`
-	Timestamp  string `json:"timestamp"`
-	Previous   string `json:"previous,omitempty"`
-	Subject    string `json:"subject,omitempty"`
-	Title      string `json:"title,omitempty"`
-	Body       string `json:"body,omitempty"`
-	Base       string `json:"base,omitempty"`
-	Head       string `json:"head,omitempty"`
-	Verdict    string `json:"verdict,omitempty"`
-	Pipeline   string `json:"pipeline,omitempty"`
-	Definition string `json:"definition,omitempty"`
-	Commit     string `json:"commit,omitempty"`
-	Outcome    string `json:"outcome,omitempty"`
-	ExitCode   int    `json:"exitCode,omitempty"`
-	DurationMS int64  `json:"durationMs,omitempty"`
-	Log        string `json:"log,omitempty"`
-	Backend    string `json:"backend,omitempty"`
-	Platform   string `json:"platform,omitempty"`
-	Runner     string `json:"runner,omitempty"`
+	Protocol   string   `json:"protocol"`
+	Kind       string   `json:"kind"`
+	Actor      string   `json:"actor"`
+	ActorName  string   `json:"actorName"`
+	PublicKey  string   `json:"publicKey"`
+	Sequence   uint64   `json:"sequence"`
+	Timestamp  string   `json:"timestamp"`
+	Previous   string   `json:"previous,omitempty"`
+	Subject    string   `json:"subject,omitempty"`
+	Title      string   `json:"title,omitempty"`
+	Body       string   `json:"body,omitempty"`
+	Base       string   `json:"base,omitempty"`
+	Head       string   `json:"head,omitempty"`
+	Verdict    string   `json:"verdict,omitempty"`
+	Pipeline   string   `json:"pipeline,omitempty"`
+	Definition string   `json:"definition,omitempty"`
+	Commit     string   `json:"commit,omitempty"`
+	Outcome    string   `json:"outcome,omitempty"`
+	ExitCode   int      `json:"exitCode,omitempty"`
+	DurationMS int64    `json:"durationMs,omitempty"`
+	Log        string   `json:"log,omitempty"`
+	Backend    string   `json:"backend,omitempty"`
+	Platform   string   `json:"platform,omitempty"`
+	Runner     string   `json:"runner,omitempty"`
+	Policy     string   `json:"policy,omitempty"`
+	Evidence   []string `json:"evidence,omitempty"`
 }
 
 type StoredEvent struct {
@@ -152,10 +154,35 @@ func validateEventContent(event Event) error {
 		if (event.Backend != "sandbox" && event.Backend != "host") || strings.TrimSpace(event.Platform) == "" || strings.TrimSpace(event.Runner) == "" {
 			return fmt.Errorf("run result requires a supported backend, platform, and runner")
 		}
+	case "proposal.decision":
+		if !validEventID(event.Subject) || !validEventID(event.Policy) || (event.Verdict != "accept" && event.Verdict != "reject") {
+			return fmt.Errorf("proposal decision requires a proposal, policy digest, and verdict")
+		}
+		if event.Verdict == "reject" && strings.TrimSpace(event.Body) == "" {
+			return fmt.Errorf("proposal rejection requires an explanation")
+		}
+		if !validEvidenceIDs(event.Evidence) {
+			return fmt.Errorf("proposal decision has invalid evidence IDs")
+		}
+	case "proposal.merged":
+		if !validEventID(event.Subject) || !validEventID(event.Policy) || !validGitOID(event.Commit) || !validGitOID(event.Head) || !validEvidenceIDs(event.Evidence) {
+			return fmt.Errorf("proposal merge requires a proposal, policy, head, commit, and decision evidence")
+		}
 	default:
 		return fmt.Errorf("unsupported event kind %q", event.Kind)
 	}
 	return nil
+}
+
+func validEvidenceIDs(evidence []string) bool {
+	seen := make(map[string]bool)
+	for _, id := range evidence {
+		if !validEventID(id) || seen[id] {
+			return false
+		}
+		seen[id] = true
+	}
+	return true
 }
 
 func validEventID(id string) bool {

@@ -42,6 +42,10 @@ func run(args []string) error {
 		return cmdRun(args[1:])
 	case "runner":
 		return cmdRunner(args[1:])
+	case "decide":
+		return cmdDecide(args[1:])
+	case "merge":
+		return cmdMerge(args[1:])
 	case "sync":
 		return cmdSync(args[1:])
 	case "log":
@@ -64,6 +68,7 @@ Usage:
   nh proposal open --base REV --head REV [--body TEXT] TITLE
   nh proposal list
   nh proposal show PROPOSAL
+  nh proposal status PROPOSAL
   nh review PROPOSAL <--approve|--request-changes> [--body TEXT]
   nh run request PROPOSAL PIPELINE
   nh run list
@@ -72,6 +77,8 @@ Usage:
   nh run logs RESULT
   nh runner once --accept-pipeline NAME --accept-actor ACTOR
   nh runner watch --accept-pipeline NAME --accept-actor ACTOR
+  nh decide PROPOSAL <--accept|--reject> [--body TEXT]
+  nh merge PROPOSAL
   nh sync [REMOTE]
   nh log
   nh version
