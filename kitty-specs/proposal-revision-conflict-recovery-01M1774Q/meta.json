@@ -2,14 +2,16 @@
   "coordination_branch": "kitty/mission-proposal-revision-conflict-recovery-01M1774Q",
   "created_at": "2026-08-29T16:55:13.654730+00:00",
   "flattened": false,
-  "friendly_name": "proposal revision conflict recovery",
+  "friendly_name": "Proposal Revision and Conflict Recovery",
   "mission_id": "01M1774QZNEXPZTV98YETRW0EA",
   "mission_number": null,
   "mission_slug": "proposal-revision-conflict-recovery-01M1774Q",
   "mission_type": "software-dev",
-  "purpose_context": "This mission advances proposal revision conflict recovery on chore/spec-kitty-bootstrap so stakeholders can track the work from mission creation onward.",
-  "purpose_tldr": "proposal revision conflict recovery",
+  "purpose_context": "Allow proposal authors to recover from target-branch divergence without rewriting signed history. Each resolved head becomes a linked immutable revision, exact-head review and CI evidence starts fresh, and disconnected sibling revisions remain visible without inventing a global latest proposal.",
+  "purpose_tldr": "Recover conflicted proposals through immutable, explicitly linked revisions.",
+  "source_description": "Add repository-native proposal revision and supersession semantics for merge-conflict recovery, with sibling revisions preserved.",
   "slug": "proposal-revision-conflict-recovery-01M1774Q",
   "target_branch": "chore/spec-kitty-bootstrap",
-  "topology": "lanes_with_coord"
+  "topology": "lanes_with_coord",
+  "vcs": "git"
 }

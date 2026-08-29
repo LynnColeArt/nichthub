@@ -1,0 +1,30 @@
+{
+  "entries": [
+    {
+      "created_at": "2026-08-29T16:56:10.866535Z",
+      "decision_id": "01M1776FVJCHKV7QC3VVTD0MF4",
+      "final_answer": "Keep both as valid sibling proposal revisions. Preserve the fork in the signed lineage, expose every sibling, and require commands to name an explicit proposal ID; do not infer a global latest revision.",
+      "input_key": "concurrent_successors",
+      "mission_id": "01M1774QZNEXPZTV98YETRW0EA",
+      "mission_slug": "proposal-revision-conflict-recovery-01M1774Q",
+      "opened_by": "cli",
+      "options": [
+        "Keep both as valid sibling revisions and require explicit proposal IDs",
+        "Choose one deterministic current revision and mark the other obsolete",
+        "Reject the second revision once either successor is observed"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "If the original author publishes two proposal revisions from disconnected clones, how should Nichthub represent the competing successors?",
+      "rationale": null,
+      "resolved_at": "2026-08-29T16:58:43.067639Z",
+      "resolved_by": null,
+      "slot_key": "specify.revision.concurrent-successors",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    }
+  ],
+  "mission_id": "01M1774QZNEXPZTV98YETRW0EA",
+  "version": 1
+}
