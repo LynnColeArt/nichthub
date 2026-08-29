@@ -45,4 +45,7 @@
 - Planning reconciliation: sibling semantics remain in scope, while concurrent
   publication from disconnected clones sharing one private identity remains
   outside this mission's existing single-writer actor boundary.
+- Planning reconciliation: local creation refuses a known merged predecessor;
+  receivers preserve otherwise valid revision and merge facts because delivery
+  order and timestamps cannot prove their real-world creation order.
 - Validation iteration 1: all checklist items passed; ready for planning.

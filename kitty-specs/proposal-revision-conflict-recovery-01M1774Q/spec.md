@@ -155,8 +155,10 @@ candidates are closed to new acceptance and merge operations.
   revision lineage, even if its code is otherwise valid.
 - A revision changes both base and head: its policy and evidence are evaluated
   entirely from the new base and exact new head.
-- A revision is published for an already merged proposal: it is rejected as a
-  revision; a new independent proposal is required.
+- A local revision is attempted for a proposal already known merged: creation is
+  refused and a new independent proposal is required. If synchronization later
+  reveals both a valid revision and a merge fact, both remain visible and the
+  lineage is closed or conflicted according to the known merge facts.
 - An accepted but unmerged predecessor gains a revision: its historical
   acceptance remains visible, but it is no longer locally mergeable.
 - A rejected or changes-requested predecessor gains a revision: the revision is
@@ -203,7 +205,7 @@ candidates are closed to new acceptance and merge operations.
 | FR-010 | A proposal revision can itself be revised, preserving a directed, acyclic, multi-generation lineage. | Medium | Open |
 | FR-011 | Once a merge is locally known anywhere in a revision lineage, other unmerged lineage candidates are locally ineligible for new acceptance or merge. | High | Open |
 | FR-012 | If independently merged sibling histories are later synchronized, both signed merge facts remain visible and the lineage reports a conflict rather than choosing or deleting one. | High | Open |
-| FR-013 | Self-links, cycles, missing or unverifiable predecessors, unauthorized revision signers, and revisions of already merged proposals are rejected with actionable reasons. | High | Open |
+| FR-013 | Self-links, cycles, missing or unverifiable predecessors, and unauthorized revision signers are rejected with actionable reasons; locally creating a revision of a proposal already known merged is refused. | High | Open |
 | FR-014 | A failed conflicting merge continues to restore the prior clean worktree and identifies the proposal needed to start a revision workflow. | High | Open |
 | FR-015 | Proposals with no revision relationships retain their existing listing, review, CI, decision, synchronization, and merge semantics. | High | Open |
 | FR-016 | Proposal revisions and their code remain exchangeable through the same repository-native synchronization boundary as existing collaboration history. | High | Open |
@@ -284,6 +286,9 @@ candidates are closed to new acceptance and merge operations.
 - A merge completed before a peer learns of a sibling remains immutable history.
   Synchronization reports competing merge facts instead of retroactively
   pretending either did not happen.
+- Event timestamps and delivery order do not prove whether a remote revision or
+  merge happened first. Reception therefore preserves both otherwise valid
+  signed facts; the locally known merge state governs future terminal actions.
 - Rejected and accepted-but-unmerged proposals may be revised; merged proposals
   may not.
 - The existing safe merge-abort behavior remains authoritative for restoring a
