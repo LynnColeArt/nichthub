@@ -128,10 +128,10 @@
       "criterion_id": "FR-013",
       "description": "Verify FR-013 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "TestProposalRevisionRelationshipRejections,TestProposalRevisionCommandAndLineageInspection",
+      "pass_fail": "pass",
+      "verified_by": "codex",
+      "verified_at": "2026-08-29T18:25:44.578553+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
