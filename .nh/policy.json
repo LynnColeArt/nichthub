@@ -1,0 +1,22 @@
+{
+  "version": "nh.policy/0",
+  "maintainers": [
+    "36944394addccd027292abc8183f332af8b4590925291ee8f1e8d8f09446b7dd"
+  ],
+  "proposals": {
+    "requiredApprovals": 1,
+    "requiredAccepts": 1,
+    "trustedReviewers": [
+      "36944394addccd027292abc8183f332af8b4590925291ee8f1e8d8f09446b7dd"
+    ],
+    "allowAuthorApproval": true
+  },
+  "pipelines": {
+    "test": {
+      "requiredResults": 1,
+      "trustedRunners": [
+        "36944394addccd027292abc8183f332af8b4590925291ee8f1e8d8f09446b7dd"
+      ]
+    }
+  }
+}

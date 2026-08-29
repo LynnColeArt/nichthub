@@ -1,0 +1,331 @@
+package main
+
+import (
+	"encoding/base64"
+	"fmt"
+	"sort"
+	"strconv"
+	"strings"
+)
+
+func actorRef(actor string) string {
+	return "refs/nh/actors/" + actor
+}
+
+func proposalRef(id string) string {
+	return "refs/nh/proposals/" + strings.TrimPrefix(id, "sha256:")
+}
+
+func createProposalRef(id, head string) error {
+	if _, err := gitOutput("update-ref", "-m", "nh: publish proposal code", proposalRef(id), head, ""); err != nil {
+		return fmt.Errorf("create proposal ref: %w", err)
+	}
+	return nil
+}
+
+func proposalHead(id string) (string, bool, error) {
+	suffix := strings.TrimPrefix(id, "sha256:")
+	out, err := gitText(
+		"for-each-ref",
+		"--format=%(refname) %(objectname)",
+		"refs/nh/proposals",
+		"refs/nh/remotes",
+	)
+	if err != nil {
+		return "", false, err
+	}
+	var found string
+	fields := strings.Fields(out)
+	for index := 0; index+1 < len(fields); index += 2 {
+		ref, object := fields[index], fields[index+1]
+		if ref != "refs/nh/proposals/"+suffix && !strings.HasSuffix(ref, "/proposals/"+suffix) {
+			continue
+		}
+		if found != "" && found != object {
+			return "", false, fmt.Errorf("proposal %s has conflicting code refs", shortID(id))
+		}
+		found = object
+	}
+	return found, found != "", nil
+}
+
+func appendEvent(event Event, identity *Identity) (*StoredEvent, error) {
+	return appendEventWithAttachments(event, identity, nil)
+}
+
+func appendEventWithAttachments(event Event, identity *Identity, attachments map[string][]byte) (*StoredEvent, error) {
+	ref := actorRef(identity.Actor)
+	previousCommit, hasPrevious, err := refValue(ref)
+	if err != nil {
+		return nil, err
+	}
+
+	payload, signature, err := encodeAndSign(event, identity)
+	if err != nil {
+		return nil, err
+	}
+	id := eventID(payload)
+	if event.Kind == "run.result" {
+		log, exists := attachments["log.txt"]
+		if !exists || len(attachments) != 1 || eventID(log) != event.Log {
+			return nil, fmt.Errorf("run result requires exactly one matching log attachment")
+		}
+	} else if len(attachments) != 0 {
+		return nil, fmt.Errorf("event kind %s does not support attachments", event.Kind)
+	}
+	if hasPrevious {
+		previous, err := loadStoredEvent(previousCommit)
+		if err != nil {
+			return nil, fmt.Errorf("read actor head: %w", err)
+		}
+		if event.Previous != previous.ID || event.Sequence != previous.Event.Sequence+1 {
+			return nil, fmt.Errorf("actor history changed while creating event; retry the command")
+		}
+	} else if event.Previous != "" || event.Sequence != 1 {
+		return nil, fmt.Errorf("first actor event must have sequence 1 and no predecessor")
+	}
+
+	eventBlob, err := gitInput(payload, nil, "hash-object", "-w", "--stdin")
+	if err != nil {
+		return nil, err
+	}
+	signatureText := []byte(base64.RawStdEncoding.EncodeToString(signature))
+	signatureBlob, err := gitInput(signatureText, nil, "hash-object", "-w", "--stdin")
+	if err != nil {
+		return nil, err
+	}
+	treeInput := fmt.Sprintf(
+		"100644 blob %s\tevent.json\n100644 blob %s\tsignature\n",
+		strings.TrimSpace(string(eventBlob)),
+		strings.TrimSpace(string(signatureBlob)),
+	)
+	attachmentNames := make([]string, 0, len(attachments))
+	for name := range attachments {
+		if name == "" || name == "event.json" || name == "signature" || strings.ContainsAny(name, "/\\\x00\n\r\t") {
+			return nil, fmt.Errorf("invalid attachment name %q", name)
+		}
+		attachmentNames = append(attachmentNames, name)
+	}
+	sort.Strings(attachmentNames)
+	for _, name := range attachmentNames {
+		blob, err := gitInput(attachments[name], nil, "hash-object", "-w", "--stdin")
+		if err != nil {
+			return nil, err
+		}
+		treeInput += fmt.Sprintf("100644 blob %s\t%s\n", strings.TrimSpace(string(blob)), name)
+	}
+	tree, err := gitInput([]byte(treeInput), nil, "mktree")
+	if err != nil {
+		return nil, err
+	}
+
+	commitArgs := []string{"commit-tree", strings.TrimSpace(string(tree)), "-m", "nh event " + id}
+	if hasPrevious {
+		commitArgs = append(commitArgs, "-p", previousCommit)
+	}
+	email := shortID(identity.Actor) + "@nh.invalid"
+	env := []string{
+		"GIT_AUTHOR_NAME=" + identity.Name,
+		"GIT_AUTHOR_EMAIL=" + email,
+		"GIT_COMMITTER_NAME=" + identity.Name,
+		"GIT_COMMITTER_EMAIL=" + email,
+	}
+	commit, err := gitInput(nil, env, commitArgs...)
+	if err != nil {
+		return nil, err
+	}
+	commitID := strings.TrimSpace(string(commit))
+
+	updateArgs := []string{"update-ref", "-m", "nh: append " + event.Kind, ref, commitID}
+	if hasPrevious {
+		updateArgs = append(updateArgs, previousCommit)
+	} else {
+		// An empty old value means the ref must not already exist, and works in
+		// repositories using either SHA-1 or SHA-256 object IDs.
+		updateArgs = append(updateArgs, "")
+	}
+	if _, err := gitOutput(updateArgs...); err != nil {
+		return nil, fmt.Errorf("append event: %w", err)
+	}
+
+	return &StoredEvent{ID: id, Commit: commitID, Event: event, Payload: payload, Signature: signature, Attachments: attachments}, nil
+}
+
+func nextEvent(identity *Identity, kind string) (Event, error) {
+	ref := actorRef(identity.Actor)
+	head, exists, err := refValue(ref)
+	if err != nil {
+		return Event{}, err
+	}
+	if !exists {
+		return newEvent(identity, kind, 1, ""), nil
+	}
+	previous, err := loadStoredEvent(head)
+	if err != nil {
+		return Event{}, fmt.Errorf("read previous actor event: %w", err)
+	}
+	if previous.Event.Actor != identity.Actor {
+		return Event{}, fmt.Errorf("actor ref contains an event from another identity")
+	}
+	return newEvent(identity, kind, previous.Event.Sequence+1, previous.ID), nil
+}
+
+func loadStoredEvent(commit string) (*StoredEvent, error) {
+	payload, err := gitOutput("show", commit+":event.json")
+	if err != nil {
+		return nil, err
+	}
+	signatureEncoded, err := gitOutput("show", commit+":signature")
+	if err != nil {
+		return nil, err
+	}
+	signature, err := base64.RawStdEncoding.DecodeString(strings.TrimSpace(string(signatureEncoded)))
+	if err != nil {
+		return nil, fmt.Errorf("invalid signature encoding in %s", commit)
+	}
+	event, id, err := verifyEvent(payload, signature)
+	if err != nil {
+		return nil, fmt.Errorf("verify %s: %w", commit, err)
+	}
+	attachments := make(map[string][]byte)
+	if event.Kind == "run.result" {
+		log, err := gitOutput("show", commit+":log.txt")
+		if err != nil {
+			return nil, fmt.Errorf("run result %s has no log attachment", shortID(id))
+		}
+		if eventID(log) != event.Log {
+			return nil, fmt.Errorf("run result %s log digest does not match", shortID(id))
+		}
+		attachments["log.txt"] = log
+	}
+	return &StoredEvent{ID: id, Commit: commit, Event: event, Payload: payload, Signature: signature, Attachments: attachments}, nil
+}
+
+func collectEvents() ([]StoredEvent, error) {
+	refOutput, err := gitText("for-each-ref", "--format=%(refname) %(objectname)", "refs/nh/actors", "refs/nh/remotes")
+	if err != nil {
+		return nil, err
+	}
+	if refOutput == "" {
+		return nil, nil
+	}
+
+	commits := make(map[string]struct{})
+	fields := strings.Fields(refOutput)
+	for index := 0; index+1 < len(fields); index += 2 {
+		ref, head := fields[index], fields[index+1]
+		if !strings.HasPrefix(ref, "refs/nh/actors/") && !strings.Contains(ref, "/actors/") {
+			continue
+		}
+		chain, err := gitText("rev-list", "--reverse", head)
+		if err != nil {
+			return nil, err
+		}
+		for _, commit := range strings.Fields(chain) {
+			commits[commit] = struct{}{}
+		}
+	}
+
+	events := make([]StoredEvent, 0, len(commits))
+	for commit := range commits {
+		stored, err := loadStoredEvent(commit)
+		if err != nil {
+			return nil, err
+		}
+		events = append(events, *stored)
+	}
+	sort.Slice(events, func(i, j int) bool {
+		if events[i].Event.Timestamp != events[j].Event.Timestamp {
+			return events[i].Event.Timestamp < events[j].Event.Timestamp
+		}
+		return events[i].ID < events[j].ID
+	})
+	if err := validateActorChains(events); err != nil {
+		return nil, err
+	}
+	if err := validateEventRelationships(events); err != nil {
+		return nil, err
+	}
+	return events, nil
+}
+
+func validateEventRelationships(events []StoredEvent) error {
+	byID := make(map[string]StoredEvent, len(events))
+	for _, stored := range events {
+		byID[stored.ID] = stored
+	}
+	for _, stored := range events {
+		event := stored.Event
+		switch event.Kind {
+		case "issue.comment":
+			subject, exists := byID[event.Subject]
+			if !exists || subject.Event.Kind != "issue.open" {
+				return fmt.Errorf("comment %s does not reference an available issue", shortID(stored.ID))
+			}
+		case "review.submit":
+			subject, exists := byID[event.Subject]
+			if !exists || subject.Event.Kind != "proposal.open" {
+				return fmt.Errorf("review %s does not reference an available proposal", shortID(stored.ID))
+			}
+		case "run.request":
+			subject, exists := byID[event.Subject]
+			if !exists || subject.Event.Kind != "proposal.open" || subject.Event.Head != event.Commit {
+				return fmt.Errorf("run request %s does not match an available proposal", shortID(stored.ID))
+			}
+		case "run.result":
+			request, exists := byID[event.Subject]
+			if !exists || request.Event.Kind != "run.request" ||
+				request.Event.Commit != event.Commit || request.Event.Pipeline != event.Pipeline || request.Event.Definition != event.Definition {
+				return fmt.Errorf("run result %s does not match an available request", shortID(stored.ID))
+			}
+		}
+	}
+	return nil
+}
+
+func resolveEvent(events []StoredEvent, query string) (*StoredEvent, error) {
+	query = strings.TrimPrefix(query, "sha256:")
+	var match *StoredEvent
+	for i := range events {
+		candidate := strings.TrimPrefix(events[i].ID, "sha256:")
+		if strings.HasPrefix(candidate, query) {
+			if match != nil && match.ID != events[i].ID {
+				return nil, fmt.Errorf("event prefix %q is ambiguous", query)
+			}
+			match = &events[i]
+		}
+	}
+	if match == nil {
+		return nil, fmt.Errorf("event %q not found", query)
+	}
+	return match, nil
+}
+
+func validateActorChains(events []StoredEvent) error {
+	byActor := make(map[string][]StoredEvent)
+	for _, event := range events {
+		byActor[event.Event.Actor] = append(byActor[event.Event.Actor], event)
+	}
+	for actor, chain := range byActor {
+		sort.Slice(chain, func(i, j int) bool { return chain[i].Event.Sequence < chain[j].Event.Sequence })
+		seen := make(map[uint64]string)
+		for index, stored := range chain {
+			if existing, ok := seen[stored.Event.Sequence]; ok && existing != stored.ID {
+				return fmt.Errorf("actor %s has conflicting sequence %s", shortID(actor), strconv.FormatUint(stored.Event.Sequence, 10))
+			}
+			seen[stored.Event.Sequence] = stored.ID
+			wantSequence := uint64(index + 1)
+			if stored.Event.Sequence != wantSequence {
+				return fmt.Errorf("actor %s has invalid sequence %s", shortID(actor), strconv.FormatUint(stored.Event.Sequence, 10))
+			}
+			wantPrevious := ""
+			if index > 0 {
+				wantPrevious = chain[index-1].ID
+			}
+			if stored.Event.Previous != wantPrevious {
+				return fmt.Errorf("actor %s has a broken event chain at sequence %s", shortID(actor), strconv.FormatUint(stored.Event.Sequence, 10))
+			}
+		}
+	}
+	return nil
+}
