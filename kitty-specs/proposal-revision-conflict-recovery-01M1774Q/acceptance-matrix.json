@@ -108,10 +108,10 @@
       "criterion_id": "FR-011",
       "description": "Verify FR-011 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "TestRevisionEvidenceAndLineageGovernance",
+      "pass_fail": "pass",
+      "verified_by": "codex",
+      "verified_at": "2026-08-29T18:25:40.984623+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
