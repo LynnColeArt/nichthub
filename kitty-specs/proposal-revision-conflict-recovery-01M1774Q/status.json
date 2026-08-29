@@ -1,7 +1,7 @@
 {
-  "event_count": 9,
-  "last_event_id": "01M17A193HWSB322CQVBADP2B4",
-  "materialized_at": "2026-08-29T17:45:45.841689+00:00",
+  "event_count": 10,
+  "last_event_id": "01M17A1NMEEZY2RG9G9XTPFVDE",
+  "materialized_at": "2026-08-29T17:45:58.670308+00:00",
   "mission_number": "",
   "mission_slug": "proposal-revision-conflict-recovery-01M1774Q",
   "mission_type": "software-dev",
@@ -9,12 +9,12 @@
     "approved": 0,
     "blocked": 0,
     "canceled": 0,
-    "claimed": 0,
+    "claimed": 1,
     "done": 0,
     "for_review": 0,
     "in_progress": 0,
     "in_review": 0,
-    "planned": 5
+    "planned": 4
   },
   "work_packages": {
     "WP01": {
@@ -24,22 +24,26 @@
       "agent_profile_version": "__resolved_profile_version_absent__",
       "assignee": "codex",
       "force_count": 1,
-      "lane": "planned",
-      "last_event_id": "01M17A193HWSB322CQVBADP2B4",
-      "last_transition_at": "2026-08-29T17:45:45.841689+00:00",
+      "lane": "claimed",
+      "last_event_id": "01M17A1NMEEZY2RG9G9XTPFVDE",
+      "last_transition_at": "2026-08-29T17:45:58.670308+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "Claimed in runtime-provided lane-a after action wrapper empty-commit rollback",
-        "Ready for review after rebase: revision validation complete; go test -race, vet, build, and diff check pass"
+        "Ready for review after rebase: revision validation complete; go test -race, vet, build, and diff check pass",
+        "Review cycle 1 requests wire-title and relationship-test corrections"
       ],
       "provider": "__resolved_provider_absent__",
+      "review": null,
       "role": "implementer",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T001": "done",
-        "T002": "done",
-        "T003": "done",
-        "T004": "done",
-        "T005": "done"
+        "T001": "planned",
+        "T002": "planned",
+        "T003": "planned",
+        "T004": "planned",
+        "T005": "planned"
       }
     },
     "WP02": {
