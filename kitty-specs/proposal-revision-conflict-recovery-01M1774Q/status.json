@@ -1,7 +1,7 @@
 {
-  "event_count": 3,
-  "last_event_id": "01M178SHXVRG0DJSEMERD8476Q",
-  "materialized_at": "2026-08-29T17:24:04.155492+00:00",
+  "event_count": 4,
+  "last_event_id": "01M178SHZYA5R5191RJR5RSB97",
+  "materialized_at": "2026-08-29T17:24:04.222381+00:00",
   "mission_number": "",
   "mission_slug": "proposal-revision-conflict-recovery-01M1774Q",
   "mission_type": "software-dev",
@@ -14,7 +14,7 @@
     "for_review": 0,
     "in_progress": 0,
     "in_review": 0,
-    "planned": 3
+    "planned": 4
   },
   "work_packages": {
     "WP01": {
@@ -37,6 +37,13 @@
       "lane": "planned",
       "last_event_id": "01M178SHXVRG0DJSEMERD8476Q",
       "last_transition_at": "2026-08-29T17:24:04.155492+00:00"
+    },
+    "WP04": {
+      "actor": "finalize-tasks",
+      "force_count": 0,
+      "lane": "planned",
+      "last_event_id": "01M178SHZYA5R5191RJR5RSB97",
+      "last_transition_at": "2026-08-29T17:24:04.222381+00:00"
     }
   }
 }
