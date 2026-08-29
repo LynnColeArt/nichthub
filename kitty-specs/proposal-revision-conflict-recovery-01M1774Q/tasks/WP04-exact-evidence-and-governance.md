@@ -29,7 +29,8 @@ history:
 - at: '2026-08-29T17:18:13Z'
   actor: system
   action: Prompt generated via /spec-kitty.tasks
-agent_profile: ''
+agent_profile: implementer-ivan
+agent: codex
 authoritative_surface: policy.go
 create_intent:
 - governance_revision_test.go
@@ -42,7 +43,7 @@ owned_files:
 - ci_test.go
 - governance.go
 - governance_revision_test.go
-role: ''
+role: implementer
 tags: []
 task_type: implement
 tracker_refs: []
