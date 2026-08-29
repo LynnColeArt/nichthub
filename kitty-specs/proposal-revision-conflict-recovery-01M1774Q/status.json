@@ -1,7 +1,7 @@
 {
-  "event_count": 12,
-  "last_event_id": "01M17A7S90J6EEXCCZM6B7HA7K",
-  "materialized_at": "2026-08-29T17:49:19.008681+00:00",
+  "event_count": 13,
+  "last_event_id": "01M17A9340HPCNYXXR7KWJ6E35",
+  "materialized_at": "2026-08-29T17:50:01.856930+00:00",
   "mission_number": "",
   "mission_slug": "proposal-revision-conflict-recovery-01M1774Q",
   "mission_type": "software-dev",
@@ -11,9 +11,9 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 1,
+    "for_review": 0,
     "in_progress": 0,
-    "in_review": 0,
+    "in_review": 1,
     "planned": 4
   },
   "work_packages": {
@@ -24,19 +24,20 @@
       "agent_profile_version": "__resolved_profile_version_absent__",
       "assignee": "codex",
       "force_count": 1,
-      "lane": "for_review",
-      "last_event_id": "01M17A7S90J6EEXCCZM6B7HA7K",
-      "last_transition_at": "2026-08-29T17:49:19.008681+00:00",
+      "lane": "in_review",
+      "last_event_id": "01M17A9340HPCNYXXR7KWJ6E35",
+      "last_transition_at": "2026-08-29T17:50:01.856930+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "Claimed in runtime-provided lane-a after action wrapper empty-commit rollback",
         "Ready for review after rebase: revision validation complete; go test -race, vet, build, and diff check pass",
         "Review cycle 1 requests wire-title and relationship-test corrections",
-        "Addressing review cycle 1 with red-first wire and relationship coverage"
+        "Addressing review cycle 1 with red-first wire and relationship coverage",
+        "Review cycle 1 addressed: serialized titles rejected; revision run/decision/merge and actionable diagnostics pinned; all Go gates pass"
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
-      "role": "implementer",
+      "role": "reviewer",
       "shell_pid": null,
       "shell_pid_created_at": null,
       "subtasks": {
