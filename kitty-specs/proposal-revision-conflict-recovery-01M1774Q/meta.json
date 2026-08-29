@@ -13,6 +13,7 @@
   "accepted_at": "2026-08-29T18:27:02.119953+00:00",
   "accepted_by": "codex",
   "accepted_from_commit": "8313afb75d34beda24d31fd352639ff7416ced99",
+  "baseline_merge_commit": "3f4164705694f869ec2959fe6066833a9b84d5be",
   "created_at": "2026-08-29T16:55:13.654730+00:00",
   "flattened": true,
   "friendly_name": "Proposal Revision and Conflict Recovery",
@@ -24,6 +25,7 @@
   "purpose_tldr": "Recover conflicted proposals through immutable, explicitly linked revisions.",
   "slug": "proposal-revision-conflict-recovery-01M1774Q",
   "source_description": "Add repository-native proposal revision and supersession semantics for merge-conflict recovery, with sibling revisions preserved.",
+  "status_phase": "1",
   "target_branch": "chore/spec-kitty-bootstrap",
   "topology": "lanes",
   "vcs": "git"
