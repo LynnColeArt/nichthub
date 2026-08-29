@@ -1,0 +1,11 @@
+adapter_id: fresh-seed
+adapter_version: 3.2.6rc2
+artifacts: []
+built_in_only: true
+bundle_content_hash:
+created_at: '1970-01-01T00:00:00+00:00'
+manifest_hash: ab221d832bb627dcb877b34df9d2b0a50f40a9e7ae0ac63cf8ff70b7769a4554
+mission_id:
+run_id: fresh-project-seed
+schema_version: '2'
+synthesizer_version: 3.2.6rc2
