@@ -123,6 +123,22 @@ nh runner watch \
 continues synchronizing and processing matching requests until interrupted.
 Requests from every other signer and for every other pipeline are ignored.
 
+Project governance lives in `.nh/policy.json`. A proposal is always evaluated
+against the exact policy bytes in its signed base commit, so a proposal cannot
+weaken the rules used to accept itself:
+
+```sh
+nh proposal status <proposal-id>
+nh decide <proposal-id> --accept
+
+# On the target branch, with a clean worktree:
+nh merge <proposal-id>
+```
+
+Accept decisions sign the policy digest and the exact review and CI evidence
+that satisfied it. Merge events sign the accepted proposal head, resulting Git
+commit, policy digest, and acceptance decisions.
+
 Back in the first clone:
 
 ```sh
@@ -154,6 +170,7 @@ nh issue show ISSUE
 nh proposal open --base REV --head REV [--body TEXT] TITLE
 nh proposal list
 nh proposal show PROPOSAL
+nh proposal status PROPOSAL
 nh review PROPOSAL <--approve|--request-changes> [--body TEXT]
 nh run request PROPOSAL PIPELINE
 nh run list
@@ -162,18 +179,20 @@ nh run execute REQUEST [--backend sandbox|host] [--rerun]
 nh run logs RESULT
 nh runner once --accept-pipeline NAME --accept-actor ACTOR
 nh runner watch --accept-pipeline NAME --accept-actor ACTOR
+nh decide PROPOSAL <--accept|--reject> [--body TEXT]
+nh merge PROPOSAL
 nh sync [REMOTE]
 nh log
 ```
 
 ## Scope of this experiment
 
-The prototype deliberately omits merge decisions, repository-owned trust
-policy, portable/container backends, secrets, configurable network
-permissions, strong CPU/memory/disk quotas, key rotation, moderation, selective
-replication, redaction, shallow-clone handling, and multiple writers using the
-same identity. Those should only be added after the repository-native event
-model survives testing.
+The prototype deliberately omits policy amendment tooling, merge queues,
+portable/container backends, secrets, configurable network permissions, strong
+CPU/memory/disk quotas, key rotation, moderation, selective replication,
+redaction, shallow-clone handling, and multiple writers using the same
+identity. Those should only be added after the repository-native event model
+survives testing.
 
 The draft wire/storage format is described in
 [`docs/protocol-v0.md`](docs/protocol-v0.md).
@@ -183,3 +202,6 @@ Live Git transport results are recorded in
 
 The current CI and runner threat model is documented in
 [`docs/ci-v0.md`](docs/ci-v0.md).
+
+Policy evaluation and decision semantics are documented in
+[`docs/governance-v0.md`](docs/governance-v0.md).
