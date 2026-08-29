@@ -12,7 +12,7 @@ requirement_refs:
 - FR-012
 planning_base_branch: chore/spec-kitty-bootstrap
 merge_target_branch: chore/spec-kitty-bootstrap
-branch_strategy: Planning artifacts were generated on chore/spec-kitty-bootstrap; the execution lane is allocated from lanes.json and completed changes merge back into chore/spec-kitty-bootstrap.
+branch_strategy: Planning artifacts for this mission were generated on chore/spec-kitty-bootstrap. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into chore/spec-kitty-bootstrap unless the human explicitly redirects the landing branch.
 subtasks:
 - T006
 - T007
