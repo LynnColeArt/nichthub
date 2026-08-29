@@ -1,0 +1,7 @@
+evidence_id,source_id,finding,decision_supported,location
+E001,S001,"Actor histories are signed linear chains; conflicting sequence numbers are rejected.","Keep same-identity publication single-writer while preserving sibling proposal edges.","event.go; store.go"
+E002,S002,"Reviews, CI, decisions, and merges already bind exact proposal IDs plus code or policy inputs.","A revision needs fresh evidence by exact subject; no inheritance mechanism is required.","proposal.go; ci.go; policy.go; governance.go"
+E003,S001,"Proposal code uses immutable per-event refs and sync transports actor/proposal wildcard namespaces.","Reuse existing proposal refs and synchronization unchanged for revisions.","store.go; commands.go"
+E004,S002,"A failed Git merge is automatically aborted before a merge event is emitted.","Extend the existing failure path with revision recovery context.","governance.go"
+E005,S004,"The approved mission preserves sibling successors without a global latest and excludes disconnected same-key concurrent publication.","Derive deterministic lineage while retaining the actor-chain boundary.","spec.md; decisions/DM-01M1776FVJCHKV7QC3VVTD0MF4.md"
+E006,S003,"The prototype explicitly omits multiple writers using one identity and requires only Git for core collaboration.","Do not expand this mission into multi-device identity append or add Docker/service requirements.","README.md; .kittify/charter/charter.md"

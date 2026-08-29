@@ -1,0 +1,5 @@
+source_id,type,title,path,accessed_at,notes
+S001,repository-source,"Signed event storage and validation","event.go; store.go; commands.go",2026-08-29,"Primary evidence for wire shape actor chains refs and synchronization."
+S002,repository-source,"Proposal evidence and merge implementation","proposal.go; ci.go; policy.go; governance.go",2026-08-29,"Primary evidence for exact evidence policy evaluation and conflict abort behavior."
+S003,repository-documentation,"Prototype scope and protocol documentation","README.md; docs/protocol-v0.md; docs/governance-v0.md",2026-08-29,"Primary evidence for documented product and compatibility boundaries."
+S004,mission-governance,"Approved mission and sibling decision","kitty-specs/proposal-revision-conflict-recovery-01M1774Q/spec.md; kitty-specs/proposal-revision-conflict-recovery-01M1774Q/decisions/DM-01M1776FVJCHKV7QC3VVTD0MF4.md; .kittify/charter/charter.md",2026-08-29,"Authoritative intent constraints terminology and quality gates."

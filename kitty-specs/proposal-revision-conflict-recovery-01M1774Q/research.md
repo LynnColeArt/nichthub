@@ -144,3 +144,14 @@ continue to transport both events and code.
   operate in O(events + lineage edges) time.
 - Unknown event kinds continue to fail closed under protocol `nh/0`.
 - No supply-chain research is needed: the design adds no dependency.
+
+## Evidence Trail and Open Questions
+
+Repository evidence is indexed in `research/source-register.csv` and individual
+findings are mapped to decisions in `research/evidence-log.csv`. No external
+source was required because the mission extends only local experimental
+protocol behavior and adds no dependency.
+
+There are no unresolved implementation questions. Multi-device append for one
+private identity remains an explicit future protocol problem, not a hidden
+dependency of sibling revision semantics.
