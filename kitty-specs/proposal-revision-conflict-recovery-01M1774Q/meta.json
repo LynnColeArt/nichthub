@@ -1,7 +1,6 @@
 {
-  "coordination_branch": "kitty/mission-proposal-revision-conflict-recovery-01M1774Q",
   "created_at": "2026-08-29T16:55:13.654730+00:00",
-  "flattened": false,
+  "flattened": true,
   "friendly_name": "Proposal Revision and Conflict Recovery",
   "mission_id": "01M1774QZNEXPZTV98YETRW0EA",
   "mission_number": null,
