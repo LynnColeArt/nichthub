@@ -192,7 +192,7 @@ func cmdRunRequest(args []string) error {
 	if err != nil {
 		return err
 	}
-	if proposal.Event.Kind != "proposal.open" {
+	if !isProposalKind(proposal.Event.Kind) {
 		return fmt.Errorf("%s is not a proposal", shortID(proposal.ID))
 	}
 	if err := requireProposalCode(proposal); err != nil {
@@ -396,7 +396,7 @@ func executeRunRequest(ctx context.Context, events []StoredEvent, request *Store
 	if err != nil {
 		return nil, fmt.Errorf("resolve run proposal: %w", err)
 	}
-	if proposal.Event.Kind != "proposal.open" || proposal.Event.Head != request.Event.Commit {
+	if !isProposalKind(proposal.Event.Kind) || proposal.Event.Head != request.Event.Commit {
 		return nil, fmt.Errorf("run request does not match its signed proposal")
 	}
 	if err := requireProposalCode(proposal); err != nil {

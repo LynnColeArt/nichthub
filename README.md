@@ -54,6 +54,27 @@ nh review <proposal-id> --approve --body "The fetched code looks good."
 nh sync
 ```
 
+If merging exposes a conflict, resolve it with Git and publish the resolution
+as a new immutable candidate:
+
+```sh
+# Starting from the conflicted proposal's intended target/base, resolve and
+# commit the code with Git, then publish that exact range.
+nh proposal revise <predecessor-proposal-id> \
+  --base <resolved-base-commit> \
+  --head <resolved-head-commit> \
+  --body "Resolve the merge conflict"
+nh sync
+```
+
+The predecessor remains unchanged. The revision gets its own signed event ID
+and content-bearing code ref, and review, CI, and acceptance evidence restart
+for that exact ID. More than one revision may name the same predecessor; these
+siblings are all preserved, so select candidates explicitly rather than
+assuming a global latest winner. `nh proposal show` and `nh proposal status`
+display predecessor, successor, sibling, superseded, closed, and competing
+merge information with exact IDs.
+
 Pipelines are JSON files stored with the proposed code. A step can invoke an
 installed tool or a custom executable tracked in the repository:
 
@@ -168,6 +189,7 @@ nh issue comment ISSUE [--body TEXT] [TEXT]
 nh issue list
 nh issue show ISSUE
 nh proposal open --base REV --head REV [--body TEXT] TITLE
+nh proposal revise PREDECESSOR --base REV --head REV [--body TEXT]
 nh proposal list
 nh proposal show PROPOSAL
 nh proposal status PROPOSAL
@@ -193,6 +215,12 @@ CPU/memory/disk quotas, key rotation, moderation, selective replication,
 redaction, shallow-clone handling, and multiple writers using the same
 identity. Those should only be added after the repository-native event model
 survives testing.
+
+Proposal revision and conflict recovery add no Docker requirement, server, or
+new transport namespace. They use the same signed actor history and
+`refs/nh/proposals/*` wildcard as original proposals. One actor identity is
+still single-writer: publishing serial siblings is supported, but concurrent
+disconnected writes using the same private key are not.
 
 The draft wire/storage format is described in
 [`docs/protocol-v0.md`](docs/protocol-v0.md).

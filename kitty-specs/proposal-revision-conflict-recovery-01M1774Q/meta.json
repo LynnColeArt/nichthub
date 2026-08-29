@@ -24,7 +24,6 @@
   "purpose_tldr": "Recover conflicted proposals through immutable, explicitly linked revisions.",
   "slug": "proposal-revision-conflict-recovery-01M1774Q",
   "source_description": "Add repository-native proposal revision and supersession semantics for merge-conflict recovery, with sibling revisions preserved.",
-  "status_phase": "1",
   "target_branch": "chore/spec-kitty-bootstrap",
   "topology": "lanes",
   "vcs": "git"

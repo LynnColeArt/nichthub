@@ -8,11 +8,13 @@ import (
 
 func cmdProposal(args []string) error {
 	if len(args) == 0 {
-		return usageError("usage: nh proposal <open|list|show|status>")
+		return usageError("usage: nh proposal <open|revise|list|show|status>")
 	}
 	switch args[0] {
 	case "open":
 		return cmdProposalOpen(args[1:])
+	case "revise":
+		return cmdProposalRevise(args[1:])
 	case "list":
 		if len(args) != 1 {
 			return usageError("usage: nh proposal list")
@@ -31,6 +33,82 @@ func cmdProposal(args []string) error {
 	default:
 		return fmt.Errorf("unknown proposal command %q", args[0])
 	}
+}
+
+func cmdProposalRevise(args []string) error {
+	if len(args) < 1 {
+		return usageError("usage: nh proposal revise PREDECESSOR --base REV --head REV [--body TEXT]")
+	}
+	predecessorQuery := args[0]
+	flags := quietFlags("proposal revise")
+	baseRevision := flags.String("base", "", "base Git revision")
+	headRevision := flags.String("head", "", "revised Git revision")
+	body := flags.String("body", "", "revision description")
+	if err := flags.Parse(args[1:]); err != nil {
+		return err
+	}
+	if flags.NArg() != 0 || *baseRevision == "" || *headRevision == "" {
+		return usageError("usage: nh proposal revise PREDECESSOR --base REV --head REV [--body TEXT]")
+	}
+	base, err := resolveCommit(*baseRevision)
+	if err != nil {
+		return fmt.Errorf("resolve base: %w", err)
+	}
+	head, err := resolveCommit(*headRevision)
+	if err != nil {
+		return fmt.Errorf("resolve head: %w", err)
+	}
+	if base == head {
+		return fmt.Errorf("proposal revision base and head resolve to the same commit")
+	}
+	events, err := collectEvents()
+	if err != nil {
+		return err
+	}
+	predecessor, err := resolveEvent(events, predecessorQuery)
+	if err != nil {
+		return err
+	}
+	if !isProposalKind(predecessor.Event.Kind) {
+		return fmt.Errorf("%s is not a proposal", shortID(predecessor.ID))
+	}
+	lineage, err := buildLineageIndex(events)
+	if err != nil {
+		return err
+	}
+	state, err := lineage.state(predecessor.ID)
+	if err != nil {
+		return err
+	}
+	if state.Merged {
+		return fmt.Errorf("proposal %s is already merged; create an independent proposal instead", predecessor.ID)
+	}
+	identity, err := loadIdentity()
+	if err != nil {
+		return err
+	}
+	if identity.Actor != predecessor.Event.Actor {
+		return fmt.Errorf("identity %s is not the author of predecessor %s", shortID(identity.Actor), predecessor.ID)
+	}
+	event, err := nextEvent(identity, "proposal.revise")
+	if err != nil {
+		return err
+	}
+	event.Subject = predecessor.ID
+	event.Body = *body
+	event.Base = base
+	event.Head = head
+	stored, err := appendEvent(event, identity)
+	if err != nil {
+		return err
+	}
+	if err := createProposalRef(stored.ID, head); err != nil {
+		return fmt.Errorf("proposal revision event %s was created but its code ref failed: %w", stored.ID, err)
+	}
+	fmt.Printf("Created proposal revision %s\n", stored.ID)
+	fmt.Printf("Predecessor: %s\n", predecessor.ID)
+	fmt.Printf("Code: %s..%s\n", base, head)
+	return nil
 }
 
 func cmdProposalOpen(args []string) error {
@@ -101,7 +179,7 @@ func shortOID(oid string) string {
 func proposalEvents(events []StoredEvent) []StoredEvent {
 	proposals := make([]StoredEvent, 0)
 	for _, stored := range events {
-		if stored.Event.Kind == "proposal.open" {
+		if isProposalKind(stored.Event.Kind) {
 			proposals = append(proposals, stored)
 		}
 	}
@@ -148,7 +226,19 @@ func cmdProposalList() error {
 		fmt.Println("No proposals.")
 		return nil
 	}
+	lineage, err := buildLineageIndex(events)
+	if err != nil {
+		return err
+	}
 	for _, proposal := range proposals {
+		state, err := lineage.state(proposal.ID)
+		if err != nil {
+			return err
+		}
+		title, err := lineageDisplayTitle(lineage, state)
+		if err != nil {
+			return err
+		}
 		reviews := currentReviews(events, proposal.ID)
 		approvals, changes := reviewCounts(reviews)
 		availability := "code-missing"
@@ -159,7 +249,8 @@ func cmdProposalList() error {
 		} else if exists {
 			availability = "code-mismatch"
 		}
-		fmt.Printf("%s  %s  +%d/-%d  %s\n", shortID(proposal.ID), oneLine(proposal.Event.Title), approvals, changes, availability)
+		fmt.Printf("%s  %s  +%d/-%d  %s\n", shortID(proposal.ID), oneLine(title), approvals, changes, availability)
+		printLineageSummary(state, "  ")
 	}
 	return nil
 }
@@ -173,12 +264,25 @@ func cmdProposalShow(query string) error {
 	if err != nil {
 		return err
 	}
-	if proposal.Event.Kind != "proposal.open" {
+	if !isProposalKind(proposal.Event.Kind) {
 		return fmt.Errorf("%s is not a proposal", shortID(proposal.ID))
 	}
-	fmt.Printf("%s  %s\n", shortID(proposal.ID), oneLine(proposal.Event.Title))
+	lineage, err := buildLineageIndex(events)
+	if err != nil {
+		return err
+	}
+	state, err := lineage.state(proposal.ID)
+	if err != nil {
+		return err
+	}
+	title, err := lineageDisplayTitle(lineage, state)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("%s  %s\n", shortID(proposal.ID), oneLine(title))
 	fmt.Printf("Proposed by %s at %s\n", oneLine(proposal.Event.ActorName), proposal.Event.Timestamp)
 	fmt.Printf("Base: %s\nHead: %s\n", proposal.Event.Base, proposal.Event.Head)
+	printLineageSummary(state, "")
 	head, exists, err := proposalHead(proposal.ID)
 	if err != nil {
 		return err
@@ -205,6 +309,50 @@ func cmdProposalShow(query string) error {
 		}
 	}
 	return nil
+}
+
+func lineageDisplayTitle(lineage *lineageIndex, state proposalLineageState) (string, error) {
+	root, err := lineage.candidate(state.RootID)
+	if err != nil {
+		return "", err
+	}
+	return root.Event.Title, nil
+}
+
+func printLineageSummary(state proposalLineageState, indent string) {
+	hasLineage := state.PredecessorID != "" || len(state.SuccessorIDs) > 0 || len(state.MergedCandidateIDs) > 0
+	if !hasLineage {
+		return
+	}
+	if state.PredecessorID != "" {
+		fmt.Printf("%sPredecessor: %s\n", indent, state.PredecessorID)
+	}
+	if len(state.SuccessorIDs) > 0 {
+		fmt.Printf("%sSuccessors: %s\n", indent, strings.Join(state.SuccessorIDs, ", "))
+	}
+	if len(state.SiblingIDs) > 0 {
+		fmt.Printf("%sSiblings: %s\n", indent, strings.Join(state.SiblingIDs, ", "))
+	}
+	states := make([]string, 0, 4)
+	if state.Merged {
+		states = append(states, "merged")
+	}
+	if state.Superseded {
+		states = append(states, "superseded")
+	}
+	if state.LineageClosed {
+		states = append(states, "lineage closed")
+	}
+	if state.MergeConflict {
+		states = append(states, "merge conflict")
+	}
+	if len(states) == 0 {
+		states = append(states, "candidate")
+	}
+	fmt.Printf("%sState: %s\n", indent, strings.Join(states, ", "))
+	if len(state.MergedCandidateIDs) > 0 {
+		fmt.Printf("%sMerged lineage members: %s\n", indent, strings.Join(state.MergedCandidateIDs, ", "))
+	}
 }
 
 func reviewCounts(reviews []StoredEvent) (approvals, changes int) {
@@ -242,7 +390,7 @@ func cmdReview(args []string) error {
 	if err != nil {
 		return err
 	}
-	if proposal.Event.Kind != "proposal.open" {
+	if !isProposalKind(proposal.Event.Kind) {
 		return fmt.Errorf("%s is not a proposal", shortID(proposal.ID))
 	}
 	head, exists, err := proposalHead(proposal.ID)

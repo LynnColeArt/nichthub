@@ -37,7 +37,9 @@ uses this fixed field order:
 Optional empty fields are omitted. `previous` identifies the preceding event
 from the same actor. `subject` identifies the event that a comment or other
 dependent event concerns. Proposal events add `base` and `head` Git commit
-object IDs. Review events add a `verdict` of `approve` or `request-changes`.
+object IDs. A `proposal.revise` event also uses `subject` for the exact
+predecessor proposal and may carry a `body`; its title is inherited rather
+than repeated. Review events add a `verdict` of `approve` or `request-changes`.
 Run events use `pipeline`, `definition`, `commit`, `outcome`, `exitCode`,
 `durationMs`, `log`, `backend`, `platform`, and `runner` as described below.
 Governance events use `policy` and an ordered set of `evidence` event IDs.
@@ -48,6 +50,7 @@ The implemented event kinds are:
 issue.open
 issue.comment
 proposal.open
+proposal.revise
 review.submit
 run.request
 run.result
@@ -63,6 +66,36 @@ event_id = "sha256:" + hex(sha256(exact_event_payload_bytes))
 
 The signature is Ed25519 over the exact event payload bytes. Verification does
 not reserialize the JSON.
+
+### Proposal revisions
+
+`proposal.revise` is an immutable signed candidate with this event-specific
+shape:
+
+```text
+subject   full event ID of the exact predecessor proposal
+base      resolved Git commit object ID used as the revised diff base
+head      resolved Git commit object ID containing the revised code
+body      optional explanation of the revision
+title     omitted; inherited from the lineage root
+```
+
+The predecessor must be an available `proposal.open` or `proposal.revise`
+event, and the revision must be signed by that predecessor's author. Base and
+head must be distinct commits. Clients reject missing predecessors, author
+mismatches, and lineage cycles. These rules are exercised by
+`TestProposalRevisionSignedRoundTrip`, `TestProposalRevisionContentValidation`,
+`TestProposalRevisionRelationships`, and
+`TestProposalRevisionRelationshipRejections`.
+
+One predecessor may have multiple successor revisions. Successor IDs are
+sorted for deterministic projection, but no timestamp, delivery order, or
+position in the author's chain establishes a global "latest" winner. The actor
+chain remains single-writer: serial sibling publication is supported, while
+disconnected devices concurrently appending with the same private key are not.
+`TestProposalRevisionSyncAndConvergence` presents the same verified facts in
+opposite orders and checks identical sibling, superseded, closed, and merged
+lineage state.
 
 ## Git representation
 
@@ -88,8 +121,8 @@ An actor publishes the head of its chain at:
 refs/nh/actors/<actor>
 ```
 
-A proposal also makes its signed `head` commit reachable at an immutable ref
-derived from the proposal event ID:
+A proposal or proposal revision also makes its signed `head` commit reachable
+at an immutable ref derived from that candidate's event ID:
 
 ```text
 refs/nh/proposals/<event SHA-256 without the "sha256:" prefix>
@@ -97,8 +130,9 @@ refs/nh/proposals/<event SHA-256 without the "sha256:" prefix>
 
 This separate ref is necessary because mentioning a Git object ID inside event
 JSON does not make that object reachable to Git's fetch or garbage-collection
-machinery. A reviewer must verify that the proposal ref points to the `head`
-recorded in the signed event before reviewing it.
+machinery. A reviewer must verify that the exact candidate ref points to the
+`head` recorded in its signed event before reviewing it. Conflicting local and
+fetched refs, or a ref whose object differs from the signed head, fail closed.
 
 Fetched refs are stored locally at:
 
@@ -131,6 +165,11 @@ These events are attestations, not proofs of honest execution. A signature says
 which runner made the claim and protects its contents. Project policy decides
 which runner identities and execution environments count.
 
+Reviews, run requests, run results, decisions, and merge facts always reference
+one exact proposal event ID. Evidence for a predecessor or sibling cannot
+qualify a revision, even when the candidates share code or a lineage root.
+`TestRevisionEvidenceAndLineageGovernance` covers this isolation.
+
 ## Governance events
 
 A `proposal.decision` references a proposal, the SHA-256 ID of the exact base
@@ -148,10 +187,16 @@ For remote `origin`, the fetch refspec is:
 
 ```text
 +refs/nh/actors/*:refs/nh/remotes/origin/actors/*
++refs/nh/proposals/*:refs/nh/remotes/origin/proposals/*
 ```
 
 The client pushes its current identity's actor ref and locally created proposal
-refs. No server-side Nichthub process participates.
+refs. Revisions use the existing proposal wildcard; they add no ref namespace
+or refspec. `TestProposalRevisionSyncAndConvergence` proves the signed event and
+exact code commit cross a real bare Git remote and remain usable for review.
+No server-side Nichthub process participates. Old `nh/0` clients fail closed on
+the unknown `proposal.revise` kind; new clients continue to read histories that
+contain no revisions with their original list, show, review, and sync behavior.
 
 ## Known unanswered questions
 

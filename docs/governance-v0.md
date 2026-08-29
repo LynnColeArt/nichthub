@@ -52,6 +52,33 @@ policy to authorize itself.
 Change requests are displayed but are not a protocol-level veto. A reviewer's
 latest review is their current review state.
 
+Readiness belongs to one immutable proposal candidate. Reviews, run requests,
+run results, decisions, and proposal code refs must all bind that candidate's
+exact event ID and signed head. A predecessor's or sibling's evidence never
+qualifies a revision. Before publishing an acceptance, the client reloads the
+current event set and reevaluates the policy from the candidate's signed base.
+
+## Revision lineages
+
+A proposal conflict is recovered by publishing a new `proposal.revise`
+candidate after Git resolves the code. The original proposal and every sibling
+remain immutable facts. There is no global latest revision and no automatic
+sibling winner; users and automation address candidates by explicit event ID.
+
+The derived lineage state applies these local safety gates:
+
+- a candidate with successors is `superseded` and cannot be accepted or merged;
+- once any other lineage member is merged, a candidate is `lineage closed` and
+  cannot be accepted or merged;
+- if more than one member has a valid merge fact, the lineage is in `merge
+  conflict`, and acceptance and merge are blocked while every competing
+  candidate ID remains visible;
+- historical rejection and inspection remain available for closed candidates.
+
+These are projection and local-command rules, not a claim that distributed
+publication can be made globally atomic. Delivery order and timestamps cannot
+prove whether a revision or merge was created first.
+
 ## Decisions
 
 Only policy maintainers can publish `accept` or `reject` decisions. An accept
@@ -74,11 +101,27 @@ Rejections require explanatory text but do not require readiness evidence.
 - enough signed acceptance decisions and no current rejection;
 - a maintainer identity under the proposal's base policy.
 
+Immediately before changing Git state, merge reloads the current verified event
+set, checks the exact candidate's evidence, and applies the lineage gates above.
+Errors identify the blocking successors or merged candidates by full event ID.
+
 Git performs a `--no-ff` merge. On conflict, Nichthub automatically aborts the
-merge and restores the previously clean worktree. After success, Nichthub emits
+merge and restores the previously clean worktree. The error identifies the
+attempted candidate and gives recovery guidance using `nh proposal revise`
+with the exact candidate ID plus explicit base and head revisions. After
+success, Nichthub emits
 a signed `proposal.merged` event containing the proposal head, resulting merge
 commit, policy digest, and acceptance-decision evidence.
+
+All valid merge facts are preserved. If disconnected peers publish merges of
+different siblings, later synchronization reports every competing candidate;
+it does not discard facts or invent a winner.
 
 There is an unavoidable transaction boundary: Git creates the merge commit
 before Nichthub can sign the merge event. If event creation fails afterward,
 the CLI reports the resulting commit explicitly for recovery.
+
+Revision governance uses ordinary Git storage and transport. It introduces no
+Docker daemon, Nichthub server, or new dependency. Concurrent disconnected
+publication by multiple devices sharing one identity remains outside this
+prototype's single-writer actor model.

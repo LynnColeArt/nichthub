@@ -66,6 +66,7 @@ Usage:
   nh issue list
   nh issue show ISSUE
   nh proposal open --base REV --head REV [--body TEXT] TITLE
+  nh proposal revise PREDECESSOR --base REV --head REV [--body TEXT]
   nh proposal list
   nh proposal show PROPOSAL
   nh proposal status PROPOSAL

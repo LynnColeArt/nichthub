@@ -41,6 +41,8 @@ type PipelineEvaluation struct {
 
 type ProposalEvaluation struct {
 	Proposal        *StoredEvent
+	DisplayTitle    string
+	Lineage         proposalLineageState
 	Policy          PolicyDocument
 	PolicyDigest    string
 	CodeAvailable   bool
@@ -144,14 +146,26 @@ func actorListed(actor string, actors []string) bool {
 }
 
 func evaluateProposal(proposal *StoredEvent, events []StoredEvent) (*ProposalEvaluation, error) {
-	if proposal.Event.Kind != "proposal.open" {
+	if !isProposalKind(proposal.Event.Kind) {
 		return nil, fmt.Errorf("%s is not a proposal", shortID(proposal.ID))
+	}
+	lineage, err := buildLineageIndex(events)
+	if err != nil {
+		return nil, err
+	}
+	lineageState, err := lineage.state(proposal.ID)
+	if err != nil {
+		return nil, err
+	}
+	root, err := lineage.candidate(lineageState.RootID)
+	if err != nil {
+		return nil, err
 	}
 	policy, _, digest, err := loadPolicy(proposal.Event.Base)
 	if err != nil {
 		return nil, err
 	}
-	evaluation := &ProposalEvaluation{Proposal: proposal, Policy: policy, PolicyDigest: digest}
+	evaluation := &ProposalEvaluation{Proposal: proposal, DisplayTitle: root.Event.Title, Lineage: lineageState, Policy: policy, PolicyDigest: digest}
 	head, exists, err := proposalHead(proposal.ID)
 	if err != nil {
 		return nil, err
@@ -344,8 +358,14 @@ func validateMergeEvent(merge, proposal StoredEvent, byID map[string]StoredEvent
 
 func proposalStatus(evaluation *ProposalEvaluation) string {
 	switch {
+	case evaluation.Lineage.MergeConflict:
+		return "merge conflict"
 	case evaluation.Merged:
 		return "merged"
+	case evaluation.Lineage.LineageClosed:
+		return "lineage closed"
+	case evaluation.Lineage.Superseded:
+		return "superseded"
 	case evaluation.Rejected:
 		return "rejected"
 	case evaluation.Accepted:
@@ -370,7 +390,19 @@ func cmdProposalStatus(query string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("Proposal: %s  %s\n", shortID(proposal.ID), oneLine(proposal.Event.Title))
+	fmt.Printf("Proposal: %s  %s\n", shortID(proposal.ID), oneLine(evaluation.DisplayTitle))
+	if evaluation.Lineage.PredecessorID != "" {
+		fmt.Printf("Predecessor: %s\n", evaluation.Lineage.PredecessorID)
+	}
+	if len(evaluation.Lineage.SuccessorIDs) > 0 {
+		fmt.Printf("Successors: %s\n", strings.Join(evaluation.Lineage.SuccessorIDs, ", "))
+	}
+	if len(evaluation.Lineage.SiblingIDs) > 0 {
+		fmt.Printf("Siblings: %s\n", strings.Join(evaluation.Lineage.SiblingIDs, ", "))
+	}
+	if len(evaluation.Lineage.MergedCandidateIDs) > 0 {
+		fmt.Printf("Merged lineage members: %s\n", strings.Join(evaluation.Lineage.MergedCandidateIDs, ", "))
+	}
 	fmt.Printf("Policy:   %s from base %s\n", shortID(evaluation.PolicyDigest), shortOID(proposal.Event.Base))
 	if evaluation.CodeMatches {
 		fmt.Printf("Code:     ✓ signed head available and matched\n")

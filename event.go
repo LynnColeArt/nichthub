@@ -136,6 +136,13 @@ func validateEventContent(event Event) error {
 		if strings.TrimSpace(event.Title) == "" || !validGitOID(event.Base) || !validGitOID(event.Head) || event.Base == event.Head {
 			return fmt.Errorf("proposal requires a title and distinct Git base/head commits")
 		}
+	case "proposal.revise":
+		if !validEventID(event.Subject) || !validGitOID(event.Base) || !validGitOID(event.Head) || event.Base == event.Head {
+			return fmt.Errorf("proposal revision requires a predecessor and distinct Git base/head commits")
+		}
+		if event.Title != "" {
+			return fmt.Errorf("proposal revision inherits its title from its predecessor")
+		}
 	case "review.submit":
 		if !validEventID(event.Subject) || (event.Verdict != "approve" && event.Verdict != "request-changes") {
 			return fmt.Errorf("review requires a proposal subject and valid verdict")
@@ -172,6 +179,10 @@ func validateEventContent(event Event) error {
 		return fmt.Errorf("unsupported event kind %q", event.Kind)
 	}
 	return nil
+}
+
+func isProposalKind(kind string) bool {
+	return kind == "proposal.open" || kind == "proposal.revise"
 }
 
 func validEvidenceIDs(evidence []string) bool {

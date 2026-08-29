@@ -262,14 +262,22 @@ func validateEventRelationships(events []StoredEvent) error {
 			if !exists || subject.Event.Kind != "issue.open" {
 				return fmt.Errorf("comment %s does not reference an available issue", shortID(stored.ID))
 			}
+		case "proposal.revise":
+			predecessor, exists := byID[event.Subject]
+			if !exists || !isProposalKind(predecessor.Event.Kind) {
+				return fmt.Errorf("revision %s does not reference an available proposal", shortID(stored.ID))
+			}
+			if predecessor.Event.Actor != event.Actor {
+				return fmt.Errorf("revision %s is not signed by predecessor author %s", shortID(stored.ID), shortID(predecessor.Event.Actor))
+			}
 		case "review.submit":
 			subject, exists := byID[event.Subject]
-			if !exists || subject.Event.Kind != "proposal.open" {
+			if !exists || !isProposalKind(subject.Event.Kind) {
 				return fmt.Errorf("review %s does not reference an available proposal", shortID(stored.ID))
 			}
 		case "run.request":
 			subject, exists := byID[event.Subject]
-			if !exists || subject.Event.Kind != "proposal.open" || subject.Event.Head != event.Commit {
+			if !exists || !isProposalKind(subject.Event.Kind) || subject.Event.Head != event.Commit {
 				return fmt.Errorf("run request %s does not match an available proposal", shortID(stored.ID))
 			}
 		case "run.result":
@@ -280,7 +288,7 @@ func validateEventRelationships(events []StoredEvent) error {
 			}
 		case "proposal.decision":
 			proposal, exists := byID[event.Subject]
-			if !exists || proposal.Event.Kind != "proposal.open" {
+			if !exists || !isProposalKind(proposal.Event.Kind) {
 				return fmt.Errorf("decision %s does not reference an available proposal", shortID(stored.ID))
 			}
 			if err := validateDecisionEvent(stored, proposal, byID); err != nil {
@@ -288,10 +296,45 @@ func validateEventRelationships(events []StoredEvent) error {
 			}
 		case "proposal.merged":
 			proposal, exists := byID[event.Subject]
-			if !exists || proposal.Event.Kind != "proposal.open" || event.Head != proposal.Event.Head {
+			if !exists || !isProposalKind(proposal.Event.Kind) || event.Head != proposal.Event.Head {
 				return fmt.Errorf("merge %s does not match an available proposal", shortID(stored.ID))
 			}
 			if err := validateMergeEvent(stored, proposal, byID); err != nil {
+				return err
+			}
+		}
+	}
+	return validateRevisionGraph(events, byID)
+}
+
+func validateRevisionGraph(events []StoredEvent, byID map[string]StoredEvent) error {
+	const (
+		visiting = 1
+		visited  = 2
+	)
+	state := make(map[string]uint8)
+	var visit func(string) error
+	visit = func(id string) error {
+		switch state[id] {
+		case visiting:
+			return fmt.Errorf("revision lineage contains a cycle at %s", shortID(id))
+		case visited:
+			return nil
+		}
+		stored, exists := byID[id]
+		if !exists || stored.Event.Kind != "proposal.revise" {
+			return nil
+		}
+		state[id] = visiting
+		if err := visit(stored.Event.Subject); err != nil {
+			return err
+		}
+		state[id] = visited
+		return nil
+	}
+	for _, stored := range events {
+		if stored.Event.Kind == "proposal.revise" {
+			if err := visit(stored.ID); err != nil {
 				return err
 			}
 		}
