@@ -1,6 +1,6 @@
 # Mission Specification: Proposal Revision and Conflict Recovery
 
-**Mission Branch**: `kitty/mission-proposal-revision-conflict-recovery-01M1774Q`  
+**Mission Branch**: `chore/spec-kitty-bootstrap`  
 **Created**: 2026-08-29  
 **Status**: Ready for planning  
 **Input**: Add immutable proposal revisions so authors can recover from merge conflicts without rewriting signed history.
@@ -11,9 +11,9 @@ A proposal author whose proposed change no longer merges cleanly resolves the
 change against a new base and publishes a new proposal revision. The revision
 names its exact predecessor while the predecessor and all of its evidence remain
 unchanged and inspectable. Review, CI, policy evaluation, and acceptance begin
-again for the revised proposal. If disconnected clones produce multiple
-successors, all remain visible as sibling revisions and every operation names an
-explicit proposal; Nichthub does not invent a global latest revision.
+again for the revised proposal. If the author produces multiple successors for
+one predecessor, all remain visible as sibling revisions and every operation
+names an explicit proposal; Nichthub does not invent a global latest revision.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -74,25 +74,24 @@ acceptance evidence exists.
 
 ---
 
-### User Story 3 - Preserve Disconnected Sibling Revisions (Priority: P2)
+### User Story 3 - Preserve Sibling Revisions (Priority: P2)
 
-As a distributed collaborator, I want concurrent revisions from disconnected
-clones preserved as siblings so synchronization never discards signed work or
-pretends there was a globally ordered latest edit.
+As a distributed collaborator, I want multiple revisions of one predecessor
+preserved as siblings so synchronization never discards signed work or pretends
+there was a globally ordered latest edit.
 
 **Why this priority**: Offline creation is a defining protocol boundary, so a
 central winner-selection rule would contradict the product.
 
-**Independent Test**: Create two author-signed revisions of the same predecessor
-in disconnected clones, synchronize them, and verify both clones converge on
+**Independent Test**: Create two author-signed revisions of the same predecessor,
+deliver them to peers in different orders, and verify every peer converges on
 the same visible sibling set.
 
 **Acceptance Scenarios**:
 
-1. **Given** two disconnected clones of the proposal author's identity, **when**
-   each publishes a different revision of the same predecessor and later syncs,
-   **then** both revisions remain valid sibling candidates and neither is
-   silently discarded or labeled globally latest.
+1. **Given** two valid author-signed revisions of the same predecessor, **when**
+   peers learn them in different orders, **then** both remain valid sibling
+   candidates and neither is silently discarded or labeled globally latest.
 2. **Given** sibling revisions, **when** a user reviews, accepts, merges, or
    further revises one, **then** the user names an exact proposal identity and
    the other sibling remains independently inspectable.
@@ -135,7 +134,7 @@ stateDiagram-v2
     [*] --> Candidate: proposal opened
     Candidate --> Superseded: valid author revision observed
     Superseded --> SiblingA: revision A
-    Superseded --> SiblingB: offline revision B
+    Superseded --> SiblingB: revision B
     SiblingA --> MergedA: exact evidence and merge
     SiblingB --> MergedB: exact evidence and merge
     SiblingA --> SupersededA: further revision
@@ -265,6 +264,9 @@ candidates are closed to new acceptance and merge operations.
 - Undoing an already completed Git merge.
 - Key rotation, shared identities, and multiple writers intentionally using one
   private identity.
+- Concurrent publication from disconnected clones sharing one private identity;
+  the sibling model supports multiple successors without changing the actor
+  history's existing single-writer invariant.
 - Merge queues, cross-repository proposals, moderation, redaction, or selective
   replication.
 
@@ -274,6 +276,9 @@ candidates are closed to new acceptance and merge operations.
   synchronization behavior remains the foundation.
 - The actor that signed the predecessor is its author; key rotation is outside
   this mission.
+- Sibling revisions are multiple author-signed successors of one predecessor.
+  They may be created through separate local workspaces, but their publication
+  remains serialized through the author's existing single-writer event chain.
 - “Superseded” is derived from the locally verified event view. A disconnected
   peer cannot react to a revision or merge it has not received.
 - A merge completed before a peer learns of a sibling remains immutable history.
@@ -291,9 +296,9 @@ candidates are closed to new acceptance and merge operations.
 - **SC-001**: An author can recover a conflicted unmerged proposal by publishing
   one linked revision while both the original and revised proposal remain fully
   inspectable.
-- **SC-002**: Across disconnected two-clone scenarios, synchronization preserves
-  100% of valid sibling revisions and both clones derive the same sibling set
-  without a global latest designation.
+- **SC-002**: When peers receive the same valid sibling revisions in different
+  orders, synchronization preserves 100% of them and every peer derives the
+  same sibling set without a global latest designation.
 - **SC-003**: In all acceptance tests, zero predecessor reviews, CI results,
   policy digests, or decisions count toward a revision.
 - **SC-004**: In all authorization and tampering tests, zero invalid or

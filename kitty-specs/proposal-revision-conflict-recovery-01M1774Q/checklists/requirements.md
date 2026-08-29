@@ -33,8 +33,8 @@
 
 - [x] All functional requirements have clear acceptance criteria through the
   prioritized scenarios, edge cases, and measurable outcomes.
-- [x] User scenarios cover conflict recovery, evidence isolation, disconnected
-  siblings, and backward compatibility.
+- [x] User scenarios cover conflict recovery, evidence isolation, sibling
+  convergence, and backward compatibility.
 - [x] Feature meets measurable outcomes defined in Success Criteria.
 - [x] No implementation architecture leaks into the specification.
 
@@ -42,4 +42,7 @@
 
 - Discovery decision `01M1776FVJCHKV7QC3VVTD0MF4` resolved concurrent
   successors as preserved sibling revisions with explicit proposal selection.
+- Planning reconciliation: sibling semantics remain in scope, while concurrent
+  publication from disconnected clones sharing one private identity remains
+  outside this mission's existing single-writer actor boundary.
 - Validation iteration 1: all checklist items passed; ready for planning.
