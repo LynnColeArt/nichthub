@@ -157,7 +157,8 @@
       "last_transition_at": "2026-08-29T18:24:36.314515+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "Ready for review: real bare-remote revision transport, order convergence, legacy compatibility, exact-ref rejection, synchronized docs, and full charter gates pass"
+        "Ready for review: real bare-remote revision transport, order convergence, legacy compatibility, exact-ref rejection, synchronized docs, and full charter gates pass",
+        "Reviewer Renata: approved"
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {

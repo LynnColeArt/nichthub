@@ -216,3 +216,4 @@ multiwriter support.
 
 Append later entries chronologically. Use Spec Kitty status events for WP and
 subtask transitions.
+- 2026-08-29T18:24:33Z – codex – shell_pid=2156508 – Review approved: real bare-remote transport and ref-mismatch rejection verified; reversed verified-event order converges; legacy sync/review preserved; docs match source; commands.go and dependencies unchanged; go test -race ./..., go vet ./..., go build ./..., and git diff --check pass
