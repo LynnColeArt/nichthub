@@ -1,11 +1,15 @@
 evidence_id,source_id,finding,decision_or_requirement
-E001,S002,"The CLI exposes signed issue creation and sync fetches before conditionally publishing actor and proposal refs.",FR-001;FR-006;D-005
-E002,S003,"Proposal run review decision and merge commands bind exact candidate policy and evidence identities.",FR-002;FR-003;FR-004;FR-005
-E003,S005,"Existing tests cover distributed pieces through in-process command functions but not one complete black-box operator scenario.",FR-008;D-001
-E004,S004,"The previous host record covered private actor refs but listed public repositories and hosted proposal refs as untested.",FR-009;D-004
-E005,S006,"The public remote advertised the current actor ref and refs/nh/proposals/4fd8813d5849241173eb48bbebd6858535545fa514a80b88d3fdae0e59377290 unchanged.",FR-001;FR-006;SC-004
-E006,S006,"The signed mission issue is sha256:7204f1b6c2eb16b1d25f1f6269f0cce1eed354636c432baf981e44e1cf83a79a at actor sequence 7.",FR-001;FR-009
-E007,S007,"A fresh clone without .git/nh/identity.json synchronized seven events and displayed the mission issue.",FR-006;NFR-002;NFR-003
-E008,S003,"nh merge changes only the checked-out branch and records a merge event; publishing main remains a separate Git action.",FR-005;D-005
-E009,S001,"The live sandbox run and deterministic offline acceptance test have different trust and repeatability purposes.",C-004;NFR-004;D-001;D-002
-E010,S008,"New services provider APIs Docker and unrelated protocol features violate the current project boundary.",C-001;C-004;C-005;NFR-006
+E001,S002,"An actor is the fingerprint of one Ed25519 key and the current local store supports exactly one private identity file.",FR-005;FR-006;C-002;D-003
+E002,S003,"Actor histories are exact-byte signed single-writer chains and global projection rejects gaps forks and invalid cross-event relationships.",FR-007;FR-010;FR-011;C-004
+E003,S004,"Candidate authorization already uses the exact policy bytes from its signed base while policy validation rejects empty maintainers and unsatisfiable thresholds.",FR-001;FR-002;FR-003;FR-004;D-001
+E004,S005,"Current sync fetches all actor and proposal refs directly into accepted namespaces and one invalid history can fail global collection.",FR-009;FR-010;FR-011;FR-012;D-004;D-005
+E005,S006,"The previous host record covered private actor refs but listed public repositories and hosted proposal refs as untested.",FR-020
+E006,S007,"The public remote advertised the active actor ref and proposal ref unchanged and a fresh identity-free clone verified seven events.",FR-016;FR-017;SC-010
+E007,S007,"The operational mission issue is sha256:7204f1b6c2eb16b1d25f1f6269f0cce1eed354636c432baf981e44e1cf83a79a.",FR-020
+E008,S008,"Existing tests cover distributed CI proposal code refs governance merge and revision recovery but not the expanded operating model.",FR-019;D-009
+E009,S009,"Fetched state is hostile identity continuity cannot silently reinterpret signed history and policy authority must remain explicit.",FR-007;FR-008;FR-010;C-001;C-003
+E010,S010,"Git supports direct selected refspecs shallow deepening and object inspection but the current fetch wrapper exposes no portable hard pre-download pack byte limit.",FR-012;FR-014;FR-015;D-006;D-007
+E011,S011,"The user approved widening the mission from a bounded loop to operational self-hosting with policy key rotation selective replication shallow handling and a two-identity proof.",FR-001;FR-005;FR-009;FR-014;FR-016
+E012,S004,"A newly trusted actor cannot authorize the policy amendment that first adds it because that candidate is governed by its base policy.",FR-003;FR-016;D-008
+E013,S003,"Distinct actor refs allow device attribution without sharing a private key or creating concurrent writes to one actor chain.",FR-005;FR-006;C-002;D-002
+E014,S005,"Accepted remote-tracking refs are the projection visibility boundary and can be updated only after quarantine validation.",FR-010;FR-011;D-005

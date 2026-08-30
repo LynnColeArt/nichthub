@@ -1,0 +1,54 @@
+{
+  "entries": [
+    {
+      "created_at": "2026-08-30T09:21:10.401652Z",
+      "decision_id": "01M18ZJ281YR2TWS6P7S7CRWNS",
+      "final_answer": null,
+      "input_key": "automated_remote_boundary",
+      "mission_id": "01M18YXXWM2WBE3DCHD6DS2RDK",
+      "mission_slug": "self-hosting-alpha-loop-01M18YXX",
+      "opened_by": "cli",
+      "options": [
+        "Disposable local remote for automation; public origin only for the live gate",
+        "Exercise the public origin in automated tests",
+        "Other"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "Should repeatable automated acceptance use only a disposable local bare Git remote, reserving the public origin for the final live Nichthub landing gate?",
+      "rationale": "Superseded by the user-approved expansion from a bounded integration proof to an operational self-hosting alpha.",
+      "resolved_at": "2026-08-30T15:34:12.495738Z",
+      "resolved_by": null,
+      "slot_key": "plan.testing.remote-boundary",
+      "status": "canceled",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-08-30T15:34:18.178081Z",
+      "decision_id": "01M19MX9A2RZJ86HBZPHX0HZM1",
+      "final_answer": "Expand to the operational alpha scope. Include policy amendment tooling; key rotation with distinct device identities rather than shared-key concurrent writers; selective bounded replication; shallow-clone handling; and a real two-identity public workflow. Keep secrets, runner network and quota hardening, portable/container backends, moderation/redaction, and merge queues for later focused missions.",
+      "input_key": "operational_alpha_scope",
+      "mission_id": "01M18YXXWM2WBE3DCHD6DS2RDK",
+      "mission_slug": "self-hosting-alpha-loop-01M18YXX",
+      "opened_by": "cli",
+      "options": [
+        "Expand to the operational alpha scope",
+        "Keep the narrow integration proof",
+        "Other"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "Should the mission expand to operational self-hosting with policy amendments, key rotation and device identities, selective bounded replication, shallow-clone handling, and a two-identity public proof?",
+      "rationale": null,
+      "resolved_at": "2026-08-30T15:34:25.820250Z",
+      "resolved_by": null,
+      "slot_key": "plan.scope.operational-alpha",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    }
+  ],
+  "mission_id": "01M18YXXWM2WBE3DCHD6DS2RDK",
+  "version": 1
+}

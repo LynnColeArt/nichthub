@@ -1,4 +1,4 @@
-# Specification Quality Checklist: Self-Hosting Alpha Loop
+# Specification Quality Checklist: Operational Self-Hosting Alpha
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning  
 **Created**: 2026-08-30  
@@ -40,3 +40,7 @@
 - Live public evidence is an acceptance output. Repeatable automated coverage
   uses a disposable ordinary Git remote so tests remain deterministic and do
   not mutate public state.
+- The widened scope keeps identity continuity separate from project authority:
+  mutually signed device or rotation relationships do not bypass policy.
+- Secrets, hardened runner resources and networking, portable backends,
+  moderation/redaction, and merge queues remain explicit later missions.

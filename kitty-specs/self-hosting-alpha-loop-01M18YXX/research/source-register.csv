@@ -1,9 +1,12 @@
 source_id,source_type,title,location,accessed_at,notes
-S001,mission_spec,Self-Hosting Alpha Loop specification,kitty-specs/self-hosting-alpha-loop-01M18YXX/spec.md,2026-08-30,Approved scope and measurable acceptance boundary
-S002,source_code,Issue synchronization and log commands,commands.go,2026-08-30,Defines issue creation and the separate fetch/publish synchronization phases
-S003,source_code,Proposal CI governance and merge commands,proposal.go;ci.go;governance.go,2026-08-30,Defines candidate evidence policy and local merge behavior
-S004,project_documentation,Hosted Git compatibility record,docs/host-compatibility.md,2026-08-30,Prior private actor-ref result and explicitly missing proposal/public observations
-S005,automated_tests,Distributed protocol integration tests,ci_test.go;proposal_test.go;policy_test.go;revision_sync_test.go;governance_revision_test.go,2026-08-30,Covers component seams but not one full subprocess-visible loop
-S006,live_observation,Public Nichthub synchronization,https://github.com/LynnColeArt/nichthub.git,2026-08-30,Public remote advertised actor and proposal refs after nh sync
-S007,live_observation,Fresh public clone verification,/tmp/nichthub-fresh-2Kd8FI/repo,2026-08-30,Clone without identity synchronized seven events and displayed the mission issue
-S008,project_governance,Nichthub project charter,.kittify/charter/charter.md,2026-08-30,Repository-native hostile-input and evidence-integrity boundaries
+S001,mission_spec,Operational Self-Hosting Alpha specification,kitty-specs/self-hosting-alpha-loop-01M18YXX/spec.md,2026-08-30,Expanded approved scope and measurable acceptance boundary
+S002,source_code,Local identity implementation,identity.go,2026-08-30,Single identity file actor fingerprint and key validation baseline
+S003,source_code,Event storage and projection,event.go;store.go;git.go,2026-08-30,Exact signatures actor chains relationship validation and ref update behavior
+S004,source_code,Policy loading validation and evaluation,policy.go;governance.go,2026-08-30,Base-policy invariant structural rules evidence and merge authorization
+S005,source_code,Synchronization implementation,commands.go,2026-08-30,Wildcard direct fetch and global post-fetch validation baseline
+S006,project_documentation,Hosted Git compatibility record,docs/host-compatibility.md,2026-08-30,Prior private actor-ref result and explicitly missing public proposal-ref observations
+S007,live_observation,Public Nichthub synchronization and fresh clone,https://github.com/LynnColeArt/nichthub.git,2026-08-30,Public actor/proposal refs and seven-event identity-free reconstruction
+S008,automated_tests,Distributed protocol integration tests,ci_test.go;proposal_test.go;policy_test.go;revision_sync_test.go;governance_revision_test.go,2026-08-30,Covers current distributed seams and immutable evidence behavior
+S009,project_governance,Nichthub project charter,.kittify/charter/charter.md,2026-08-30,Repository-native hostile-input exact-evidence and immutable-history boundaries
+S010,local_tool_documentation,Installed Git fetch and object inspection capabilities,git 2.43.0 command help,2026-08-30,Direct refspec shallow and filter support plus object measurement primitives
+S011,user_decision,Operational alpha scope decision,kitty-specs/self-hosting-alpha-loop-01M18YXX/decisions/DM-01M19MX9A2RZJ86HBZPHX0HZM1.md,2026-08-30,Approved policy identity replication shallow-clone and two-actor scope
