@@ -1,0 +1,13 @@
+{
+  "wp_id": "WP05",
+  "captured_at": "2026-08-30T20:18:50Z",
+  "base_branch": "feat/self-hosting-alpha-loop",
+  "base_commit": "ee7cf2e0b1fa8bf91a1ef6d4801bf5c1dabe66af",
+  "test_runner": "pytest",
+  "total": 0,
+  "passed": 0,
+  "failed": 0,
+  "skipped": 0,
+  "failures": [],
+  "source_identity": "GateCoverageScopeSource/junit_xml"
+}
