@@ -49,6 +49,12 @@ func TestDistributedPipelineRun(t *testing.T) {
   ]
 }`, hostMarker)
 	action := "#!/bin/sh\nset -eu\nif [ -e \"$2\" ]; then visibility=visible; else visibility=hidden; fi\nprintf 'custom action: %s at %s; host-marker-%s\\n' \"$1\" \"$NH_COMMIT\" \"$visibility\"\n"
+	writeTestPolicy(t, seed, PolicyDocument{
+		Version:     policyVersion,
+		Maintainers: []string{strings.Repeat("a", 64)},
+		Proposals:   ProposalPolicy{RequiredAccepts: 1},
+		Pipelines:   map[string]PipelinePolicy{},
+	})
 	if err := os.WriteFile(filepath.Join(seed, ".nh", "pipelines", "check.json"), []byte(pipeline), 0o644); err != nil {
 		t.Fatal(err)
 	}

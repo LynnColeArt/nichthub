@@ -61,26 +61,41 @@ type ProposalEvaluation struct {
 }
 
 func loadPolicy(commit string) (PolicyDocument, []byte, string, error) {
+	gitDir, err := requireGitRepository()
+	if err != nil {
+		return PolicyDocument{}, nil, "", err
+	}
+	if err := replicationPendingError(gitDir, commit); err != nil {
+		return PolicyDocument{}, nil, "", err
+	}
 	encoded, err := gitOutput("show", commit+":.nh/policy.json")
 	if err != nil {
-		return PolicyDocument{}, nil, "", fmt.Errorf("no .nh/policy.json at base commit %s", shortOID(commit))
+		return PolicyDocument{}, nil, "", fmt.Errorf("no .nh/policy.json at commit %s", commit)
 	}
+	policy, digest, err := parsePolicyBytes(encoded)
+	if err != nil {
+		return PolicyDocument{}, nil, "", err
+	}
+	return policy, encoded, digest, nil
+}
+
+func parsePolicyBytes(encoded []byte) (PolicyDocument, string, error) {
 	if len(encoded) > maxPolicySize {
-		return PolicyDocument{}, nil, "", fmt.Errorf("policy exceeds %d bytes", maxPolicySize)
+		return PolicyDocument{}, "", fmt.Errorf("policy exceeds %d bytes", maxPolicySize)
 	}
 	decoder := json.NewDecoder(bytes.NewReader(encoded))
 	decoder.DisallowUnknownFields()
 	var policy PolicyDocument
 	if err := decoder.Decode(&policy); err != nil {
-		return PolicyDocument{}, nil, "", fmt.Errorf("parse policy: %w", err)
+		return PolicyDocument{}, "", fmt.Errorf("parse policy: %w", err)
 	}
 	if err := ensureJSONEnd(decoder); err != nil {
-		return PolicyDocument{}, nil, "", fmt.Errorf("parse policy: %w", err)
+		return PolicyDocument{}, "", fmt.Errorf("parse policy: %w", err)
 	}
 	if err := validatePolicy(policy); err != nil {
-		return PolicyDocument{}, nil, "", err
+		return PolicyDocument{}, "", err
 	}
-	return policy, encoded, eventID(encoded), nil
+	return policy, eventID(encoded), nil
 }
 
 func validatePolicy(policy PolicyDocument) error {
@@ -129,7 +144,7 @@ func validateActorList(name string, actors []string) error {
 			return fmt.Errorf("%s contains invalid actor %q", name, actor)
 		}
 		if seen[actor] {
-			return fmt.Errorf("%s contains duplicate actor %s", name, shortID(actor))
+			return fmt.Errorf("%s contains duplicate actor %s", name, actor)
 		}
 		seen[actor] = true
 	}
@@ -378,6 +393,12 @@ func proposalStatus(evaluation *ProposalEvaluation) string {
 }
 
 func cmdProposalStatus(query string) error {
+	if err := prepareShallowVerification(shallowVerificationScope{Operation: "proposal status", Subject: query}); err != nil {
+		return err
+	}
+	if err := guardProposalQuery("proposal status", query); err != nil {
+		return err
+	}
 	events, err := collectEvents()
 	if err != nil {
 		return err

@@ -6,11 +6,8 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 )
 
@@ -27,21 +24,23 @@ func actorForPublicKey(publicKey ed25519.PublicKey) string {
 }
 
 func identityPath() (string, error) {
-	gitDir, err := requireGitRepository()
+	paths, err := identityKeyringPaths()
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(gitDir, "nh", "identity.json"), nil
+	return paths.legacy, nil
 }
 
 func createIdentity(name string) (*Identity, string, error) {
-	path, err := identityPath()
-	if err != nil {
-		return nil, "", err
+	existing, err := loadActiveIdentity()
+	if err == nil {
+		paths, pathErr := identityKeyringPaths()
+		if pathErr != nil {
+			return nil, "", pathErr
+		}
+		return nil, "", fmt.Errorf("identity already exists at %s", filepathForIdentityRecord(paths, existing.Actor))
 	}
-	if _, err := os.Stat(path); err == nil {
-		return nil, "", fmt.Errorf("identity already exists at %s", path)
-	} else if !errors.Is(err, os.ErrNotExist) {
+	if !errors.Is(err, errNoIdentity) {
 		return nil, "", err
 	}
 
@@ -62,51 +61,43 @@ func createIdentity(name string) (*Identity, string, error) {
 		PublicKey:  base64.RawStdEncoding.EncodeToString(publicKey),
 		PrivateKey: base64.RawStdEncoding.EncodeToString(privateKey),
 	}
-	encoded, err := json.MarshalIndent(identity, "", "  ")
+	path, err := storeIdentityRecord(identity, identityLifecycleAvailable)
 	if err != nil {
 		return nil, "", err
 	}
-	encoded = append(encoded, '\n')
-	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
-		return nil, "", err
-	}
-	if err := os.WriteFile(path, encoded, 0o600); err != nil {
+	if err := initializeActiveIdentity(identity.Actor); err != nil {
 		return nil, "", err
 	}
 	return identity, path, nil
 }
 
 func loadIdentity() (*Identity, error) {
-	path, err := identityPath()
-	if err != nil {
-		return nil, err
-	}
-	encoded, err := os.ReadFile(path)
-	if errors.Is(err, os.ErrNotExist) {
+	identity, err := loadActiveIdentity()
+	if errors.Is(err, errNoIdentity) {
 		return nil, fmt.Errorf("no identity; run 'nh init'")
 	}
-	if err != nil {
-		return nil, err
-	}
-	var identity Identity
-	if err := json.Unmarshal(encoded, &identity); err != nil {
-		return nil, fmt.Errorf("read identity: %w", err)
+	return identity, err
+}
+
+func validateIdentity(identity *Identity) error {
+	if identity == nil {
+		return fmt.Errorf("identity is missing")
 	}
 	publicKey, err := base64.RawStdEncoding.DecodeString(identity.PublicKey)
 	if err != nil || len(publicKey) != ed25519.PublicKeySize {
-		return nil, fmt.Errorf("identity has an invalid public key")
+		return fmt.Errorf("identity has an invalid public key")
 	}
 	privateKey, err := base64.RawStdEncoding.DecodeString(identity.PrivateKey)
 	if err != nil || len(privateKey) != ed25519.PrivateKeySize {
-		return nil, fmt.Errorf("identity has an invalid private key")
+		return fmt.Errorf("identity has an invalid private key")
 	}
 	if actorForPublicKey(publicKey) != identity.Actor {
-		return nil, fmt.Errorf("identity actor does not match its public key")
+		return fmt.Errorf("identity actor does not match its public key")
 	}
 	if !ed25519.PublicKey(privateKey[32:]).Equal(ed25519.PublicKey(publicKey)) {
-		return nil, fmt.Errorf("identity key pair does not match")
+		return fmt.Errorf("identity key pair does not match")
 	}
-	return &identity, nil
+	return nil
 }
 
 func (i *Identity) publicKey() (ed25519.PublicKey, error) {

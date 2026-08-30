@@ -14,32 +14,35 @@ import (
 const protocolVersion = "nh/0"
 
 type Event struct {
-	Protocol   string   `json:"protocol"`
-	Kind       string   `json:"kind"`
-	Actor      string   `json:"actor"`
-	ActorName  string   `json:"actorName"`
-	PublicKey  string   `json:"publicKey"`
-	Sequence   uint64   `json:"sequence"`
-	Timestamp  string   `json:"timestamp"`
-	Previous   string   `json:"previous,omitempty"`
-	Subject    string   `json:"subject,omitempty"`
-	Title      string   `json:"title,omitempty"`
-	Body       string   `json:"body,omitempty"`
-	Base       string   `json:"base,omitempty"`
-	Head       string   `json:"head,omitempty"`
-	Verdict    string   `json:"verdict,omitempty"`
-	Pipeline   string   `json:"pipeline,omitempty"`
-	Definition string   `json:"definition,omitempty"`
-	Commit     string   `json:"commit,omitempty"`
-	Outcome    string   `json:"outcome,omitempty"`
-	ExitCode   int      `json:"exitCode,omitempty"`
-	DurationMS int64    `json:"durationMs,omitempty"`
-	Log        string   `json:"log,omitempty"`
-	Backend    string   `json:"backend,omitempty"`
-	Platform   string   `json:"platform,omitempty"`
-	Runner     string   `json:"runner,omitempty"`
-	Policy     string   `json:"policy,omitempty"`
-	Evidence   []string `json:"evidence,omitempty"`
+	Protocol     string   `json:"protocol"`
+	Kind         string   `json:"kind"`
+	Actor        string   `json:"actor"`
+	ActorName    string   `json:"actorName"`
+	PublicKey    string   `json:"publicKey"`
+	Sequence     uint64   `json:"sequence"`
+	Timestamp    string   `json:"timestamp"`
+	Previous     string   `json:"previous,omitempty"`
+	Subject      string   `json:"subject,omitempty"`
+	Relationship string   `json:"relationship,omitempty"`
+	TargetActor  string   `json:"targetActor,omitempty"`
+	TargetKey    string   `json:"targetKey,omitempty"`
+	Title        string   `json:"title,omitempty"`
+	Body         string   `json:"body,omitempty"`
+	Base         string   `json:"base,omitempty"`
+	Head         string   `json:"head,omitempty"`
+	Verdict      string   `json:"verdict,omitempty"`
+	Pipeline     string   `json:"pipeline,omitempty"`
+	Definition   string   `json:"definition,omitempty"`
+	Commit       string   `json:"commit,omitempty"`
+	Outcome      string   `json:"outcome,omitempty"`
+	ExitCode     int      `json:"exitCode,omitempty"`
+	DurationMS   int64    `json:"durationMs,omitempty"`
+	Log          string   `json:"log,omitempty"`
+	Backend      string   `json:"backend,omitempty"`
+	Platform     string   `json:"platform,omitempty"`
+	Runner       string   `json:"runner,omitempty"`
+	Policy       string   `json:"policy,omitempty"`
+	Evidence     []string `json:"evidence,omitempty"`
 }
 
 type StoredEvent struct {
@@ -174,6 +177,27 @@ func validateEventContent(event Event) error {
 	case "proposal.merged":
 		if !validEventID(event.Subject) || !validEventID(event.Policy) || !validGitOID(event.Commit) || !validGitOID(event.Head) || !validEvidenceIDs(event.Evidence) {
 			return fmt.Errorf("proposal merge requires a proposal, policy, head, commit, and decision evidence")
+		}
+	case "identity.authorize":
+		if event.Relationship != identityRelationshipDevice && event.Relationship != identityRelationshipSuccessor {
+			return fmt.Errorf("identity authorization requires relationship device or successor")
+		}
+		if !validActorFingerprint(event.TargetActor) {
+			return fmt.Errorf("identity authorization requires a full target actor")
+		}
+		targetKey, err := base64.RawStdEncoding.DecodeString(event.TargetKey)
+		if err != nil || len(targetKey) != ed25519.PublicKeySize {
+			return fmt.Errorf("identity authorization has an invalid target public key")
+		}
+		if actorForPublicKey(ed25519.PublicKey(targetKey)) != event.TargetActor {
+			return fmt.Errorf("identity authorization target actor does not match target public key")
+		}
+		if event.TargetActor == event.Actor {
+			return fmt.Errorf("identity authorization cannot target its signer")
+		}
+	case "identity.accept":
+		if !validEventID(event.Subject) {
+			return fmt.Errorf("identity acceptance requires a full authorization event ID")
 		}
 	default:
 		return fmt.Errorf("unsupported event kind %q", event.Kind)
