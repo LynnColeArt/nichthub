@@ -7,6 +7,7 @@
   "mission_number": null,
   "mission_slug": "self-hosting-alpha-loop-01M18YXX",
   "mission_type": "software-dev",
+  "pr_bound": true,
   "purpose_context": "A Nichthub maintainer will use the existing CLI, identity, policy, pipeline, and public Git remote to carry one real project change from signed issue and proposal through CI evidence, review, acceptance, and merge without relying on GitHub collaboration features or a Nichthub server.",
   "purpose_tldr": "Prove Nichthub can govern its own development through one complete public-remote collaboration cycle.",
   "slug": "self-hosting-alpha-loop-01M18YXX",
