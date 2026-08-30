@@ -12,7 +12,7 @@ requirement_refs:
 - FR-018
 planning_base_branch: feat/self-hosting-alpha-loop
 merge_target_branch: feat/self-hosting-alpha-loop
-branch_strategy: independent execution lane from feat/self-hosting-alpha-loop; merge through Spec Kitty into feat/self-hosting-alpha-loop
+branch_strategy: Planning artifacts for this mission were generated on feat/self-hosting-alpha-loop. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/self-hosting-alpha-loop unless the human explicitly redirects the landing branch.
 subtasks:
 - T011
 - T012

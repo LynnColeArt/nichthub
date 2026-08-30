@@ -9,7 +9,7 @@ requirement_refs:
 - FR-020
 planning_base_branch: feat/self-hosting-alpha-loop
 merge_target_branch: feat/self-hosting-alpha-loop
-branch_strategy: final documentation/evidence lane based on completed WP06; merge through Spec Kitty into feat/self-hosting-alpha-loop
+branch_strategy: Planning artifacts for this mission were generated on feat/self-hosting-alpha-loop. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/self-hosting-alpha-loop unless the human explicitly redirects the landing branch.
 subtasks:
 - T034
 - T035
@@ -38,10 +38,6 @@ owned_files:
 - docs/identity-v0.md
 - docs/replication-v0.md
 - docs/self-hosting-alpha.md
-- kitty-specs/self-hosting-alpha-loop-01M18YXX/quickstart.md
-- kitty-specs/self-hosting-alpha-loop-01M18YXX/contracts/identity-continuity-v0.md
-- kitty-specs/self-hosting-alpha-loop-01M18YXX/contracts/policy-amendment-cli-v0.md
-- kitty-specs/self-hosting-alpha-loop-01M18YXX/contracts/selected-replication-v0.md
 role: curator
 tags: []
 task_type: implement
@@ -151,7 +147,7 @@ actor, candidate, and policy IDs. Publish only the intended explicit refs.
 - Document shallow recovery as explicit selected fetch through the same
   transaction, never global unshallow or implicit trust expansion.
 
-### T037 – Update README, host compatibility, and quickstart
+### T037 – Update README, host compatibility, and public operator flow
 
 - Replace the README's now-implemented omission claims with an accurate alpha
   capability/scope table and retain explicit deferrals.
@@ -161,8 +157,9 @@ actor, candidate, and policy IDs. Publish only the intended explicit refs.
   runner description.
 - Update `docs/host-compatibility.md` with the already observed public actor and
   proposal ref support, selected/shallow test results, and host limitations.
-- Reconcile the mission quickstart with final CLI flags/output and ensure every
-  trust-bearing placeholder requires a full ID.
+- Put the final public operator flow in `docs/self-hosting-alpha.md`; use the
+  mission quickstart as a planning input and ensure every trust-bearing
+  placeholder in the shipped guide requires a full ID.
 - Separate `nh sync` collaboration-ref publication from ordinary `git push`
   primary-branch publication.
 - Ensure no command instructs users to copy `.git/nh` or a private key.
@@ -254,4 +251,3 @@ plus `nh`.
 > event log.
 
 - 2026-08-30T17:26:50Z – system – Prompt created.
-
