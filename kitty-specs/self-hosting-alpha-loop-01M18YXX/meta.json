@@ -12,5 +12,7 @@
   "purpose_tldr": "Make Nichthub capable of sustaining its own public development with durable identity, governance, and replication controls.",
   "slug": "self-hosting-alpha-loop-01M18YXX",
   "target_branch": "feat/self-hosting-alpha-loop",
-  "topology": "coord"
+  "topology": "coord",
+  "vcs": "git",
+  "vcs_locked_at": "2026-08-30T17:47:53.120944+00:00"
 }
