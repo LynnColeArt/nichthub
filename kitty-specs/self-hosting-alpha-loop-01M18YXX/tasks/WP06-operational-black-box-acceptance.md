@@ -40,6 +40,7 @@ history:
   actor: system
   action: Prompt generated via /spec-kitty.tasks
 agent_profile: implementer-ivan
+agent: codex
 authoritative_surface: main.go
 create_intent:
 - operational_acceptance_test.go
@@ -271,4 +272,3 @@ that pass without inspecting accepted refs and exact evidence relationships.
 > event log.
 
 - 2026-08-30T17:26:50Z – system – Prompt created.
-

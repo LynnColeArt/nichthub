@@ -25,6 +25,7 @@ history:
   actor: system
   action: Prompt generated via /spec-kitty.tasks
 agent_profile: implementer-ivan
+agent: codex
 authoritative_surface: shallow.go
 create_intent:
 - shallow.go
@@ -226,4 +227,3 @@ that emits a signed fact before the gap is resolved.
 > event log.
 
 - 2026-08-30T17:26:50Z – system – Prompt created.
-

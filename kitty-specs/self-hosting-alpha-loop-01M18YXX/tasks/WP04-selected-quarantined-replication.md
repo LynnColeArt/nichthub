@@ -30,6 +30,7 @@ history:
   actor: system
   action: Prompt generated via /spec-kitty.tasks
 agent_profile: implementer-ivan
+agent: codex
 authoritative_surface: replication.go
 create_intent:
 - replication.go
@@ -287,4 +288,3 @@ an unrelated accepted actor or any promotion that is not atomic.
 > event log.
 
 - 2026-08-30T17:26:50Z – system – Prompt created.
-

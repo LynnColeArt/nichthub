@@ -24,6 +24,7 @@ history:
   actor: system
   action: Prompt generated via /spec-kitty.tasks
 agent_profile: implementer-ivan
+agent: codex
 authoritative_surface: identity_continuity.go
 create_intent:
 - identity_continuity.go
@@ -223,4 +224,3 @@ shortcut into project roles.
 > event log.
 
 - 2026-08-30T17:26:50Z – system – Prompt created.
-

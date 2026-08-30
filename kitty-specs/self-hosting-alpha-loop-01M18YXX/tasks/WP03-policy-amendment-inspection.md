@@ -25,6 +25,7 @@ history:
   actor: system
   action: Prompt generated via /spec-kitty.tasks
 agent_profile: implementer-ivan
+agent: codex
 authoritative_surface: policy.go
 create_intent:
 - policy_commands.go
@@ -213,4 +214,3 @@ event, abbreviated trust IDs, or any output implying continuity grants roles.
 > event log.
 
 - 2026-08-30T17:26:50Z – system – Prompt created.
-

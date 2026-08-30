@@ -21,6 +21,7 @@ history:
   actor: system
   action: Prompt generated via /spec-kitty.tasks
 agent_profile: implementer-ivan
+agent: codex
 authoritative_surface: identity.go
 create_intent:
 - identity_keyring.go
@@ -222,4 +223,3 @@ implementation.
 > `status.events.jsonl`, not by editing task checkboxes.
 
 - 2026-08-30T17:26:50Z – system – Prompt created.
-
