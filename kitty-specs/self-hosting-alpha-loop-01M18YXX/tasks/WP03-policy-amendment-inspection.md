@@ -214,3 +214,4 @@ event, abbreviated trust IDs, or any output implying continuity grants roles.
 > event log.
 
 - 2026-08-30T17:26:50Z – system – Prompt created.
+- 2026-08-30T18:32:19Z – codex – Formal cross-WP handoff: WP03 may make the narrow main.go command-route and proposal.go pre-mutation diagnostic wiring required to expose policy amendment inspection. WP06 owns main.go and WP05 owns proposal.go later; both must preserve or deliberately supersede this behavior during rebase. FR008 production continuity evidence is supplied by WP02 T010 and must be exercised, not replaced by synthetic continuity structs.

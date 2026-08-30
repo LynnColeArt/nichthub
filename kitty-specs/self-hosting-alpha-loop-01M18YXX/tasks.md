@@ -59,12 +59,12 @@ WP03 ─────────────────────────
 | T025 | Guard policy, candidate, CI, decision, and merge verification | WP05 | No |
 | T026 | Route explicit selected recovery through quarantine | WP05 | No |
 | T027 | Prove bounded retry without global unshallow or trust expansion | WP05 | No |
-| T028 | Build a subprocess-level multi-repository acceptance harness | WP06 | No |
-| T029 | Exercise policy amendment under the old policy | WP06 | No |
-| T030 | Exercise distinct actors and planned rotation | WP06 | No |
-| T031 | Exercise selected replication, hostile input, and every budget boundary | WP06 | No |
-| T032 | Exercise shallow detection and bounded recovery | WP06 | No |
-| T033 | Exercise role-distinct governance, compatibility, and three-run repeatability | WP06 | No |
+| T028 | Build a subprocess-level multi-repository acceptance harness | WP06 | Yes |
+| T029 | Exercise policy amendment under the old policy | WP06 | Yes |
+| T030 | Exercise distinct actors and planned rotation | WP06 | Yes |
+| T031 | Exercise selected replication, hostile input, and every budget boundary | WP06 | Yes |
+| T032 | Exercise shallow detection and bounded recovery | WP06 | Yes |
+| T033 | Exercise role-distinct governance, compatibility, and three-run repeatability | WP06 | Yes |
 | T034 | Update canonical protocol and governance documentation | WP07 | No |
 | T035 | Document identity continuity, keyring safety, and rotation limits | WP07 | No |
 | T036 | Document selected replication, quarantine, budgets, and threat boundaries | WP07 | No |

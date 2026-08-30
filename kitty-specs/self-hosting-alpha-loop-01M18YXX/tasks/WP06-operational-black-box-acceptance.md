@@ -39,7 +39,7 @@ history:
 - at: '2026-08-30T17:26:50Z'
   actor: system
   action: Prompt generated via /spec-kitty.tasks
-agent_profile: implementer-ivan
+agent_profile: reviewer-renata
 agent: codex
 authoritative_surface: main.go
 create_intent:
@@ -49,7 +49,7 @@ model: ''
 owned_files:
 - main.go
 - operational_acceptance_test.go
-role: implementer
+role: reviewer
 tags: []
 task_type: implement
 tracker_refs: []
@@ -274,3 +274,5 @@ that pass without inspecting accepted refs and exact evidence relationships.
 - 2026-08-30T17:26:50Z – system – Prompt created.
 - 2026-08-30T18:32:22Z – codex – Accepted incoming handoff from WP03: main.go may already route the nh policy command. Preserve or deliberately supersede that route while implementing operational acceptance; include it in black-box coverage.
 - 2026-08-30T21:53:58Z – codex – Accepted mandatory ARBITER handoff from WP05: before WP06 may pass, fix the post-promotion denial-clear crash seam centrally. collectEvents/loadStoredEvent and every accepted trust path must reject transaction-pending denied object/event commits even after shallow markers are gone. Add black-box crash/restart reconciliation, missing/corrupt denial-record fail-closed behavior, and serialized/per-transaction union or ref-count semantics so one transaction cannot clear another's denial and pre-existing accepted objects are never falsely denied. Reproduce WP05 review-cycle-3 failure. Mission acceptance is prohibited until this passes independent review.
+- 2026-08-30T22:33:41Z – codex – Implemented the authorized arbiter repair across store.go, shallow.go, and quarantine.go: durable per-transaction pending/accepted object receipts now gate every accepted trust loader independently of shallow markers, fail closed on incomplete/corrupt state, preserve concurrent denial unions, spare pre-existing accepted objects, and reconcile only after completion is durable. Added a compiled-process crash/restart reproduction of the WP05 review-cycle-3 post-promotion/marker-release seam.
+- 2026-08-30T22:33:41Z – codex – Completed T028–T033 operational proof in commit 8eca178 with compiled nh subprocesses, isolated repositories and bare remotes, old-policy amendment authority, device continuity and interrupted/retried successor rotation, remote cycle ambiguity without inferred authority, hostile exact replication across all five budgets, bounded shallow recovery including refusal of an unselected supplier, role-distinct governance, and identity-free reconstruction. Operational x1 and x3, full, race, vet, build, formatting, and diff checks passed; no dependencies changed and the diff-scoped ruff check had no Python files.
