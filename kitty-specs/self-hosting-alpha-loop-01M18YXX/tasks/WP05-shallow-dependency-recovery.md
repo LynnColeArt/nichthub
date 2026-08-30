@@ -227,3 +227,4 @@ that emits a signed fact before the gap is resolved.
 > event log.
 
 - 2026-08-30T17:26:50Z – system – Prompt created.
+- 2026-08-30T18:32:20Z – codex – Accepted incoming handoff from WP03: proposal.go may already contain the narrow policy-amendment diagnostic call before proposal mutation. Preserve or deliberately supersede it while implementing shallow recovery; do not silently drop the diagnostic behavior.

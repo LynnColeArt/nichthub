@@ -272,3 +272,4 @@ that pass without inspecting accepted refs and exact evidence relationships.
 > event log.
 
 - 2026-08-30T17:26:50Z – system – Prompt created.
+- 2026-08-30T18:32:22Z – codex – Accepted incoming handoff from WP03: main.go may already route the nh policy command. Preserve or deliberately supersede that route while implementing operational acceptance; include it in black-box coverage.
