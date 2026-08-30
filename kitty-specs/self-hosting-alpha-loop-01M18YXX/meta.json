@@ -1,0 +1,15 @@
+{
+  "coordination_branch": "kitty/mission-self-hosting-alpha-loop-01M18YXX",
+  "created_at": "2026-08-30T09:10:10.580642+00:00",
+  "flattened": false,
+  "friendly_name": "Self-Hosting Alpha Loop",
+  "mission_id": "01M18YXXWM2WBE3DCHD6DS2RDK",
+  "mission_number": null,
+  "mission_slug": "self-hosting-alpha-loop-01M18YXX",
+  "mission_type": "software-dev",
+  "purpose_context": "A Nichthub maintainer will use the existing CLI, identity, policy, pipeline, and public Git remote to carry one real project change from signed issue and proposal through CI evidence, review, acceptance, and merge without relying on GitHub collaboration features or a Nichthub server.",
+  "purpose_tldr": "Prove Nichthub can govern its own development through one complete public-remote collaboration cycle.",
+  "slug": "self-hosting-alpha-loop-01M18YXX",
+  "target_branch": "feat/self-hosting-alpha-loop",
+  "topology": "coord"
+}
