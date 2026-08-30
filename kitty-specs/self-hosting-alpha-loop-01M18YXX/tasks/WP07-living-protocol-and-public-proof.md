@@ -22,7 +22,13 @@ history:
 - at: '2026-08-30T17:26:50Z'
   actor: system
   action: Prompt generated via /spec-kitty.tasks
-agent_profile: curator-carla
+- at: '2026-08-30T23:57:37Z'
+  actor: codex
+  action: Completed living protocol, deterministic evidence, disposable rehearsal, staged public proof, and fresh public depth-limited reconstruction.
+- at: '2026-08-30T23:57:37Z'
+  actor: codex
+  action: Recorded contract drift; shipped replication publishes all local public actor refs because predecessor history is required for continuity validation, while private keyring, transaction, and selection state remains local. Canonical docs and tests supersede the draft active-only statement.
+agent_profile: reviewer-renata
 agent: codex
 authoritative_surface: docs/
 create_intent:
@@ -39,7 +45,7 @@ owned_files:
 - docs/identity-v0.md
 - docs/replication-v0.md
 - docs/self-hosting-alpha.md
-role: curator
+role: reviewer
 tags: []
 task_type: implement
 tracker_refs: []
@@ -252,3 +258,6 @@ plus `nh`.
 > event log.
 
 - 2026-08-30T17:26:50Z – system – Prompt created.
+- 2026-08-30T23:57:37Z – codex – Completed T034–T039: synchronized the protocol, governance, identity, replication, README, and host guides with shipped behavior; recorded deterministic operational evidence; rehearsed the exact two-stage flow on a disposable bare remote; published and verified explicit public collaboration refs and main separately; and reconstructed all recorded facts from an identity-free depth-1 public clone.
+- 2026-08-30T23:57:37Z – codex – Resolved draft-contract drift in favor of approved shipped behavior: `nh sync` publishes all local public actor refs, including predecessor history required by rotation/continuity validation. Private keyring, active selection, replication selections, and transactions remain local; public continuity facts do not grant policy authority.
+- 2026-08-30T23:57:37Z – codex – Final gates passed: full tests, race tests, vet, build, operational acceptance count 3, formatting, diff check, exact private-key scan, tracked-private-state scan, documentation sensitive-path/token/credential scan, and proof-record placeholder scan. Prepared independent reviewer handoff; the charter currently has no authored Code Review Checklist section.
