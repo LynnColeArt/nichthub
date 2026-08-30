@@ -1,0 +1,9 @@
+source_id,source_type,title,location,accessed_at,notes
+S001,mission_spec,Self-Hosting Alpha Loop specification,kitty-specs/self-hosting-alpha-loop-01M18YXX/spec.md,2026-08-30,Approved scope and measurable acceptance boundary
+S002,source_code,Issue synchronization and log commands,commands.go,2026-08-30,Defines issue creation and the separate fetch/publish synchronization phases
+S003,source_code,Proposal CI governance and merge commands,proposal.go;ci.go;governance.go,2026-08-30,Defines candidate evidence policy and local merge behavior
+S004,project_documentation,Hosted Git compatibility record,docs/host-compatibility.md,2026-08-30,Prior private actor-ref result and explicitly missing proposal/public observations
+S005,automated_tests,Distributed protocol integration tests,ci_test.go;proposal_test.go;policy_test.go;revision_sync_test.go;governance_revision_test.go,2026-08-30,Covers component seams but not one full subprocess-visible loop
+S006,live_observation,Public Nichthub synchronization,https://github.com/LynnColeArt/nichthub.git,2026-08-30,Public remote advertised actor and proposal refs after nh sync
+S007,live_observation,Fresh public clone verification,/tmp/nichthub-fresh-2Kd8FI/repo,2026-08-30,Clone without identity synchronized seven events and displayed the mission issue
+S008,project_governance,Nichthub project charter,.kittify/charter/charter.md,2026-08-30,Repository-native hostile-input and evidence-integrity boundaries
