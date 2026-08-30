@@ -23,12 +23,21 @@ func cmdDecide(args []string) error {
 	if *reject && strings.TrimSpace(*body) == "" {
 		return usageError("a rejection requires --body TEXT")
 	}
+	if err := prepareShallowVerification(shallowVerificationScope{Operation: "proposal decision", Subject: query}); err != nil {
+		return err
+	}
+	if err := guardShallowEventClosure("proposal decision"); err != nil {
+		return err
+	}
 	events, err := collectEvents()
 	if err != nil {
 		return err
 	}
-	proposal, err := resolveEvent(events, query)
+	proposal, err := resolveEventDependency("proposal decision", query, shallowCandidateEvent, events)
 	if err != nil {
+		return err
+	}
+	if err := guardProposalEvaluationDependencies("proposal decision", proposal, events); err != nil {
 		return err
 	}
 	evaluation, err := evaluateProposal(proposal, events)
@@ -60,6 +69,9 @@ func cmdDecide(args []string) error {
 		}
 		currentProposal, err := resolveEvent(currentEvents, proposal.ID)
 		if err != nil {
+			return err
+		}
+		if err := guardProposalEvaluationDependencies("proposal decision", currentProposal, currentEvents); err != nil {
 			return err
 		}
 		currentEvaluation, err := evaluateProposal(currentProposal, currentEvents)
@@ -102,12 +114,21 @@ func cmdMerge(args []string) error {
 	if len(args) != 1 {
 		return usageError("usage: nh merge PROPOSAL")
 	}
+	if err := prepareShallowVerification(shallowVerificationScope{Operation: "proposal merge", Subject: args[0]}); err != nil {
+		return err
+	}
+	if err := guardShallowEventClosure("proposal merge"); err != nil {
+		return err
+	}
 	events, err := collectEvents()
 	if err != nil {
 		return err
 	}
-	proposal, err := resolveEvent(events, args[0])
+	proposal, err := resolveEventDependency("proposal merge", args[0], shallowCandidateEvent, events)
 	if err != nil {
+		return err
+	}
+	if err := guardProposalEvaluationDependencies("proposal merge", proposal, events); err != nil {
 		return err
 	}
 	evaluation, err := evaluateProposal(proposal, events)
@@ -151,10 +172,20 @@ func cmdMerge(args []string) error {
 	if err != nil {
 		return err
 	}
-	if _, err := gitOutput("merge-base", "--is-ancestor", proposal.Event.Base, current); err != nil {
-		return fmt.Errorf("current branch %s does not descend from proposal base %s", branch, shortOID(proposal.Event.Base))
+	if err := guardMergeAncestry("proposal merge", proposal, current); err != nil {
+		return err
 	}
-	if _, err := gitOutput("merge-base", "--is-ancestor", proposal.Event.Head, current); err == nil {
+	contained, missing, err := exactCommitAncestorUntil(proposal.Event.Head, current, proposal.Event.Base)
+	if err != nil {
+		return err
+	}
+	if missing != "" {
+		return classifyShallowDependency(exactDependency{
+			Operation: "proposal merge", Kind: shallowMergeAncestor, MissingID: missing,
+			ObjectType: "commit", OwnerKind: replicationProposal, OwnerID: proposal.ID,
+		}, fmt.Errorf("exact proposal containment requires unavailable parent %s", missing))
+	}
+	if contained {
 		return fmt.Errorf("proposal head is already contained in branch %s", branch)
 	}
 	message := fmt.Sprintf("Merge NH proposal %s: %s", shortID(proposal.ID), oneLine(evaluation.DisplayTitle))

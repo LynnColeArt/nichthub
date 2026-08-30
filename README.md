@@ -1,82 +1,152 @@
 # Nichthub
 
 Nichthub is an experiment in distributing collaboration with a Git repository.
-Git distributes the work; Nichthub distributes the intent, discussion, and
-evidence around it.
+Git distributes the work; Nichthub distributes the signed intent, discussion,
+policy, and evidence around it. There is no Nichthub service or database: an
+ordinary Git remote transports both code and `refs/nh/*` collaboration facts.
 
-The current prototype proves one narrow claim: two people can exchange signed
-issues, proposals, reviews, and CI attestations—including proposed Git commits
-and verified run logs—through an ordinary Git remote without a Nichthub server.
-It is not yet a stable or secure protocol.
+The current operational alpha supports signed issues, immutable proposal
+candidates and revisions, reviews, CI requests/results/logs, governance
+decisions and merge facts, distinct device actors, policy amendments, selected
+quarantined replication, and exact shallow-history recovery. It remains an
+experimental protocol, not a stable or hardened multi-tenant system.
 
 ## Build
 
-Go 1.26 or newer is currently used for development.
+Go 1.26 or newer and Git 2.x are the baseline requirements. Docker is not
+required.
 
 ```sh
 go build -o nh .
 go test ./...
 ```
 
-## Try it
+Bubblewrap is used by the default Linux CI executor when you choose to execute
+a pipeline. It is not required for identity, policy, proposal, review,
+replication, inspection, or verification commands. The explicit unsafe host
+executor remains available for controlled debugging.
 
-Inside a Git repository:
+## Start a repository
 
 ```sh
-nh init --name Alice
+nh init --name "Alice's device"
+nh identity public
 nh issue open --body "The description" "An issue title"
-nh sync
+nh sync origin
 ```
 
-In another clone:
+`nh init` creates a local Ed25519 identity below `.git/nh/`. Private keys and
+local replication selections are never Git objects and are not cloned. Public
+events are exact-byte signed and stored in one append-only Git history per
+actor:
+
+```text
+refs/nh/actors/<full-actor-fingerprint>
+```
+
+## Distinct device actors
+
+Initialize another clone independently, then exchange only the output of
+`nh identity public`. The existing actor authorizes the new public key and the
+new actor accepts that exact authorization:
 
 ```sh
-nh init --name Bob
-nh sync
-nh issue list
-nh issue comment <issue-id> "I can see it."
-nh sync
+nh identity authorize --relationship device \
+  --actor <full-new-actor> \
+  --public-key <new-public-key>
+nh sync origin
+
+# In the independently initialized target clone, after selected sync:
+nh identity accept <full-authorization-event-id>
+nh sync origin
+nh identity list
 ```
 
-Proposals bind signed collaboration events to Git commits and publish a
-content-bearing proposal ref so the proposed code is fetched with the event:
+The relationship is descriptive. It does not add the new actor to any policy
+role. `nh identity rotate` performs the same two-sided protocol locally with a
+`successor` relationship and retryable transaction state; it is planned
+rotation while the predecessor key is available, not lost-key recovery.
+
+## Inspect and amend policy
+
+Project governance lives in `.nh/policy.json`. Inspection prints complete
+trust-bearing actor IDs. An amendment is an ordinary candidate, and only the
+exact policy bytes from its signed base govern it:
+
+```sh
+nh policy show main
+nh policy check --base main --file .nh/policy.json
+nh policy check --base main --head HEAD
+
+nh proposal open --base main --head HEAD \
+  --body "The base policy governs this amendment." \
+  "Amend collaboration policy"
+```
+
+Continuity relationships and replication selections never grant maintainer,
+reviewer, runner, or decision authority. Only the explicit full actor lists in
+the candidate's base policy do.
+
+## Select and synchronize facts
+
+Save exact full actor/candidate selections and positive local budgets before
+synchronizing an unfamiliar remote:
+
+```sh
+nh replication select origin \
+  --actor <full-maintainer-actor> \
+  --actor <full-reviewer-actor> \
+  --proposal <full-candidate-event-id> \
+  --max-events 10000 \
+  --max-objects 100000 \
+  --max-object-bytes 16777216 \
+  --max-attachment-bytes 1048576 \
+  --max-total-bytes 268435456
+nh replication show origin
+nh sync origin
+```
+
+Each selected ref is fetched into a separate bare quarantine repository,
+measured and verified, then promoted to `refs/nh/remotes/<remote>/*` in one
+atomic ref transaction. Independently valid selections may promote when
+another selected history fails. Standard Git can download a selected pack
+before Nichthub measures it, so these are hard validation, promotion, and
+retention limits—not portable pre-download network quotas.
+
+A trust-sensitive command in a depth-limited clone reports a full missing ID
+and exact recovery action. Recovery is explicit and uses the saved selection:
+
+```sh
+nh sync origin --recover-shallow
+```
+
+This never performs a global unshallow and never silently adds a selector.
+
+## Proposals, CI, decisions, and merge
 
 ```sh
 nh proposal open --base main --head feature \
-  --body "Please review this change." "Add the feature"
-nh sync
+  --body "Please review this exact change." "Add the feature"
+nh run request <full-candidate-event-id> test
+nh sync origin
 
-# In a reviewer's clone:
-nh sync
-nh proposal list
-nh proposal show <proposal-id>
-nh review <proposal-id> --approve --body "The fetched code looks good."
-nh sync
+# In a selected participant clone:
+nh run execute <full-run-request-event-id>
+nh review <full-candidate-event-id> --approve \
+  --body "The fetched candidate is correct."
+nh sync origin
+
+# In a maintainer clone:
+nh proposal status <full-candidate-event-id>
+nh decide <full-candidate-event-id> --accept
+nh merge <full-candidate-event-id>
+nh sync origin                    # publish collaboration refs
+git push origin main:main         # publish the primary branch separately
 ```
 
-If merging exposes a conflict, resolve it with Git and publish the resolution
-as a new immutable candidate:
-
-```sh
-# Starting from the conflicted proposal's intended target/base, resolve and
-# commit the code with Git, then publish that exact range.
-nh proposal revise <predecessor-proposal-id> \
-  --base <resolved-base-commit> \
-  --head <resolved-head-commit> \
-  --body "Resolve the merge conflict"
-nh sync
-```
-
-The predecessor remains unchanged. The revision gets its own signed event ID
-and content-bearing code ref, and review, CI, and acceptance evidence restart
-for that exact ID. More than one revision may name the same predecessor; these
-siblings are all preserved, so select candidates explicitly rather than
-assuming a global latest winner. `nh proposal show` and `nh proposal status`
-display predecessor, successor, sibling, superseded, closed, and competing
-merge information with exact IDs.
-
-Pipelines are JSON files stored with the proposed code. A step can invoke an
-installed tool or a custom executable tracked in the repository:
+Pipeline definitions are repository JSON files. A step can invoke an installed
+tool or an executable tracked in the candidate, without a shell unless the
+command itself is a shell:
 
 ```json
 {
@@ -92,144 +162,71 @@ installed tool or a custom executable tracked in the repository:
 }
 ```
 
-Requesting and executing a run are separate signed actions:
-
-```sh
-# Requester
-nh run request <proposal-id> test
-nh sync
-
-# Runner
-nh sync
-nh run list
-nh run execute <request-id>
-nh sync
-
-# Requester
-nh sync
-nh run show <request-id>
-nh run logs <result-id>
-```
-
 On Linux, the default executor uses Bubblewrap with separate user, PID,
 network, IPC, UTS, and cgroup namespaces; dropped capabilities; no host home;
-read-only system tools; and a writable generated checkout. `bwrap` must be
-installed. The sandbox has no external network access.
-
-The unsafe host backend remains available for debugging and unsupported
-platforms, but requires both flags on every invocation:
+read-only system tools; and a writable generated checkout. It exposes no
+external network interface. The unsafe host backend requires both flags on
+every invocation:
 
 ```sh
-nh run execute <request-id> \
+nh run execute <full-run-request-event-id> \
   --backend host \
   --allow-unsafe-host-execution
 ```
 
-A runner can discover work automatically while applying a narrow local
-acceptance policy. Both the pipeline and the full request-signer fingerprint
-are mandatory:
+If Git reports a merge conflict, resolve it outside Nichthub and publish a new
+immutable revision. The predecessor and all prior evidence remain unchanged;
+the revision needs its own exact review, CI, and acceptance evidence:
 
 ```sh
-nh runner once \
-  --accept-pipeline test \
-  --accept-actor <full-actor-fingerprint>
-
-nh runner watch \
-  --accept-pipeline test \
-  --accept-actor <full-actor-fingerprint> \
-  --interval 30s
+nh proposal revise <full-predecessor-candidate-id> \
+  --base <full-resolved-base-commit> \
+  --head <full-resolved-head-commit> \
+  --body "Resolve the merge conflict"
+nh sync origin
 ```
 
-`runner once` executes at most one pending matching request. `runner watch`
-continues synchronizing and processing matching requests until interrupted.
-Requests from every other signer and for every other pipeline are ignored.
-
-Project governance lives in `.nh/policy.json`. A proposal is always evaluated
-against the exact policy bytes in its signed base commit, so a proposal cannot
-weaken the rules used to accept itself:
-
-```sh
-nh proposal status <proposal-id>
-nh decide <proposal-id> --accept
-
-# On the target branch, with a clean worktree:
-nh merge <proposal-id>
-```
-
-Accept decisions sign the policy digest and the exact review and CI evidence
-that satisfied it. Merge events sign the accepted proposal head, resulting Git
-commit, policy digest, and acceptance decisions.
-
-Back in the first clone:
-
-```sh
-nh sync
-nh issue show <issue-id>
-```
-
-`nh init` creates a local Ed25519 identity under `.git/nh/`. The private key is
-not part of the repository and is not cloned. Events are exact-byte signed,
-stored as Git objects, and connected through one append-only ref per actor:
-
-```text
-refs/nh/actors/<actor-key-fingerprint>
-```
-
-`nh sync` fetches these refs into a remote-tracking namespace and publishes the
-current actor's ref. Git is the storage and transport layer; the remote does not
-need Nichthub-specific software.
-
-## Prototype commands
+## Command surface
 
 ```text
 nh init [--name NAME]
-nh identity show
-nh issue open [--body TEXT] TITLE
-nh issue comment ISSUE [--body TEXT] [TEXT]
-nh issue list
-nh issue show ISSUE
-nh proposal open --base REV --head REV [--body TEXT] TITLE
-nh proposal revise PREDECESSOR --base REV --head REV [--body TEXT]
-nh proposal list
-nh proposal show PROPOSAL
-nh proposal status PROPOSAL
+nh identity show|list|public|authorize|accept|rotate
+nh issue open|comment|list|show
+nh proposal open|revise|list|show|status
+nh policy show [REV]
+nh policy check --base REV <--head REV|--file PATH>
 nh review PROPOSAL <--approve|--request-changes> [--body TEXT]
-nh run request PROPOSAL PIPELINE
-nh run list
-nh run show REQUEST
-nh run execute REQUEST [--backend sandbox|host] [--rerun]
-nh run logs RESULT
-nh runner once --accept-pipeline NAME --accept-actor ACTOR
-nh runner watch --accept-pipeline NAME --accept-actor ACTOR
+nh run request|list|show|execute|logs
+nh runner once|watch --accept-pipeline NAME --accept-actor ACTOR
 nh decide PROPOSAL <--accept|--reject> [--body TEXT]
 nh merge PROPOSAL
-nh sync [REMOTE]
+nh replication select|show [REMOTE]
+nh sync [REMOTE] [--recover-shallow]
 nh log
 ```
 
-## Scope of this experiment
+Trust-bearing commands require full actor fingerprints and full
+`sha256:<64-hex>` event IDs. Short IDs are display conveniences only.
 
-The prototype deliberately omits policy amendment tooling, merge queues,
-portable/container backends, secrets, configurable network permissions, strong
-CPU/memory/disk quotas, key rotation, moderation, selective replication,
-redaction, shallow-clone handling, and multiple writers using the same
-identity. Those should only be added after the repository-native event model
-survives testing.
+## Alpha boundary
 
-Proposal revision and conflict recovery add no Docker requirement, server, or
-new transport namespace. They use the same signed actor history and
-`refs/nh/proposals/*` wildcard as original proposals. One actor identity is
-still single-writer: publishing serial siblings is supported, but concurrent
-disconnected writes using the same private key are not.
+| Area | Operational alpha | Explicitly deferred |
+| --- | --- | --- |
+| Policy | Show, validate, diff, and govern amendments from exact base bytes | Merge queues and implicit role migration |
+| Identity | Distinct actors, mutual device/successor facts, local keyring, retryable planned rotation | Lost-key, compromise, social/organizational recovery, or concurrent writers sharing one actor key |
+| Replication | Exact selections, quarantine, positive budgets, validation, atomic accepted refs, compatibility-all | Portable hard pre-download quotas, moderation, selective deletion, and global redaction |
+| CI | Repository-defined actions, default Bubblewrap runner, explicit unsafe host fallback | Secrets, configurable network access, strong CPU/memory/disk/process quotas, and portable/container backends |
+| Product | CLI and Git-native signed facts | Notifications, general search, web UI, discovery, and a stable protocol compatibility promise |
 
-The draft wire/storage format is described in
-[`docs/protocol-v0.md`](docs/protocol-v0.md).
+Published immutable facts may be superseded by new facts, but the alpha cannot
+promise global erasure from every replica.
 
-Live Git transport results are recorded in
-[`docs/host-compatibility.md`](docs/host-compatibility.md).
+## Documentation
 
-The current CI and runner threat model is documented in
-[`docs/ci-v0.md`](docs/ci-v0.md).
-
-Policy evaluation and decision semantics are documented in
-[`docs/governance-v0.md`](docs/governance-v0.md).
+- [Protocol and storage](docs/protocol-v0.md)
+- [Identity continuity and keyring safety](docs/identity-v0.md)
+- [Governance and policy amendments](docs/governance-v0.md)
+- [Selected replication and shallow recovery](docs/replication-v0.md)
+- [CI and runner threat model](docs/ci-v0.md)
+- [Hosted Git compatibility](docs/host-compatibility.md)
+- [Operational self-hosting proof](docs/self-hosting-alpha.md)

@@ -36,6 +36,10 @@ func run(args []string) error {
 		return cmdIssue(args[1:])
 	case "proposal":
 		return cmdProposal(args[1:])
+	case "policy":
+		return cmdPolicy(args[1:])
+	case "replication":
+		return cmdReplication(args[1:])
 	case "review":
 		return cmdReview(args[1:])
 	case "run":
@@ -60,7 +64,7 @@ func printUsage() {
 
 Usage:
   nh init [--name NAME]
-  nh identity show
+  nh identity show|list|public|authorize|accept|rotate
   nh issue open [--body TEXT] TITLE
   nh issue comment ISSUE [--body TEXT] [TEXT]
   nh issue list
@@ -70,6 +74,8 @@ Usage:
   nh proposal list
   nh proposal show PROPOSAL
   nh proposal status PROPOSAL
+  nh policy show [REV]
+  nh policy check --base REV <--head REV|--file PATH>
   nh review PROPOSAL <--approve|--request-changes> [--body TEXT]
   nh run request PROPOSAL PIPELINE
   nh run list
@@ -80,7 +86,8 @@ Usage:
   nh runner watch --accept-pipeline NAME --accept-actor ACTOR
   nh decide PROPOSAL <--accept|--reject> [--body TEXT]
   nh merge PROPOSAL
-  nh sync [REMOTE]
+  nh replication select|show [REMOTE] [full actor fingerprints and event IDs] [budgets]
+  nh sync [REMOTE] [--recover-shallow]
   nh log
   nh version
 `)

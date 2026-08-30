@@ -65,6 +65,13 @@ func loadPipeline(commit, name string) (PipelineDefinition, []byte, string, erro
 	if !validPipelineName(name) {
 		return PipelineDefinition{}, nil, "", fmt.Errorf("invalid pipeline name %q", name)
 	}
+	gitDir, err := requireGitRepository()
+	if err != nil {
+		return PipelineDefinition{}, nil, "", err
+	}
+	if err := replicationPendingError(gitDir, commit); err != nil {
+		return PipelineDefinition{}, nil, "", err
+	}
 	path := ".nh/pipelines/" + name + ".json"
 	encoded, err := gitOutput("show", commit+":"+path)
 	if err != nil {
@@ -184,18 +191,33 @@ func cmdRunRequest(args []string) error {
 	if len(args) != 2 {
 		return usageError("usage: nh run request PROPOSAL PIPELINE")
 	}
+	if err := prepareShallowVerification(shallowVerificationScope{Operation: "run request", Subject: args[0], Pipeline: args[1]}); err != nil {
+		return err
+	}
+	if err := guardShallowEventClosure("run request"); err != nil {
+		return err
+	}
 	events, err := collectEvents()
 	if err != nil {
 		return err
 	}
-	proposal, err := resolveEvent(events, args[0])
+	proposal, err := resolveEventDependency("run request", args[0], shallowCandidateEvent, events)
 	if err != nil {
 		return err
 	}
 	if !isProposalKind(proposal.Event.Kind) {
 		return fmt.Errorf("%s is not a proposal", shortID(proposal.ID))
 	}
+	if err := guardProposalDependencies("run request", proposal, events); err != nil {
+		return err
+	}
+	if err := guardBasePolicy("run request", proposal.Event.Base, replicationProposal, proposal.ID); err != nil {
+		return err
+	}
 	if err := requireProposalCode(proposal); err != nil {
+		return err
+	}
+	if err := guardPipelineDefinition("run request", proposal.Event.Head, args[1], proposal.ID, ""); err != nil {
 		return err
 	}
 	_, _, definition, err := loadPipeline(proposal.Event.Head, args[1])
@@ -278,6 +300,12 @@ func runResultCounts(results []StoredEvent) (passed, failed int) {
 }
 
 func cmdRunList() error {
+	if err := prepareShallowVerification(shallowVerificationScope{Operation: "run list"}); err != nil {
+		return err
+	}
+	if err := guardShallowEventClosure("run list"); err != nil {
+		return err
+	}
 	events, err := collectEvents()
 	if err != nil {
 		return err
@@ -300,11 +328,17 @@ func cmdRunList() error {
 }
 
 func cmdRunShow(query string) error {
+	if err := prepareShallowVerification(shallowVerificationScope{Operation: "run show", Subject: query}); err != nil {
+		return err
+	}
+	if err := guardShallowEventClosure("run show"); err != nil {
+		return err
+	}
 	events, err := collectEvents()
 	if err != nil {
 		return err
 	}
-	request, err := resolveEvent(events, query)
+	request, err := resolveEventDependency("run show", query, shallowRunRequest, events)
 	if err != nil {
 		return err
 	}
@@ -327,11 +361,17 @@ func cmdRunShow(query string) error {
 }
 
 func cmdRunLogs(query string) error {
+	if err := prepareShallowVerification(shallowVerificationScope{Operation: "run logs", Subject: query}); err != nil {
+		return err
+	}
+	if err := guardShallowEventClosure("run logs"); err != nil {
+		return err
+	}
 	events, err := collectEvents()
 	if err != nil {
 		return err
 	}
-	result, err := resolveEvent(events, query)
+	result, err := resolveEventDependency("run logs", query, shallowRunResult, events)
 	if err != nil {
 		return err
 	}
@@ -368,11 +408,17 @@ func cmdRunExecute(args []string) error {
 	if err != nil {
 		return err
 	}
+	if err := prepareShallowVerification(shallowVerificationScope{Operation: "run execute", Subject: query}); err != nil {
+		return err
+	}
+	if err := guardShallowEventClosure("run execute"); err != nil {
+		return err
+	}
 	events, err := collectEvents()
 	if err != nil {
 		return err
 	}
-	request, err := resolveEvent(events, query)
+	request, err := resolveEventDependency("run execute", query, shallowRunRequest, events)
 	if err != nil {
 		return err
 	}
@@ -398,6 +444,12 @@ func executeRunRequest(ctx context.Context, events []StoredEvent, request *Store
 	}
 	if !isProposalKind(proposal.Event.Kind) || proposal.Event.Head != request.Event.Commit {
 		return nil, fmt.Errorf("run request does not match its signed proposal")
+	}
+	if err := guardProposalDependencies("run execute", proposal, events); err != nil {
+		return nil, err
+	}
+	if err := guardPipelineDefinition("run execute", request.Event.Commit, request.Event.Pipeline, proposal.ID, request.Event.Definition); err != nil {
+		return nil, err
 	}
 	if err := requireProposalCode(proposal); err != nil {
 		return nil, err
