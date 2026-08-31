@@ -1,20 +1,259 @@
 {
-  "event_count": 0,
-  "last_event_id": null,
-  "materialized_at": "",
+  "event_count": 90,
+  "last_event_id": "01M1AJP7PKMB19J9S65CHY612R",
+  "materialized_at": "2026-08-31T00:14:44.429295+00:00",
   "mission_number": "",
-  "mission_slug": "",
+  "mission_slug": "self-hosting-alpha-loop-01M18YXX",
   "mission_type": "software-dev",
   "summary": {
-    "approved": 0,
+    "approved": 6,
     "blocked": 0,
     "canceled": 0,
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 0,
+    "in_progress": 1,
     "in_review": 0,
     "planned": 0
   },
-  "work_packages": {}
+  "work_packages": {
+    "WP01": {
+      "actor": "user",
+      "agent": "codex",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
+      "force_count": 1,
+      "lane": "approved",
+      "last_event_id": "01M19Y31H6MX277H80J0BZY7HW",
+      "last_transition_at": "2026-08-30T18:14:44.006247+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for review: versioned owner-only keyring, exact legacy migration, recoverable rotation state, hostile-state tests, and full Go quality gates green",
+        "Correction cycle 1 ready: completed rotation cleanup is durable/recoverable and tracked-secret scan is non-vacuous with mutation proof",
+        "Review passed cycle 2: rotation cleanup and both retry boundaries satisfy the in-progress-only state contract; tracked-secret scan is non-vacuous and proves detection; focused/full/race/vet/format gates pass. Anti-patterns: dead code PASS, synthetic fixture PASS, silent empty return PASS, FR coverage PASS, frozen surface PASS, locked decision PASS, shared ownership PASS, production fragility N/A."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
+      "review_result": {
+        "reference": "Review passed cycle 2: rotation cleanup and both retry boundaries satisfy the in-progress-only state contract; tracked-secret scan is non-vacuous and proves detection; focused/full/race/vet/format gates pass. Anti-patterns: dead code PASS, synthetic fixture PASS, silent empty return PASS, FR coverage PASS, frozen surface PASS, locked decision PASS, shared ownership PASS, production fragility N/A.",
+        "reviewer": "lynncoleart",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 2156508,
+      "shell_pid_created_at": "1788012444.72",
+      "subtasks": {
+        "T001": "done",
+        "T002": "done",
+        "T003": "done",
+        "T004": "done",
+        "T005": "done"
+      }
+    },
+    "WP02": {
+      "actor": "user",
+      "agent": "codex",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
+      "force_count": 5,
+      "lane": "approved",
+      "last_event_id": "01M1A0VGQDV7QWCFAT4Y7RBBHX",
+      "last_transition_at": "2026-08-30T19:03:03.149306+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for review: signed identity events, deterministic conflict projection, exact-target commands, crash-safe planned rotation, and explicit policy-authority separation. Force override only for pre-existing committed planning artifacts inherited from lane reconciliation; WP02 implementation commit contains code/tests only.",
+        "Cycle 2 ready: private rotation command journal closes target-record/state and pre/post-cleanup retry boundaries while preserving WP01 rotation-state cleanup; exact actor/record/event stability tests added. Force override only for inherited committed planning artifacts on lane-b; correction commit contains code/tests only.",
+        "Cycle 3 ready: verifies persisted rotation authorization and acceptance through signed Git event evidence before every active-pointer switch; hostile-state matrix and full Go gates pass. Force only overrides inherited committed kitty-specs lane artifacts; correction commit contains code/tests only.",
+        "Review passed: c6e5c81 closes the persisted-ID trust bypass by cryptographically resolving exact authorization and acceptance evidence before the sole production active-switch path; hostile missing/wrong-kind/wrong-actor/wrong-target/wrong-relationship/unrelated-subject/corrupt cases fail closed with recovery state intact, valid resume and all prior crash windows converge without siblings, owner-only journal and WP01 cleanup semantics remain intact, compatibility/policy separation are unchanged, and focused/full/race/vet/build/format/diff gates pass. Anti-patterns: dead code PASS; synthetic fixtures PASS; silent empty return PASS; FR coverage PASS; frozen surface PASS; locked decisions PASS; shared-file ownership PASS (commands.go/store.go integration exceptions documented in 0935e97); production fragility N/A."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
+      "review_result": {
+        "reference": "Review passed: c6e5c81 closes the persisted-ID trust bypass by cryptographically resolving exact authorization and acceptance evidence before the sole production active-switch path; hostile missing/wrong-kind/wrong-actor/wrong-target/wrong-relationship/unrelated-subject/corrupt cases fail closed with recovery state intact, valid resume and all prior crash windows converge without siblings, owner-only journal and WP01 cleanup semantics remain intact, compatibility/policy separation are unchanged, and focused/full/race/vet/build/format/diff gates pass. Anti-patterns: dead code PASS; synthetic fixtures PASS; silent empty return PASS; FR coverage PASS; frozen surface PASS; locked decisions PASS; shared-file ownership PASS (commands.go/store.go integration exceptions documented in 0935e97); production fragility N/A.",
+        "reviewer": "lynncoleart",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 2156508,
+      "shell_pid_created_at": "1788012444.72",
+      "subtasks": {
+        "T006": "done",
+        "T007": "done",
+        "T008": "done",
+        "T009": "done",
+        "T010": "done"
+      }
+    },
+    "WP03": {
+      "actor": "user",
+      "agent": "codex",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
+      "force_count": 6,
+      "lane": "approved",
+      "last_event_id": "01M1A1QEWY8W2KACGF8H81HFJC",
+      "last_transition_at": "2026-08-30T19:18:18.782270+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for review: canonical exact-byte policy loading, deterministic show/check comparison, and base-policy authorization tests. Focused/full/race tests, vet, build, and diff checks pass; no Python files changed (ruff diff-scoped check exit 0). Force acknowledges the pre-existing planning-artifact reconciliation commit on lane C; no planning artifacts were modified by WP03.",
+        "Correction cycle 1 ready: live nh policy routing and proposal-open diagnostic are wired with minimal main.go/proposal.go ownership exceptions; invalid policy amendments fail before identity/event/ref mutation; FR-008 uses mutually signed contract-shaped device authorization/acceptance facts at the explicit pre-WP02 dependency seam and proves no derived policy authority. Focused/full/race tests, live go-run caller, vet, build, and diff checks pass; cycle-N ruff diff-scoped check has no Python files and exits 0. Force acknowledges the pre-existing planning-artifact reconciliation commit; no planning artifacts were modified.",
+        "Ready for review: integrated approved WP01/WP02 code-only lineage; replaced synthetic FR-008 fixture with signed append/collect/project/evaluate production evidence; preserved live policy routing and pre-mutation diagnostics; all Go gates pass. Forced past known Python-only no_coverage gate and pre-existing planning-artifact reconciliation history.",
+        "Review passed cycle 3: real signed append/verify/collect/ProjectIdentityContinuity/evaluateProposal/validateDecisionEvent flow proves accepted continuity grants no authority under the old base policy and exact actor inclusion grants only later-policy roles; live policy routes and pre-mutation exact diagnostics pass; formal WP05/WP06 ownership handoffs are recorded; approved WP01/WP02 cherry-picks are code-only and content-identical to lane tips; focused, repeated, full, race, vet, build, live CLI, and diff gates pass. Anti-patterns 1-8: PASS. Force only bypasses pre-existing lane reconciliation planning-artifact commits, not review findings."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
+      "review_result": {
+        "reference": "Review passed cycle 3: real signed append/verify/collect/ProjectIdentityContinuity/evaluateProposal/validateDecisionEvent flow proves accepted continuity grants no authority under the old base policy and exact actor inclusion grants only later-policy roles; live policy routes and pre-mutation exact diagnostics pass; formal WP05/WP06 ownership handoffs are recorded; approved WP01/WP02 cherry-picks are code-only and content-identical to lane tips; focused, repeated, full, race, vet, build, live CLI, and diff gates pass. Anti-patterns 1-8: PASS. Force only bypasses pre-existing lane reconciliation planning-artifact commits, not review findings.",
+        "reviewer": "lynncoleart",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 2156508,
+      "shell_pid_created_at": "1788012444.72",
+      "subtasks": {
+        "T011": "done",
+        "T012": "done",
+        "T013": "done",
+        "T014": "done",
+        "T015": "done"
+      }
+    },
+    "WP04": {
+      "actor": "user",
+      "agent": "codex",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
+      "force_count": 1,
+      "lane": "approved",
+      "last_event_id": "01M1A549KBCH8P6EKA15Y4G17T",
+      "last_transition_at": "2026-08-30T20:17:45.067404+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for review: exact selected refs enter a fresh bare quarantine; per-selection graph, event, attachment, signature, chain, relationship, identity, policy, and code-binding validation runs under positive budgets; promotable objects are copied and verified before cleanup and one expected-old accepted-ref transaction. Mixed real-repository tests prove invalid isolation, old-ref preservation, missing-ID guidance, unselected exclusion, all five budget boundaries, identity-free sync, and compatibility-all behavior.",
+        "Ready for review: correction cycle hardens merge binding, sanitized failures, real budget boundaries, hostile validation, and truthful completion-journal failure semantics",
+        "Review passed: cycle-2 closes merge-head poisoning, sanitizes every exercised replication/publication failure phase without losing exact IDs, adds real per-budget boundary transactions and hostile validation isolation, and reports post-promotion journal failure truthfully; focused/full/race/vet/build/gofmt/diff gates pass"
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
+      "review_result": {
+        "reference": "Review passed: cycle-2 closes merge-head poisoning, sanitizes every exercised replication/publication failure phase without losing exact IDs, adds real per-budget boundary transactions and hostile validation isolation, and reports post-promotion journal failure truthfully; focused/full/race/vet/build/gofmt/diff gates pass",
+        "reviewer": "lynncoleart",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 2156508,
+      "shell_pid_created_at": "1788012444.72",
+      "subtasks": {
+        "T016": "done",
+        "T017": "done",
+        "T018": "done",
+        "T019": "done",
+        "T020": "done",
+        "T021": "done",
+        "T022": "done"
+      }
+    },
+    "WP05": {
+      "actor": "user",
+      "agent": null,
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
+      "force_count": 4,
+      "lane": "approved",
+      "last_event_id": "01M1AAMRT46AX5FTKHJCW88JJ7",
+      "last_transition_at": "2026-08-30T21:54:07.812316+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for review: exact shallow gaps and bounded selected quarantine recovery; all Go gates pass",
+        "Correction cycle 2 complete in fce0d24; all required gates pass",
+        "Cycle 3 correction complete in 0bc996b; full adversarial and regression gates green.",
+        "Arbiter decision after 3 review cycles: conditionally advance to unblock mandatory WP06 remediation. One genuine crash/restart denial bypass is explicitly NOT waived and is recorded in WP05/WP06 history. WP06 and mission acceptance must reproduce and close it before approval."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
+      "review_result": {
+        "feedback_path": "/home/lynn/projects/nichthub/kitty-specs/self-hosting-alpha-loop-01M18YXX/tasks/WP05-shallow-dependency-recovery/review-cycle-3.md",
+        "reference": "review-cycle://self-hosting-alpha-loop-01M18YXX/WP05-shallow-dependency-recovery/review-cycle-3.md",
+        "reviewer": "user",
+        "verdict": "changes_requested"
+      },
+      "role": "reviewer",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
+      "subtasks": {
+        "T023": "planned",
+        "T024": "planned",
+        "T025": "planned",
+        "T026": "planned",
+        "T027": "planned"
+      }
+    },
+    "WP06": {
+      "actor": "user",
+      "agent": "codex",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
+      "force_count": 1,
+      "lane": "approved",
+      "last_event_id": "01M1AFBQ77FDFGC4Y3VDDWSMMG",
+      "last_transition_at": "2026-08-30T23:16:34.151646+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Implementation commit 8eca178; arbiter crash/restart repair and T028-T033 operational gates passed. Lane metadata cleanup d772413 restores canonical planning artifacts.",
+        "Correction commit 94f47e5 adds independent pre-copy pending anchors, secure private state directories/files, compiled-process completion interruption, hostile receipt/directory matrix, and bounded retry reconciliation. Operational x1/x3 and full/race/vet/build passed.",
+        "Review passed cycle 2: compiled nh interruption proves the post-promotion plus post-shallow-release pre-completion boundary; fresh processes fail closed for missing, malformed, symlinked, and unsafe-mode receipts; authoritative 0600 pending anchors repair explicit retry and clear only after durable completion; receipt-or-anchor loss in concurrent unions remains globally closed, completed shared objects alone become accepted, and pre-existing accepted objects are never anchored. Transactions, anchors, nh/replication parents, files, size bounds, and strict JSON reject hostile states; normal ordering never deletes both authorities and no such resistance is claimed. Operational x1/x3, focused ledger/path tests, full, race, vet, build, gofmt, and diff checks pass; broad black-box coverage and approved dependency provenance remain intact. Anti-patterns: dead code PASS; synthetic fixtures PASS; silent empty return PASS; FR coverage PASS; frozen surface N/A; locked decisions PASS; shared-file ownership PASS via recorded WP05 arbiter/integration rationale; production fragility PASS."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
+      "review_result": {
+        "reference": "Review passed cycle 2: compiled nh interruption proves the post-promotion plus post-shallow-release pre-completion boundary; fresh processes fail closed for missing, malformed, symlinked, and unsafe-mode receipts; authoritative 0600 pending anchors repair explicit retry and clear only after durable completion; receipt-or-anchor loss in concurrent unions remains globally closed, completed shared objects alone become accepted, and pre-existing accepted objects are never anchored. Transactions, anchors, nh/replication parents, files, size bounds, and strict JSON reject hostile states; normal ordering never deletes both authorities and no such resistance is claimed. Operational x1/x3, focused ledger/path tests, full, race, vet, build, gofmt, and diff checks pass; broad black-box coverage and approved dependency provenance remain intact. Anti-patterns: dead code PASS; synthetic fixtures PASS; silent empty return PASS; FR coverage PASS; frozen surface N/A; locked decisions PASS; shared-file ownership PASS via recorded WP05 arbiter/integration rationale; production fragility PASS.",
+        "reviewer": "lynncoleart",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 2156508,
+      "shell_pid_created_at": "1788012444.72",
+      "subtasks": {
+        "T028": "done",
+        "T029": "done",
+        "T030": "done",
+        "T031": "done",
+        "T032": "done",
+        "T033": "done"
+      }
+    },
+    "WP07": {
+      "actor": "codex",
+      "agent": null,
+      "agent_profile": "curator-carla",
+      "agent_profile_version": "1.0",
+      "force_count": 1,
+      "lane": "in_progress",
+      "last_event_id": "01M1AJP7PKMB19J9S65CHY612R",
+      "last_transition_at": "2026-08-31T00:14:44.429295+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Living protocol and public proof complete; full/race/vet/build/operational x3 and documentation/secret/placeholder gates pass; ready for independent review."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
+      "review_result": {
+        "feedback_path": "/home/lynn/projects/nichthub/kitty-specs/self-hosting-alpha-loop-01M18YXX/tasks/WP07-living-protocol-and-public-proof/review-cycle-1.md",
+        "reference": "review-cycle://self-hosting-alpha-loop-01M18YXX/WP07-living-protocol-and-public-proof/review-cycle-1.md",
+        "reviewer": "user",
+        "verdict": "changes_requested"
+      },
+      "role": "implementer",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
+      "subtasks": {
+        "T034": "planned",
+        "T035": "planned",
+        "T036": "planned",
+        "T037": "planned",
+        "T038": "planned",
+        "T039": "planned"
+      }
+    }
+  }
 }
