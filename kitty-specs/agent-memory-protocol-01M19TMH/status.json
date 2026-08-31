@@ -20,107 +20,234 @@
     "WP01": {
       "actor": "merge",
       "agent": "codex",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
       "force_count": 1,
       "lane": "done",
       "last_event_id": "01M1CH50NSNQHSGZPCY9ERC14X",
       "last_transition_at": "2026-08-31T18:26:20.473242+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for review: canonical nh-memory/0 envelope, strict validation, Ed25519 signing, exact IDs, hostile-input and boundary coverage; all required gates pass",
+        "Review round 1 addressed: reject every .. path segment while allowing two-dot filenames; exact adjacent multibyte content and aggregate handoff boundary fixtures; all WP gates pass",
+        "Review passed cycle 2: commit 829d82d rejects every exact '..' path segment while preserving valid two-dot names; boundary tests now isolate 65,535/65,536/65,537-byte multibyte content and aggregate handoff limits with sub-limit entries. Uncached focused memory/legacy tests, go test -race ./..., go vet ./..., go build ./..., and git diff --check all pass; legacy Event files remain untouched and all WP anti-pattern checks pass."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "reference": "Review passed cycle 2: commit 829d82d rejects every exact '..' path segment while preserving valid two-dot names; boundary tests now isolate 65,535/65,536/65,537-byte multibyte content and aggregate handoff limits with sub-limit entries. Uncached focused memory/legacy tests, go test -race ./..., go vet ./..., go build ./..., and git diff --check all pass; legacy Event files remain untouched and all WP anti-pattern checks pass.",
         "reviewer": "lynncoleart",
         "verdict": "approved"
       },
+      "role": "reviewer",
       "shell_pid": 2156508,
-      "shell_pid_created_at": "1788012444.72"
+      "shell_pid_created_at": "1788012444.72",
+      "subtasks": {
+        "T001": "done",
+        "T002": "done",
+        "T003": "done",
+        "T004": "done",
+        "T005": "done"
+      }
     },
     "WP02": {
       "actor": "merge",
       "agent": "codex",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
       "force_count": 1,
       "lane": "done",
       "last_event_id": "01M1CH52WDMZX0H6CHCS6892DA",
       "last_transition_at": "2026-08-31T18:26:22.733770+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for independent review; full tests/race/vet/build passed; one-invocation gate skip documents unavailable architectural gate authority",
+        "Ready for review cycle 2; full focused x10/full race/vet/build gates passed; architectural gate authority unavailable",
+        "Review passed cycle 2: d51986a closes every cycle-1 blocker with production-path Git fixtures for strict tree/wire corruption, parent and signed continuity, multi-source deterministic collection, accepted/pending/quarantine boundaries, lifecycle-operation pass-through, and collaboration/privacy isolation. Focused x10, full suite, focused race, vet, build, and diff-check all pass. Anti-pattern checks: dead-code N/A, synthetic fixtures PASS, silent-empty PASS, FR coverage PASS, frozen surface PASS, locked decisions PASS, shared ownership PASS, production fragility N/A."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "reference": "Review passed cycle 2: d51986a closes every cycle-1 blocker with production-path Git fixtures for strict tree/wire corruption, parent and signed continuity, multi-source deterministic collection, accepted/pending/quarantine boundaries, lifecycle-operation pass-through, and collaboration/privacy isolation. Focused x10, full suite, focused race, vet, build, and diff-check all pass. Anti-pattern checks: dead-code N/A, synthetic fixtures PASS, silent-empty PASS, FR coverage PASS, frozen surface PASS, locked decisions PASS, shared ownership PASS, production fragility N/A.",
         "reviewer": "lynncoleart",
         "verdict": "approved"
       },
+      "role": "reviewer",
       "shell_pid": 2156508,
-      "shell_pid_created_at": "1788012444.72"
+      "shell_pid_created_at": "1788012444.72",
+      "subtasks": {
+        "T006": "done",
+        "T007": "done",
+        "T008": "done",
+        "T009": "done",
+        "T010": "done"
+      }
     },
     "WP03": {
       "actor": "merge",
       "agent": "codex",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
       "force_count": 1,
       "lane": "done",
       "last_event_id": "01M1CH54YNRWGRPM74QESSBZ6D",
       "last_transition_at": "2026-08-31T18:26:24.853372+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for independent review; full/race/vet/build and permutation gates passed; architectural gate authority unavailable",
+        "Ready for review cycle 2; full projection matrix and all full/race/vet/build gates passed; architectural gate authority unavailable",
+        "Review passed cycle 2: 8840cee rejects same-author challenges with a scoped diagnostic while preserving target and unrelated rows. Signed-envelope and real-Git tests now cover cross-stream/order-independent lifecycle graphs, full precedence, shuffled/misleading-time convergence, exact/descendant/subject applicability, change/remove/rename anchor behavior, all evidence namespaces and typed gaps, exact policy commits independent of HEAD, orthogonal classifications, full provenance, and unchanged collaboration bytes/IDs. Gates: focused suites pass; TestMemoryProjection x3 plus permutation x10 pass; full test, race, vet, build, and diff-check pass. Anti-patterns: dead code N/A (explicit WP04/WP05/WP06 handoff seam); synthetic fixtures PASS; silent empty returns PASS; FR coverage PASS; frozen surface PASS; locked decisions PASS; shared ownership PASS; production fragility PASS."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "reference": "Review passed cycle 2: 8840cee rejects same-author challenges with a scoped diagnostic while preserving target and unrelated rows. Signed-envelope and real-Git tests now cover cross-stream/order-independent lifecycle graphs, full precedence, shuffled/misleading-time convergence, exact/descendant/subject applicability, change/remove/rename anchor behavior, all evidence namespaces and typed gaps, exact policy commits independent of HEAD, orthogonal classifications, full provenance, and unchanged collaboration bytes/IDs. Gates: focused suites pass; TestMemoryProjection x3 plus permutation x10 pass; full test, race, vet, build, and diff-check pass. Anti-patterns: dead code N/A (explicit WP04/WP05/WP06 handoff seam); synthetic fixtures PASS; silent empty returns PASS; FR coverage PASS; frozen surface PASS; locked decisions PASS; shared ownership PASS; production fragility PASS.",
         "reviewer": "lynncoleart",
         "verdict": "approved"
       },
+      "role": "reviewer",
       "shell_pid": 2156508,
-      "shell_pid_created_at": "1788012444.72"
+      "shell_pid_created_at": "1788012444.72",
+      "subtasks": {
+        "T011": "done",
+        "T012": "done",
+        "T013": "done",
+        "T014": "done",
+        "T015": "done"
+      }
     },
     "WP04": {
       "actor": "merge",
       "agent": "codex",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
       "force_count": 2,
       "lane": "done",
       "last_event_id": "01M1CH5711Q8RA13K49CMH2JYV",
       "last_transition_at": "2026-08-31T18:26:26.977963+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for independent review; full/race/vet/build and 10k determinism/performance gates passed; architectural gate authority unavailable",
+        "Ready for review cycle 2; exact-filter ordering/commit binding and full persistence/hostile matrix pass; architectural gate authority unavailable",
+        "Ready for review cycle 3; full applicability binding and representative 10k production corpus pass; architectural gate authority unavailable",
+        "Review passed cycle 3: full commit/subject/path projection binding; representative 10k persisted recovery; focused, repeated, full, race, vet, build, and diff gates pass; anti-pattern checks 1-7 PASS and 8 N/A"
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "reference": "Review passed cycle 3: full commit/subject/path projection binding; representative 10k persisted recovery; focused, repeated, full, race, vet, build, and diff gates pass; anti-pattern checks 1-7 PASS and 8 N/A",
         "reviewer": "lynncoleart",
         "verdict": "approved"
       },
+      "role": "reviewer",
       "shell_pid": 2156508,
-      "shell_pid_created_at": "1788012444.72"
+      "shell_pid_created_at": "1788012444.72",
+      "subtasks": {
+        "T016": "done",
+        "T017": "done",
+        "T018": "done",
+        "T019": "done",
+        "T020": "done"
+      }
     },
     "WP05": {
       "actor": "merge",
       "agent": "codex",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
       "force_count": 2,
       "lane": "done",
       "last_event_id": "01M1CH5BN0KGZQ5PF11ABJFGYD",
       "last_transition_at": "2026-08-31T18:26:31.712652+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for independent review; focused x3/full/race/vet/build/diff gates passed; implementation recovered after agent capacity interruption",
+        "Ready for review cycle 2; compiled black-box policyless/default/lifecycle/paging/adapter gates and full/race/vet/build pass",
+        "Review cycle 2 passed: all cycle-1 blockers corrected; policyless show/explicit recall, strict omitted/default versus invalid bounds, lifecycle-fact signature/target projections, atomic encoded-budget pagination, neutral JSON-byte adapters, sentinel isolation, collaboration compatibility, full filters, focused x3, compiled black-box, full, race, vet, build, and diff gates pass. Anti-pattern checks 1-7 PASS; 8 N/A.",
+        "Ready for downstream compatibility review; documented handoff input+context command and all focused/full/race/vet/build gates pass",
+        "Downstream compatibility review passed: fa20292 makes the documented handoff --at/--applies/--input/--json form work with deterministic fill/merge semantics; matching JSON is accepted; conflicting, incomplete, unrelated-record-flag, and ordinary-record ambiguous inputs fail without ref mutation. Focused x3, independent compiled black-box, full, race, vet, build, and diff gates pass. Anti-pattern checks 1-7 PASS; 8 N/A."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "reference": "Downstream compatibility review passed: fa20292 makes the documented handoff --at/--applies/--input/--json form work with deterministic fill/merge semantics; matching JSON is accepted; conflicting, incomplete, unrelated-record-flag, and ordinary-record ambiguous inputs fail without ref mutation. Focused x3, independent compiled black-box, full, race, vet, build, and diff gates pass. Anti-pattern checks 1-7 PASS; 8 N/A.",
         "reviewer": "lynncoleart",
         "verdict": "approved"
       },
+      "role": "reviewer",
       "shell_pid": 2156508,
-      "shell_pid_created_at": "1788012444.72"
+      "shell_pid_created_at": "1788012444.72",
+      "subtasks": {
+        "T021": "done",
+        "T022": "done",
+        "T023": "done",
+        "T024": "done",
+        "T025": "done"
+      }
     },
     "WP06": {
       "actor": "merge",
       "agent": "codex",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
       "force_count": 2,
       "lane": "done",
       "last_event_id": "01M1CH592D9E8DYG1YTSPX5N8F",
       "last_transition_at": "2026-08-31T18:26:29.069118+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for independent review; focused/full/race/vet/build replication gates passed; architectural gate authority unavailable",
+        "Ready for review cycle 2; real shallow recovery and full transaction/budget/crash/fresh-clone matrix pass; architectural gate authority unavailable",
+        "Review passed cycle 3: f1325c7 binds lifecycle, event, memory, Git-anchor, and Git-evidence gaps to exact known actor/proposal/memory suppliers and RequiredRef values; unknown suppliers remain explicitly non-derivable without unauthorized discovery, and recovery subsets promote only saved exact selectors with unchanged selection bytes. Memory budgets now prove full versus same-stream incremental discount, unreferenced/shared-object charging, zero attachments, and every numeric boundary. Mixed actor+proposal+memory tests prove all-old/all-new refs and byte-identical collaboration projection across fetch, measure, copy, pre-promote, validated receipt, ref-transaction, completion receipt, retry, and independent pending state. Fresh-clone and collaboration-only convergence remain green. Focused suites, high-risk suite x5, full go test, full race, vet, build, and diff-check pass. Anti-patterns: dead code PASS; synthetic fixtures PASS; silent empty PASS; FR coverage PASS; frozen surface PASS; locked decisions PASS; shared ownership PASS; production fragility PASS."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "reference": "Review passed cycle 3: f1325c7 binds lifecycle, event, memory, Git-anchor, and Git-evidence gaps to exact known actor/proposal/memory suppliers and RequiredRef values; unknown suppliers remain explicitly non-derivable without unauthorized discovery, and recovery subsets promote only saved exact selectors with unchanged selection bytes. Memory budgets now prove full versus same-stream incremental discount, unreferenced/shared-object charging, zero attachments, and every numeric boundary. Mixed actor+proposal+memory tests prove all-old/all-new refs and byte-identical collaboration projection across fetch, measure, copy, pre-promote, validated receipt, ref-transaction, completion receipt, retry, and independent pending state. Fresh-clone and collaboration-only convergence remain green. Focused suites, high-risk suite x5, full go test, full race, vet, build, and diff-check pass. Anti-patterns: dead code PASS; synthetic fixtures PASS; silent empty PASS; FR coverage PASS; frozen surface PASS; locked decisions PASS; shared ownership PASS; production fragility PASS.",
         "reviewer": "lynncoleart",
         "verdict": "approved"
       },
+      "role": "reviewer",
       "shell_pid": 2156508,
-      "shell_pid_created_at": "1788012444.72"
+      "shell_pid_created_at": "1788012444.72",
+      "subtasks": {
+        "T026": "done",
+        "T027": "done",
+        "T028": "done",
+        "T029": "done",
+        "T030": "done"
+      }
     },
     "WP07": {
       "actor": "merge",
       "agent": "codex",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
       "force_count": 0,
       "lane": "done",
       "last_event_id": "01M1CH5ENWH1FA885Y6MEX19A4",
       "last_transition_at": "2026-08-31T18:26:34.812153+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for independent final review; focused x3/full/race/vet/build/docs/private-state/public-proof gates pass",
+        "Review passed: independent public ls-remote and credential-disabled fresh-clone proof matched full refs/OIDs, main remained 7e41574792be828ba507e5df7adda71662475483, exact selection/sync/index/recall converged, index rebuilt byte-identically at mode 0600, authoring failed without identity, focused x3/full/race/vet/build/diff/docs/private-state gates passed, frozen contracts stayed read-only, and collaboration/no-memory regressions stayed green. Anti-patterns: dead code PASS; synthetic fixtures PASS; silent empty returns N/A; FR coverage PASS; frozen surface PASS; locked decisions PASS; shared ownership PASS via approved WP05 dependency 9504d48; production fragility N/A."
+      ],
+      "provider": "__resolved_provider_absent__",
       "review_result": {
         "reference": "Review passed: independent public ls-remote and credential-disabled fresh-clone proof matched full refs/OIDs, main remained 7e41574792be828ba507e5df7adda71662475483, exact selection/sync/index/recall converged, index rebuilt byte-identically at mode 0600, authoring failed without identity, focused x3/full/race/vet/build/diff/docs/private-state gates passed, frozen contracts stayed read-only, and collaboration/no-memory regressions stayed green. Anti-patterns: dead code PASS; synthetic fixtures PASS; silent empty returns N/A; FR coverage PASS; frozen surface PASS; locked decisions PASS; shared ownership PASS via approved WP05 dependency 9504d48; production fragility N/A.",
         "reviewer": "lynncoleart",
         "verdict": "approved"
       },
+      "role": "reviewer",
       "shell_pid": 2156508,
-      "shell_pid_created_at": "1788012444.72"
+      "shell_pid_created_at": "1788012444.72",
+      "subtasks": {
+        "T031": "done",
+        "T032": "done",
+        "T033": "done",
+        "T034": "done",
+        "T035": "done"
+      }
     }
   }
 }
