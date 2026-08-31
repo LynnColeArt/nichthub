@@ -52,7 +52,7 @@
     },
     "WP02": {
       "actor": "user",
-      "agent": "codex",
+      "agent": null,
       "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
       "force_count": 1,
@@ -64,6 +64,7 @@
         "Ready for independent review; full tests/race/vet/build passed; one-invocation gate skip documents unavailable architectural gate authority"
       ],
       "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "feedback_path": "/home/lynn/projects/nichthub/kitty-specs/agent-memory-protocol-01M19TMH/tasks/WP02-independent-memory-streams/review-cycle-1.md",
         "reference": "review-cycle://agent-memory-protocol-01M19TMH/WP02-independent-memory-streams/review-cycle-1.md",
@@ -71,14 +72,14 @@
         "verdict": "changes_requested"
       },
       "role": "reviewer",
-      "shell_pid": 2156508,
-      "shell_pid_created_at": "1788012444.72",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T006": "done",
-        "T007": "done",
-        "T008": "done",
-        "T009": "done",
-        "T010": "done"
+        "T006": "planned",
+        "T007": "planned",
+        "T008": "planned",
+        "T009": "planned",
+        "T010": "planned"
       }
     },
     "WP03": {
