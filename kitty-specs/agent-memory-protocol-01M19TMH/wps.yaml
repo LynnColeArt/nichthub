@@ -32,6 +32,11 @@ work_packages:
       - T003
       - T004
       - T005
+    prompt_file: "tasks/WP01-signed-memory-envelope.md"
+    agent_profile: "implementer-ivan"
+    role: "implementer"
+    agent: "codex"
+    model: ""
 
   - id: WP02
     title: "Independent Memory Streams"
@@ -59,6 +64,11 @@ work_packages:
       - T008
       - T009
       - T010
+    prompt_file: "tasks/WP02-independent-memory-streams.md"
+    agent_profile: "implementer-ivan"
+    role: "implementer"
+    agent: "codex"
+    model: ""
 
   - id: WP03
     title: "Lifecycle, Applicability, and Trust Projection"
@@ -95,6 +105,11 @@ work_packages:
       - T013
       - T014
       - T015
+    prompt_file: "tasks/WP03-lifecycle-applicability-and-trust-projection.md"
+    agent_profile: "implementer-ivan"
+    role: "implementer"
+    agent: "codex"
+    model: ""
 
   - id: WP04
     title: "Rebuildable Exact and Lexical Index"
@@ -122,6 +137,11 @@ work_packages:
       - T018
       - T019
       - T020
+    prompt_file: "tasks/WP04-rebuildable-exact-and-lexical-index.md"
+    agent_profile: "implementer-ivan"
+    role: "implementer"
+    agent: "codex"
+    model: ""
 
   - id: WP05
     title: "Deliberate Record and Safe Recall CLI"
@@ -168,6 +188,11 @@ work_packages:
       - T023
       - T024
       - T025
+    prompt_file: "tasks/WP05-deliberate-record-and-safe-recall-cli.md"
+    agent_profile: "implementer-ivan"
+    role: "implementer"
+    agent: "codex"
+    model: ""
 
   - id: WP06
     title: "Selected Memory Replication and Recovery"
@@ -201,6 +226,11 @@ work_packages:
       - T028
       - T029
       - T030
+    prompt_file: "tasks/WP06-selected-memory-replication-and-recovery.md"
+    agent_profile: "implementer-ivan"
+    role: "implementer"
+    agent: "codex"
+    model: ""
 
   - id: WP07
     title: "Operational Agent Handoff and Living Protocol"
@@ -265,3 +295,8 @@ work_packages:
       - T033
       - T034
       - T035
+    prompt_file: "tasks/WP07-operational-agent-handoff-and-living-protocol.md"
+    agent_profile: "reviewer-renata"
+    role: "reviewer"
+    agent: "codex"
+    model: ""
