@@ -1,7 +1,7 @@
 {
-  "event_count": 70,
-  "last_event_id": "01M1CAH7CZ25VK1EKS0BDYYZBW",
-  "materialized_at": "2026-08-31T16:30:40.543678+00:00",
+  "event_count": 71,
+  "last_event_id": "01M1CAHTM7KWDBYQ392J7Q7K5P",
+  "materialized_at": "2026-08-31T16:31:00.231598+00:00",
   "mission_number": "",
   "mission_slug": "agent-memory-protocol-01M19TMH",
   "mission_type": "software-dev",
@@ -11,9 +11,9 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 1,
+    "for_review": 0,
     "in_progress": 0,
-    "in_review": 0,
+    "in_review": 1,
     "planned": 1
   },
   "work_packages": {
@@ -153,18 +153,18 @@
     "WP05": {
       "actor": "codex",
       "agent": "codex",
-      "agent_profile": "implementer-ivan",
+      "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
       "force_count": 0,
-      "lane": "for_review",
-      "last_event_id": "01M1CAH7CZ25VK1EKS0BDYYZBW",
-      "last_transition_at": "2026-08-31T16:30:40.543678+00:00",
+      "lane": "in_review",
+      "last_event_id": "01M1CAHTM7KWDBYQ392J7Q7K5P",
+      "last_transition_at": "2026-08-31T16:31:00.231598+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "Ready for independent review; focused x3/full/race/vet/build/diff gates passed; implementation recovered after agent capacity interruption"
       ],
       "provider": "__resolved_provider_absent__",
-      "role": "implementer",
+      "role": "reviewer",
       "shell_pid": 2156508,
       "shell_pid_created_at": "1788012444.72",
       "subtasks": {
