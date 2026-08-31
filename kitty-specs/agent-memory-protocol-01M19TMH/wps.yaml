@@ -1,0 +1,267 @@
+work_packages:
+  - id: WP01
+    title: "Signed Memory Envelope"
+    dependencies: []
+    owned_files:
+      - "memory_event.go"
+      - "memory_event_test.go"
+    requirement_refs:
+      - FR-001
+      - FR-002
+      - FR-003
+      - FR-004
+      - FR-005
+      - FR-010
+      - FR-011
+      - FR-021
+      - NFR-001
+      - NFR-002
+      - NFR-004
+      - NFR-009
+      - NFR-010
+      - NFR-011
+      - C-002
+      - C-004
+      - C-005
+      - C-007
+    plan_concern_refs:
+      - IC-01
+    subtasks:
+      - T001
+      - T002
+      - T003
+      - T004
+      - T005
+
+  - id: WP02
+    title: "Independent Memory Streams"
+    dependencies:
+      - WP01
+    owned_files:
+      - "memory_store.go"
+      - "memory_store_test.go"
+    requirement_refs:
+      - FR-006
+      - FR-014
+      - FR-015
+      - FR-016
+      - FR-017
+      - FR-023
+      - NFR-005
+      - NFR-010
+      - C-003
+      - C-006
+    plan_concern_refs:
+      - IC-02
+    subtasks:
+      - T006
+      - T007
+      - T008
+      - T009
+      - T010
+
+  - id: WP03
+    title: "Lifecycle, Applicability, and Trust Projection"
+    dependencies:
+      - WP01
+      - WP02
+    owned_files:
+      - "memory_projection.go"
+      - "memory_projection_test.go"
+      - "policy.go"
+      - "policy_test.go"
+    requirement_refs:
+      - FR-003
+      - FR-004
+      - FR-008
+      - FR-010
+      - FR-012
+      - FR-013
+      - FR-014
+      - FR-015
+      - FR-016
+      - FR-017
+      - FR-022
+      - NFR-001
+      - NFR-005
+      - NFR-010
+      - C-004
+      - C-010
+    plan_concern_refs:
+      - IC-03
+    subtasks:
+      - T011
+      - T012
+      - T013
+      - T014
+      - T015
+
+  - id: WP04
+    title: "Rebuildable Exact and Lexical Index"
+    dependencies:
+      - WP03
+    owned_files:
+      - "memory_index.go"
+      - "memory_index_test.go"
+    requirement_refs:
+      - FR-008
+      - FR-009
+      - FR-019
+      - FR-020
+      - NFR-003
+      - NFR-007
+      - NFR-008
+      - NFR-009
+      - NFR-011
+      - C-008
+    plan_concern_refs:
+      - IC-05
+    subtasks:
+      - T016
+      - T017
+      - T018
+      - T019
+      - T020
+
+  - id: WP05
+    title: "Deliberate Record and Safe Recall CLI"
+    dependencies:
+      - WP03
+      - WP04
+    owned_files:
+      - "memory_commands.go"
+      - "memory_commands_test.go"
+      - "main.go"
+    requirement_refs:
+      - FR-001
+      - FR-002
+      - FR-003
+      - FR-004
+      - FR-005
+      - FR-008
+      - FR-009
+      - FR-010
+      - FR-011
+      - FR-012
+      - FR-013
+      - FR-014
+      - FR-015
+      - FR-016
+      - FR-018
+      - FR-020
+      - FR-021
+      - FR-022
+      - NFR-001
+      - NFR-002
+      - NFR-003
+      - NFR-004
+      - NFR-009
+      - NFR-011
+      - C-005
+      - C-007
+      - C-012
+    plan_concern_refs:
+      - IC-04
+    subtasks:
+      - T021
+      - T022
+      - T023
+      - T024
+      - T025
+
+  - id: WP06
+    title: "Selected Memory Replication and Recovery"
+    dependencies:
+      - WP01
+      - WP02
+      - WP03
+    owned_files:
+      - "replication.go"
+      - "quarantine.go"
+      - "shallow.go"
+      - "commands.go"
+      - "memory_replication_test.go"
+    requirement_refs:
+      - FR-006
+      - FR-007
+      - FR-022
+      - FR-023
+      - FR-024
+      - NFR-006
+      - NFR-009
+      - NFR-010
+      - NFR-011
+      - NFR-012
+      - C-003
+    plan_concern_refs:
+      - IC-06
+    subtasks:
+      - T026
+      - T027
+      - T028
+      - T029
+      - T030
+
+  - id: WP07
+    title: "Operational Agent Handoff and Living Protocol"
+    dependencies:
+      - WP05
+      - WP06
+    owned_files:
+      - "memory_acceptance_test.go"
+      - ".nh/policy.json"
+      - "README.md"
+      - "docs/protocol-v0.md"
+      - "docs/replication-v0.md"
+      - "docs/host-compatibility.md"
+      - "docs/memory-v0.md"
+      - "docs/memory-safety.md"
+      - "kitty-specs/agent-memory-protocol-01M19TMH/quickstart.md"
+      - "kitty-specs/agent-memory-protocol-01M19TMH/contracts/memory-wire-v0.md"
+      - "kitty-specs/agent-memory-protocol-01M19TMH/contracts/memory-cli-v0.md"
+      - "kitty-specs/agent-memory-protocol-01M19TMH/contracts/memory-replication-v0.md"
+    requirement_refs:
+      - FR-001
+      - FR-005
+      - FR-006
+      - FR-007
+      - FR-008
+      - FR-009
+      - FR-010
+      - FR-011
+      - FR-012
+      - FR-013
+      - FR-014
+      - FR-015
+      - FR-016
+      - FR-017
+      - FR-018
+      - FR-019
+      - FR-020
+      - FR-021
+      - FR-022
+      - FR-023
+      - FR-024
+      - NFR-001
+      - NFR-002
+      - NFR-003
+      - NFR-005
+      - NFR-006
+      - NFR-007
+      - NFR-008
+      - NFR-009
+      - NFR-010
+      - NFR-011
+      - NFR-012
+      - C-001
+      - C-009
+      - C-011
+      - C-012
+    plan_concern_refs:
+      - IC-07
+    subtasks:
+      - T031
+      - T032
+      - T033
+      - T034
+      - T035
