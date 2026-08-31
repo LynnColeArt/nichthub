@@ -263,7 +263,7 @@ func boundedMemoryBlobAt(gitDir, object string, limit int64, name, commit string
 func memoryCommitParentsAt(gitDir, commit string) ([]string, error) {
 	text, err := gitTextAt(gitDir, "cat-file", "-p", commit)
 	if err != nil {
-		return nil, fmt.Errorf("read memory commit %s parents: %w", safeDiagnostic(commit), err)
+		return nil, fmt.Errorf("memory commit %s is unavailable while reading parents: %w", safeDiagnostic(commit), err)
 	}
 	var parents []string
 	for _, line := range strings.Split(text, "\n") {
