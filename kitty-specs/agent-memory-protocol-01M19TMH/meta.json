@@ -25,6 +25,7 @@
   "purpose_context": "Agents working across sessions and clones need to recover project intent, decisions, assumptions, failed approaches, verification, and handoffs without depending on a vendor memory service or treating retrieved text as trusted instructions. This mission defines repository-native memory events, deterministic supersession and contradiction semantics, policy-controlled safe recall, and rebuildable local indexes on top of the identity and selective-replication foundations established by the operational self-hosting alpha.",
   "purpose_tldr": "Give agents durable, distributed, signed project memory bound to exact Git and Nichthub state.",
   "slug": "agent-memory-protocol-01M19TMH",
+  "status_phase": "1",
   "target_branch": "feat/agent-memory-protocol",
   "topology": "coord",
   "vcs": "git",
