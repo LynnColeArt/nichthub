@@ -29,7 +29,8 @@
       "model": "__resolved_model_absent__",
       "notes": [
         "Ready for review: canonical nh-memory/0 envelope, strict validation, Ed25519 signing, exact IDs, hostile-input and boundary coverage; all required gates pass",
-        "Review round 1 addressed: reject every .. path segment while allowing two-dot filenames; exact adjacent multibyte content and aggregate handoff boundary fixtures; all WP gates pass"
+        "Review round 1 addressed: reject every .. path segment while allowing two-dot filenames; exact adjacent multibyte content and aggregate handoff boundary fixtures; all WP gates pass",
+        "Review passed cycle 2: commit 829d82d rejects every exact '..' path segment while preserving valid two-dot names; boundary tests now isolate 65,535/65,536/65,537-byte multibyte content and aggregate handoff limits with sub-limit entries. Uncached focused memory/legacy tests, go test -race ./..., go vet ./..., go build ./..., and git diff --check all pass; legacy Event files remain untouched and all WP anti-pattern checks pass."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
