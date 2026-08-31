@@ -25,6 +25,7 @@
   "purpose_context": "Nichthub will move from a bounded protocol experiment to an operational self-hosting alpha by adding safe policy evolution, planned key rotation across distinct device actors, selective bounded replication, shallow-clone recovery, and a real role-distinct public development workflow without relying on GitHub collaboration features or a Nichthub server.",
   "purpose_tldr": "Make Nichthub capable of sustaining its own public development with durable identity, governance, and replication controls.",
   "slug": "self-hosting-alpha-loop-01M18YXX",
+  "status_phase": "1",
   "target_branch": "feat/self-hosting-alpha-loop",
   "topology": "coord",
   "vcs": "git",
