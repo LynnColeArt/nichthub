@@ -1,0 +1,209 @@
+{
+  "mission_slug": "self-hosting-alpha-loop-01M18YXX",
+  "mission_number": "",
+  "mission_type": "software-dev",
+  "overall_verdict": "pass",
+  "criteria": [
+    {
+      "criterion_id": "FR-001",
+      "description": "Verify FR-001 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "policy_test.go; kitty-specs/self-hosting-alpha-loop-01M18YXX/tasks/WP03-policy-amendment-inspection/review-cycle-3.md",
+      "pass_fail": "pass",
+      "verified_by": "codex",
+      "verified_at": "2026-08-31T00:30:41.231045+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-002",
+      "description": "Verify FR-002 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "policy_test.go; kitty-specs/self-hosting-alpha-loop-01M18YXX/tasks/WP03-policy-amendment-inspection/review-cycle-3.md",
+      "pass_fail": "pass",
+      "verified_by": "codex",
+      "verified_at": "2026-08-31T00:30:45.051222+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-003",
+      "description": "Verify FR-003 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "policy_test.go; operational_acceptance_test.go; kitty-specs/self-hosting-alpha-loop-01M18YXX/tasks/WP06-operational-black-box-acceptance/review-cycle-2.md",
+      "pass_fail": "pass",
+      "verified_by": "codex",
+      "verified_at": "2026-08-31T00:30:48.664529+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-004",
+      "description": "Verify FR-004 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "policy_test.go; kitty-specs/self-hosting-alpha-loop-01M18YXX/tasks/WP03-policy-amendment-inspection/review-cycle-3.md",
+      "pass_fail": "pass",
+      "verified_by": "codex",
+      "verified_at": "2026-08-31T00:30:51.641621+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-005",
+      "description": "Verify FR-005 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "identity_test.go; operational_acceptance_test.go; kitty-specs/self-hosting-alpha-loop-01M18YXX/tasks/WP06-operational-black-box-acceptance/review-cycle-2.md",
+      "pass_fail": "pass",
+      "verified_by": "codex",
+      "verified_at": "2026-08-31T00:30:55.276142+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-006",
+      "description": "Verify FR-006 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "identity_test.go; keyring_test.go; operational_acceptance_test.go; kitty-specs/self-hosting-alpha-loop-01M18YXX/tasks/WP06-operational-black-box-acceptance/review-cycle-2.md",
+      "pass_fail": "pass",
+      "verified_by": "codex",
+      "verified_at": "2026-08-31T00:30:58.898284+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-007",
+      "description": "Verify FR-007 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "identity_test.go; operational_acceptance_test.go; kitty-specs/self-hosting-alpha-loop-01M18YXX/tasks/WP06-operational-black-box-acceptance/review-cycle-2.md",
+      "pass_fail": "pass",
+      "verified_by": "codex",
+      "verified_at": "2026-08-31T00:31:01.791147+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-008",
+      "description": "Verify FR-008 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "policy_test.go; identity_test.go; kitty-specs/self-hosting-alpha-loop-01M18YXX/tasks/WP03-policy-amendment-inspection/review-cycle-3.md",
+      "pass_fail": "pass",
+      "verified_by": "codex",
+      "verified_at": "2026-08-31T00:31:04.719684+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-009",
+      "description": "Verify FR-009 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "replication_test.go; operational_acceptance_test.go; kitty-specs/self-hosting-alpha-loop-01M18YXX/tasks/WP04-selected-quarantined-replication/review-cycle-2.md",
+      "pass_fail": "pass",
+      "verified_by": "codex",
+      "verified_at": "2026-08-31T00:31:07.639350+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-010",
+      "description": "Verify FR-010 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "replication_test.go; operational_acceptance_test.go; kitty-specs/self-hosting-alpha-loop-01M18YXX/tasks/WP04-selected-quarantined-replication/review-cycle-2.md",
+      "pass_fail": "pass",
+      "verified_by": "codex",
+      "verified_at": "2026-08-31T00:31:10.606016+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-011",
+      "description": "Verify FR-011 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "replication_test.go; operational_acceptance_test.go; kitty-specs/self-hosting-alpha-loop-01M18YXX/tasks/WP04-selected-quarantined-replication/review-cycle-2.md",
+      "pass_fail": "pass",
+      "verified_by": "codex",
+      "verified_at": "2026-08-31T00:31:14.325223+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-012",
+      "description": "Verify FR-012 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "replication_test.go; operational_acceptance_test.go; kitty-specs/self-hosting-alpha-loop-01M18YXX/tasks/WP04-selected-quarantined-replication/review-cycle-2.md",
+      "pass_fail": "pass",
+      "verified_by": "codex",
+      "verified_at": "2026-08-31T00:31:17.919237+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-013",
+      "description": "Verify FR-013 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "shallow_test.go; operational_acceptance_test.go; kitty-specs/self-hosting-alpha-loop-01M18YXX/tasks/WP06-operational-black-box-acceptance/review-cycle-2.md",
+      "pass_fail": "pass",
+      "verified_by": "codex",
+      "verified_at": "2026-08-31T00:31:21.678656+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-014",
+      "description": "Verify FR-014 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "shallow_test.go; operational_acceptance_test.go; kitty-specs/self-hosting-alpha-loop-01M18YXX/tasks/WP06-operational-black-box-acceptance/review-cycle-2.md",
+      "pass_fail": "pass",
+      "verified_by": "codex",
+      "verified_at": "2026-08-31T00:31:24.586614+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-015",
+      "description": "Verify FR-015 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "shallow_test.go; operational_acceptance_test.go; kitty-specs/self-hosting-alpha-loop-01M18YXX/tasks/WP06-operational-black-box-acceptance/review-cycle-2.md",
+      "pass_fail": "pass",
+      "verified_by": "codex",
+      "verified_at": "2026-08-31T00:31:27.569913+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-016",
+      "description": "Verify FR-016 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "operational_acceptance_test.go; docs/self-hosting-alpha.md; kitty-specs/self-hosting-alpha-loop-01M18YXX/tasks/WP07-living-protocol-and-public-proof/review-cycle-2.md",
+      "pass_fail": "pass",
+      "verified_by": "codex",
+      "verified_at": "2026-08-31T00:31:30.504372+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-017",
+      "description": "Verify FR-017 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "operational_acceptance_test.go; docs/self-hosting-alpha.md; kitty-specs/self-hosting-alpha-loop-01M18YXX/tasks/WP07-living-protocol-and-public-proof/review-cycle-2.md",
+      "pass_fail": "pass",
+      "verified_by": "codex",
+      "verified_at": "2026-08-31T00:31:33.477584+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-018",
+      "description": "Verify FR-018 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "keyring_test.go; identity_test.go; replication_test.go; shallow_test.go; operational_acceptance_test.go",
+      "pass_fail": "pass",
+      "verified_by": "codex",
+      "verified_at": "2026-08-31T00:31:37.080657+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-019",
+      "description": "Verify FR-019 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "operational_acceptance_test.go; kitty-specs/self-hosting-alpha-loop-01M18YXX/tasks/WP06-operational-black-box-acceptance/review-cycle-2.md",
+      "pass_fail": "pass",
+      "verified_by": "codex",
+      "verified_at": "2026-08-31T00:31:40.742443+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-020",
+      "description": "Verify FR-020 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "docs/self-hosting-alpha.md; kitty-specs/self-hosting-alpha-loop-01M18YXX/tasks/WP07-living-protocol-and-public-proof/review-cycle-2.md",
+      "pass_fail": "pass",
+      "verified_by": "codex",
+      "verified_at": "2026-08-31T00:31:44.568195+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    }
+  ],
+  "negative_invariants": []
+}

@@ -1,7 +1,21 @@
 {
-  "coordination_branch": "kitty/mission-self-hosting-alpha-loop-01M18YXX",
+  "accept_commit": "0e60386dec958fb0b5128767dee9a06496c4a1e6",
+  "acceptance_history": [
+    {
+      "accept_commit": "0e60386dec958fb0b5128767dee9a06496c4a1e6",
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-08-31T00:32:38.903621+00:00",
+      "accepted_by": "codex",
+      "accepted_from_commit": "11c24e0f54683035da99e8d66d3f7a416b26900f"
+    }
+  ],
+  "acceptance_mode": "pr",
+  "accepted_at": "2026-08-31T00:32:38.903621+00:00",
+  "accepted_by": "codex",
+  "accepted_from_commit": "11c24e0f54683035da99e8d66d3f7a416b26900f",
+  "baseline_merge_commit": "2353a077c38353334a86739d6e71d394585539f4",
   "created_at": "2026-08-30T09:10:10.580642+00:00",
-  "flattened": false,
+  "flattened": true,
   "friendly_name": "Operational Self-Hosting Alpha",
   "mission_id": "01M18YXXWM2WBE3DCHD6DS2RDK",
   "mission_number": null,
@@ -11,6 +25,8 @@
   "purpose_context": "Nichthub will move from a bounded protocol experiment to an operational self-hosting alpha by adding safe policy evolution, planned key rotation across distinct device actors, selective bounded replication, shallow-clone recovery, and a real role-distinct public development workflow without relying on GitHub collaboration features or a Nichthub server.",
   "purpose_tldr": "Make Nichthub capable of sustaining its own public development with durable identity, governance, and replication controls.",
   "slug": "self-hosting-alpha-loop-01M18YXX",
+  "status_phase": "1",
   "target_branch": "feat/self-hosting-alpha-loop",
-  "topology": "coord"
+  "vcs": "git",
+  "vcs_locked_at": "2026-08-30T17:47:53.120944+00:00"
 }

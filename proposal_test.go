@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
 	"io"
 	"os"
 	"path/filepath"
@@ -104,15 +103,14 @@ func mustGitText(t *testing.T, args ...string) string {
 
 func writeActiveTestIdentity(t *testing.T, identity *Identity) {
 	t.Helper()
-	path, err := identityPath()
+	if _, err := storeIdentityRecord(identity, identityLifecycleAvailable); err != nil {
+		t.Fatal(err)
+	}
+	paths, err := identityKeyringPaths()
 	if err != nil {
 		t.Fatal(err)
 	}
-	encoded, err := json.MarshalIndent(identity, "", "  ")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(path, append(encoded, '\n'), 0o600); err != nil {
+	if err := writePrivateFileAtomic(paths.active, []byte(identity.Actor+"\n")); err != nil {
 		t.Fatal(err)
 	}
 }

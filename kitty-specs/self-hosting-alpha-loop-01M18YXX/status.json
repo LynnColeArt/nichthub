@@ -1,0 +1,127 @@
+{
+  "event_count": 101,
+  "last_event_id": "01M1AM2ZS6GYM28HK4BQA15MZX",
+  "materialized_at": "2026-08-31T00:39:10.886537+00:00",
+  "mission_number": "",
+  "mission_slug": "self-hosting-alpha-loop-01M18YXX",
+  "mission_type": "software-dev",
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 7,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "merge",
+      "agent": "codex",
+      "force_count": 1,
+      "lane": "done",
+      "last_event_id": "01M1AM2G50DXSMPKPNHXEXNDHT",
+      "last_transition_at": "2026-08-31T00:38:54.881008+00:00",
+      "review_result": {
+        "reference": "Review passed cycle 2: rotation cleanup and both retry boundaries satisfy the in-progress-only state contract; tracked-secret scan is non-vacuous and proves detection; focused/full/race/vet/format gates pass. Anti-patterns: dead code PASS, synthetic fixture PASS, silent empty return PASS, FR coverage PASS, frozen surface PASS, locked decision PASS, shared ownership PASS, production fragility N/A.",
+        "reviewer": "lynncoleart",
+        "verdict": "approved"
+      },
+      "shell_pid": 2156508,
+      "shell_pid_created_at": "1788012444.72"
+    },
+    "WP02": {
+      "actor": "merge",
+      "agent": "codex",
+      "force_count": 5,
+      "lane": "done",
+      "last_event_id": "01M1AM2P7FQM9DK5ET3JQG3HG8",
+      "last_transition_at": "2026-08-31T00:39:01.103369+00:00",
+      "review_result": {
+        "reference": "Review passed: c6e5c81 closes the persisted-ID trust bypass by cryptographically resolving exact authorization and acceptance evidence before the sole production active-switch path; hostile missing/wrong-kind/wrong-actor/wrong-target/wrong-relationship/unrelated-subject/corrupt cases fail closed with recovery state intact, valid resume and all prior crash windows converge without siblings, owner-only journal and WP01 cleanup semantics remain intact, compatibility/policy separation are unchanged, and focused/full/race/vet/build/format/diff gates pass. Anti-patterns: dead code PASS; synthetic fixtures PASS; silent empty return PASS; FR coverage PASS; frozen surface PASS; locked decisions PASS; shared-file ownership PASS (commands.go/store.go integration exceptions documented in 0935e97); production fragility N/A.",
+        "reviewer": "lynncoleart",
+        "verdict": "approved"
+      },
+      "shell_pid": 2156508,
+      "shell_pid_created_at": "1788012444.72"
+    },
+    "WP03": {
+      "actor": "merge",
+      "agent": "codex",
+      "force_count": 6,
+      "lane": "done",
+      "last_event_id": "01M1AM2K6M6FC7SK56QCY2QBHM",
+      "last_transition_at": "2026-08-31T00:38:58.004969+00:00",
+      "review_result": {
+        "reference": "Review passed cycle 3: real signed append/verify/collect/ProjectIdentityContinuity/evaluateProposal/validateDecisionEvent flow proves accepted continuity grants no authority under the old base policy and exact actor inclusion grants only later-policy roles; live policy routes and pre-mutation exact diagnostics pass; formal WP05/WP06 ownership handoffs are recorded; approved WP01/WP02 cherry-picks are code-only and content-identical to lane tips; focused, repeated, full, race, vet, build, live CLI, and diff gates pass. Anti-patterns 1-8: PASS. Force only bypasses pre-existing lane reconciliation planning-artifact commits, not review findings.",
+        "reviewer": "lynncoleart",
+        "verdict": "approved"
+      },
+      "shell_pid": 2156508,
+      "shell_pid_created_at": "1788012444.72"
+    },
+    "WP04": {
+      "actor": "merge",
+      "agent": "codex",
+      "force_count": 1,
+      "lane": "done",
+      "last_event_id": "01M1AM2S6HWYY37DFVT6TDF6TN",
+      "last_transition_at": "2026-08-31T00:39:04.146024+00:00",
+      "review_result": {
+        "reference": "Review passed: cycle-2 closes merge-head poisoning, sanitizes every exercised replication/publication failure phase without losing exact IDs, adds real per-budget boundary transactions and hostile validation isolation, and reports post-promotion journal failure truthfully; focused/full/race/vet/build/gofmt/diff gates pass",
+        "reviewer": "lynncoleart",
+        "verdict": "approved"
+      },
+      "shell_pid": 2156508,
+      "shell_pid_created_at": "1788012444.72"
+    },
+    "WP05": {
+      "actor": "merge",
+      "agent": "codex",
+      "force_count": 5,
+      "lane": "done",
+      "last_event_id": "01M1AM2V7R27VF4T596XBKZKEF",
+      "last_transition_at": "2026-08-31T00:39:06.232358+00:00",
+      "review_result": {
+        "feedback_path": "/home/lynn/projects/nichthub/kitty-specs/self-hosting-alpha-loop-01M18YXX/tasks/WP05-shallow-dependency-recovery/review-cycle-3.md",
+        "reference": "review-cycle://self-hosting-alpha-loop-01M18YXX/WP05-shallow-dependency-recovery/review-cycle-3.md",
+        "reviewer": "user",
+        "verdict": "changes_requested"
+      },
+      "shell_pid": 2156508,
+      "shell_pid_created_at": "1788012444.72"
+    },
+    "WP06": {
+      "actor": "merge",
+      "agent": "codex",
+      "force_count": 1,
+      "lane": "done",
+      "last_event_id": "01M1AM2X7ZZ46D9SQ0QX9YQEQX",
+      "last_transition_at": "2026-08-31T00:39:08.287363+00:00",
+      "review_result": {
+        "reference": "Review passed cycle 2: compiled nh interruption proves the post-promotion plus post-shallow-release pre-completion boundary; fresh processes fail closed for missing, malformed, symlinked, and unsafe-mode receipts; authoritative 0600 pending anchors repair explicit retry and clear only after durable completion; receipt-or-anchor loss in concurrent unions remains globally closed, completed shared objects alone become accepted, and pre-existing accepted objects are never anchored. Transactions, anchors, nh/replication parents, files, size bounds, and strict JSON reject hostile states; normal ordering never deletes both authorities and no such resistance is claimed. Operational x1/x3, focused ledger/path tests, full, race, vet, build, gofmt, and diff checks pass; broad black-box coverage and approved dependency provenance remain intact. Anti-patterns: dead code PASS; synthetic fixtures PASS; silent empty return PASS; FR coverage PASS; frozen surface N/A; locked decisions PASS; shared-file ownership PASS via recorded WP05 arbiter/integration rationale; production fragility PASS.",
+        "reviewer": "lynncoleart",
+        "verdict": "approved"
+      },
+      "shell_pid": 2156508,
+      "shell_pid_created_at": "1788012444.72"
+    },
+    "WP07": {
+      "actor": "merge",
+      "agent": "codex",
+      "force_count": 1,
+      "lane": "done",
+      "last_event_id": "01M1AM2ZS6GYM28HK4BQA15MZX",
+      "last_transition_at": "2026-08-31T00:39:10.886537+00:00",
+      "review_result": {
+        "reference": "Review passed cycle 2: docs-only correction f42e7ae now matches gap-free shallow recovery exactly (rc=0, empty stdout/stderr, remains shallow); fresh credential-disabled public reconstruction promoted the unchanged 24-event/two-actor/three-proposal manifest with exact budgets; no origin change, identifiers/placeholders/secrets/private paths or tracked .git/nh drift; gofmt, go test ./..., go vet ./..., go build ./..., and diff checks pass. Anti-patterns: dead code N/A; synthetic fixtures PASS; silent empty return N/A; FR coverage PASS; frozen surface PASS; locked decisions PASS; ownership PASS; production fragility N/A; dependency audit N/A.",
+        "reviewer": "lynncoleart",
+        "verdict": "approved"
+      },
+      "shell_pid": 2156508,
+      "shell_pid_created_at": "1788012444.72"
+    }
+  }
+}
