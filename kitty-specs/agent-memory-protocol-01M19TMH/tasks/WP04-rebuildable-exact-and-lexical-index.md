@@ -1,32 +1,43 @@
 ---
-work_package_id: "WP04"
-title: "Rebuildable Exact and Lexical Index"
-dependencies: ["WP03"]
+work_package_id: WP04
+title: Rebuildable Exact and Lexical Index
+dependencies:
+- WP03
 requirement_refs:
-  - FR-008
-  - FR-009
-  - FR-019
-  - FR-020
-  - NFR-003
-  - NFR-007
-  - NFR-008
-  - NFR-009
-  - NFR-011
-  - C-008
-subtasks: ["T016", "T017", "T018", "T019", "T020"]
-owned_files:
-  - "memory_index.go"
-  - "memory_index_test.go"
-authoritative_surface: "memory_index.go"
+- FR-008
+- FR-009
+- FR-019
+- FR-020
+- NFR-003
+- NFR-007
+- NFR-008
+- NFR-009
+- NFR-011
+- C-008
+planning_base_branch: feat/agent-memory-protocol
+merge_target_branch: feat/agent-memory-protocol
+branch_strategy: Planning artifacts for this mission were generated on feat/agent-memory-protocol. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/agent-memory-protocol unless the human explicitly redirects the landing branch.
+subtasks:
+- T016
+- T017
+- T018
+- T019
+- T020
+history: []
+agent_profile: implementer-ivan
+authoritative_surface: memory_index.go
 create_intent:
-  - "memory_index.go"
-  - "memory_index_test.go"
-execution_mode: "code_change"
-task_type: "implement"
-agent_profile: "implementer-ivan"
-role: "implementer"
-agent: "codex"
-model: ""
+- memory_index.go
+- memory_index_test.go
+execution_mode: code_change
+model: ''
+owned_files:
+- memory_index.go
+- memory_index_test.go
+role: implementer
+tags: []
+task_type: implement
+tracker_refs: []
 ---
 
 # Work Package Prompt: WP04 – Rebuildable Exact and Lexical Index

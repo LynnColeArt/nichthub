@@ -1,32 +1,43 @@
 ---
-work_package_id: "WP02"
-title: "Independent Memory Streams"
-dependencies: ["WP01"]
+work_package_id: WP02
+title: Independent Memory Streams
+dependencies:
+- WP01
 requirement_refs:
-  - "FR-006"
-  - "FR-014"
-  - "FR-015"
-  - "FR-016"
-  - "FR-017"
-  - "FR-023"
-  - "NFR-005"
-  - "NFR-010"
-  - "C-003"
-  - "C-006"
-subtasks: ["T006", "T007", "T008", "T009", "T010"]
-owned_files:
-  - "memory_store.go"
-  - "memory_store_test.go"
-authoritative_surface: "memory_store.go"
+- FR-006
+- FR-014
+- FR-015
+- FR-016
+- FR-017
+- FR-023
+- NFR-005
+- NFR-010
+- C-003
+- C-006
+planning_base_branch: feat/agent-memory-protocol
+merge_target_branch: feat/agent-memory-protocol
+branch_strategy: Planning artifacts for this mission were generated on feat/agent-memory-protocol. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/agent-memory-protocol unless the human explicitly redirects the landing branch.
+subtasks:
+- T006
+- T007
+- T008
+- T009
+- T010
+history: []
+agent_profile: implementer-ivan
+authoritative_surface: memory_store.go
 create_intent:
-  - "memory_store.go"
-  - "memory_store_test.go"
-execution_mode: "code_change"
-task_type: "implement"
-agent_profile: "implementer-ivan"
-role: "implementer"
-agent: "codex"
-model: ""
+- memory_store.go
+- memory_store_test.go
+execution_mode: code_change
+model: ''
+owned_files:
+- memory_store.go
+- memory_store_test.go
+role: implementer
+tags: []
+task_type: implement
+tracker_refs: []
 ---
 
 # Work Package Prompt: WP02 – Independent Memory Streams
