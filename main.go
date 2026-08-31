@@ -32,6 +32,8 @@ func run(args []string) error {
 		return cmdInit(args[1:])
 	case "identity":
 		return cmdIdentity(args[1:])
+	case "memory":
+		return cmdMemory(args[1:])
 	case "issue":
 		return cmdIssue(args[1:])
 	case "proposal":
@@ -65,6 +67,15 @@ func printUsage() {
 Usage:
   nh init [--name NAME]
   nh identity show|list|public|authorize|accept|rotate
+  nh memory record --kind KIND --at REV --applies MODE [record fields]
+  nh memory record --input FILE|- --json
+  nh memory handoff --at REV --applies MODE --input FILE|- --json
+  nh memory supersede MEMORY [record fields]
+  nh memory retract MEMORY --reason REASON
+  nh memory challenge MEMORY --reason REASON [--evidence TYPED-ID]...
+  nh memory show MEMORY [--json]
+  nh memory recall [filters] [bounds] [--json]
+  nh memory index rebuild|verify
   nh issue open [--body TEXT] TITLE
   nh issue comment ISSUE [--body TEXT] [TEXT]
   nh issue list
