@@ -476,6 +476,11 @@ func validMemoryPath(value string) bool {
 	if !utf8.ValidString(value) || value == "" || len(value) > maxMemoryPathBytes || strings.HasPrefix(value, "/") || strings.Contains(value, "\\") || path.Clean(value) != value || value == "." {
 		return false
 	}
+	for _, segment := range strings.Split(value, "/") {
+		if segment == ".." {
+			return false
+		}
+	}
 	for _, r := range value {
 		if unicode.IsControl(r) {
 			return false
