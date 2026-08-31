@@ -205,11 +205,11 @@ func cmdMemory(args []string) error {
 func cmdMemoryHandoff(args []string) error {
 	for _, argument := range args {
 		if argument == "--input" || strings.HasPrefix(argument, "--input=") {
-			parsed, err := parseMemoryRecordArgs(memoryOperationRecord, args)
+			input, at, applies, err := parseMemoryHandoffInputArgs(args)
 			if err != nil {
 				return err
 			}
-			reader, err := openMemoryCommandInput(parsed.Input)
+			reader, err := openMemoryCommandInput(input)
 			if err != nil {
 				return err
 			}
@@ -221,10 +221,44 @@ func cmdMemoryHandoff(args []string) error {
 			if request.Kind != memoryKindHandoff {
 				return fmt.Errorf("handoff input field kind must be handoff")
 			}
+			if at != "" {
+				commit, err := resolveCommit(at)
+				if err != nil {
+					return err
+				}
+				if request.Anchor.Commit != "" && request.Anchor.Commit != commit {
+					return fmt.Errorf("handoff input field anchor.commit conflicts with --at")
+				}
+				request.Anchor.Commit = commit
+			}
+			if applies != "" {
+				if request.Applicability.Mode != "" && request.Applicability.Mode != applies {
+					return fmt.Errorf("handoff input field applicability.mode conflicts with --applies")
+				}
+				request.Applicability.Mode = applies
+			}
 			return appendNormalizedMemoryRecord(memoryOperationRecord, "", request, true)
 		}
 	}
 	return cmdMemoryRecord(memoryOperationRecord, "", append([]string{"--kind", memoryKindHandoff}, args...))
+}
+
+func parseMemoryHandoffInputArgs(args []string) (input, at, applies string, err error) {
+	flags := quietFlags("memory handoff")
+	inputFlag := flags.String("input", "", "strict JSON input file or -")
+	jsonOutput := flags.Bool("json", false, "emit JSON")
+	atFlag := flags.String("at", "", "exact Git revision")
+	appliesFlag := flags.String("applies", "", "applicability mode")
+	if err := flags.Parse(args); err != nil {
+		return "", "", "", err
+	}
+	if flags.NArg() != 0 || *inputFlag == "" {
+		return "", "", "", usageError("usage: nh memory handoff --at REV --applies MODE --input FILE|- --json")
+	}
+	if !*jsonOutput {
+		return "", "", "", fmt.Errorf("--input requires --json")
+	}
+	return *inputFlag, *atFlag, *appliesFlag, nil
 }
 
 func decodeRecordRequestV0(reader io.Reader) (RecordRequestV0, error) {

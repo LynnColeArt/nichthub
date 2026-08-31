@@ -778,6 +778,149 @@ func TestMemoryCommandHandoffConsumesOnlyExplicitVersionedInput(t *testing.T) {
 	})
 }
 
+func TestMemoryCommandHandoffComposesDocumentedInputWithCLIContext(t *testing.T) {
+	withMemoryCommandRepository(t, func(head string, identity *Identity) {
+		input := map[string]any{
+			"version": 0, "kind": memoryKindHandoff, "content": "bounded downstream handoff",
+			"topics": []string{"handoff"}, "evidence": []string{}, "actor": identity.Actor,
+			"handoff": map[string]any{
+				"completed": []string{"WP07 acceptance"}, "assumptions": []string{"contract stays frozen"},
+				"blockers": []string{}, "nextActions": []string{"review the signed result"},
+			},
+		}
+		encoded, err := json.Marshal(input)
+		if err != nil {
+			t.Fatal(err)
+		}
+		path := filepath.Join(t.TempDir(), "handoff.json")
+		if err := os.WriteFile(path, encoded, 0o600); err != nil {
+			t.Fatal(err)
+		}
+		output, err := captureTestOutput(t, func() error {
+			return run([]string{"memory", "handoff", "--at", "HEAD", "--applies", "descendants", "--input", path, "--json"})
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		var result memoryCommandResultV0
+		if err := json.Unmarshal([]byte(output), &result); err != nil {
+			t.Fatal(err)
+		}
+		stored, err := resolveMemoryForCommand(result.MemoryID, false)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if stored.Envelope.Record.Anchor.Commit != head || stored.Envelope.Record.Applicability.Mode != memoryApplicabilityDescendants ||
+			stored.Envelope.Record.Handoff.NextActions[0] != "review the signed result" {
+			t.Fatalf("composed handoff = %#v", stored.Envelope.Record)
+		}
+		input["anchor"] = map[string]any{"commit": head}
+		input["applicability"] = map[string]any{"mode": memoryApplicabilityDescendants}
+		encoded, err = json.Marshal(input)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, encoded, 0o600); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := captureTestOutput(t, func() error {
+			return run([]string{"memory", "handoff", "--at", "HEAD", "--applies", "descendants", "--input", path, "--json"})
+		}); err != nil {
+			t.Fatalf("matching JSON and CLI context should compose: %v", err)
+		}
+	})
+}
+
+func TestMemoryCommandHandoffInputConflictsFailWithoutRefMutation(t *testing.T) {
+	withMemoryCommandRepository(t, func(head string, identity *Identity) {
+		base := RecordRequestV0{
+			Version: intPointer(0), Kind: memoryKindHandoff, Content: "explicit handoff", Actor: identity.Actor,
+			Anchor: MemoryAnchor{Commit: head}, Applicability: Applicability{Mode: memoryApplicabilityDescendants},
+			Topics: []string{}, Evidence: []string{},
+			Handoff: &HandoffFields{Completed: []string{"done"}, Assumptions: []string{}, Blockers: []string{}, NextActions: []string{}},
+		}
+		writeRequest := func(name string, request RecordRequestV0) string {
+			t.Helper()
+			encoded, err := json.Marshal(request)
+			if err != nil {
+				t.Fatal(err)
+			}
+			path := filepath.Join(t.TempDir(), name+".json")
+			if err := os.WriteFile(path, encoded, 0o600); err != nil {
+				t.Fatal(err)
+			}
+			return path
+		}
+		wrongAnchor := base
+		wrongAnchor.Anchor.Commit = strings.Repeat("f", len(head))
+		wrongApplicability := base
+		wrongApplicability.Applicability.Mode = memoryApplicabilityExact
+		missingApplicability := base
+		missingApplicability.Applicability = Applicability{}
+		cases := []struct {
+			name string
+			args []string
+		}{
+			{"anchor-conflict", []string{"memory", "handoff", "--at", "HEAD", "--applies", "descendants", "--input", writeRequest("anchor", wrongAnchor), "--json"}},
+			{"applicability-conflict", []string{"memory", "handoff", "--at", "HEAD", "--applies", "descendants", "--input", writeRequest("applicability", wrongApplicability), "--json"}},
+			{"missing-cli-context", []string{"memory", "handoff", "--at", "HEAD", "--input", writeRequest("missing-applicability", missingApplicability), "--json"}},
+			{"input-with-record-field", []string{"memory", "handoff", "--at", "HEAD", "--applies", "descendants", "--input", writeRequest("record-field", base), "--content", "ambiguous", "--json"}},
+		}
+		for _, test := range cases {
+			t.Run(test.name, func(t *testing.T) {
+				before := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh/memory")
+				if _, err := captureTestOutput(t, func() error { return run(test.args) }); err == nil {
+					t.Fatalf("conflicting handoff input succeeded: %v", test.args)
+				}
+				after := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh/memory")
+				if after != before {
+					t.Fatalf("failed handoff mutated refs: before=%q after=%q", before, after)
+				}
+			})
+		}
+		if _, err := parseMemoryRecordArgs(memoryOperationRecord, []string{"--at", "HEAD", "--input", writeRequest("ordinary-record", base), "--json"}); err == nil {
+			t.Fatal("ordinary record input validation was weakened")
+		}
+	})
+}
+
+func TestMemoryCommandHandoffCompiledBlackBoxDocumentedForm(t *testing.T) {
+	binary := buildOperationalBinary(t)
+	repository := filepath.Join(t.TempDir(), "repository")
+	if err := os.Mkdir(repository, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	runOperationalGit(t, repository, "init", "-q", "-b", "main")
+	runOperationalGit(t, repository, "config", "user.name", "Handoff Black Box")
+	runOperationalGit(t, repository, "config", "user.email", "handoff@nh.invalid")
+	runOperationalCommand(t, binary, repository, "init", "--name", "Handoff Black Box")
+	runOperationalGit(t, repository, "commit", "--allow-empty", "-q", "-m", "handoff base")
+	head := runOperationalGit(t, repository, "rev-parse", "HEAD")
+	request := `{"version":0,"kind":"handoff","content":"compiled handoff","topics":[],"evidence":[],"handoff":{"completed":["compiled"],"assumptions":[],"blockers":[],"nextActions":["inspect only"]}}`
+	path := filepath.Join(repository, "handoff.json")
+	if err := os.WriteFile(path, []byte(request), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	output := runOperationalCommand(t, binary, repository, "memory", "handoff", "--at", "HEAD", "--applies", "descendants", "--input", "handoff.json", "--json")
+	var result memoryCommandResultV0
+	if err := json.Unmarshal([]byte(output), &result); err != nil {
+		t.Fatal(err)
+	}
+	if !validMemoryID(result.MemoryID) || result.Anchor == nil || result.Anchor.Commit != head {
+		t.Fatalf("compiled handoff output = %#v", result)
+	}
+	shown := runOperationalCommand(t, binary, repository, "memory", "show", result.MemoryID, "--json")
+	var exact memoryShowEnvelopeV0
+	if err := json.Unmarshal([]byte(shown), &exact); err != nil {
+		t.Fatal(err)
+	}
+	if exact.Projection == nil || exact.Projection.Data.Kind != memoryKindHandoff ||
+		exact.Projection.Data.Applicability.Mode != memoryApplicabilityDescendants ||
+		exact.Projection.Data.Handoff.NextActions[0] != "inspect only" {
+		t.Fatalf("compiled handoff projection = %#v", exact.Projection)
+	}
+}
+
 func TestMemoryRecallCountPaginationReconstructsDeterministicOrder(t *testing.T) {
 	rows := []MemoryIndexRecordV0{
 		indexRow("a", deterministicMemoryIdentity().Actor, "2026-08-30T12:00:00Z"),
