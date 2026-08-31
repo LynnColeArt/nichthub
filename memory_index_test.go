@@ -2,6 +2,8 @@ package main
 
 import (
 	"bytes"
+	"crypto/ed25519"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -700,7 +702,6 @@ func TestMemoryIndexExactAndUnicodeLexicalQuery(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	index.projectionCommit = strings.Repeat("a", 40)
 	cases := []struct {
 		name  string
 		query MemoryIndexQuery
@@ -718,7 +719,11 @@ func TestMemoryIndexExactAndUnicodeLexicalQuery(t *testing.T) {
 	}
 	for _, test := range cases {
 		test.query.AtCommit = strings.Repeat("a", 40)
-		got, err := queryMemoryIndexV0(index, test.query)
+		bound := index
+		bound.projectionBinding = memoryIndexProjectionBinding{
+			AtCommit: test.query.AtCommit, Subject: test.query.Subject, Path: test.query.Path,
+		}
+		got, err := queryMemoryIndexV0(bound, test.query)
 		if err != nil {
 			t.Errorf("%s: %v", test.name, err)
 			continue
@@ -731,6 +736,7 @@ func TestMemoryIndexExactAndUnicodeLexicalQuery(t *testing.T) {
 			t.Errorf("%s IDs = %v, want %v", test.name, ids, test.want)
 		}
 	}
+	index.projectionBinding = memoryIndexProjectionBinding{AtCommit: strings.Repeat("a", 40)}
 	if _, err := queryMemoryIndexV0(index, MemoryIndexQuery{AtCommit: strings.Repeat("a", 40), Actors: []string{alice[:20]}}); err == nil {
 		t.Fatal("short actor ID accepted")
 	}
@@ -786,7 +792,7 @@ func TestMemoryIndexQueryRequiresExactVerifiedProjectionCommit(t *testing.T) {
 	if err != nil || len(got) != 1 {
 		t.Fatalf("matching projection context = %d rows, %v", len(got), err)
 	}
-	if _, err := queryMemoryIndexV0(index, MemoryIndexQuery{AtCommit: otherCommit}); err == nil || !strings.Contains(err.Error(), "projection commit") {
+	if _, err := queryMemoryIndexV0(index, MemoryIndexQuery{AtCommit: otherCommit}); err == nil || !strings.Contains(err.Error(), "projection context") {
 		t.Fatalf("mismatched projection context error = %v", err)
 	}
 	loaded, err := loadMemoryIndexV0At(gitDir)
@@ -806,6 +812,98 @@ func TestMemoryIndexQueryRequiresExactVerifiedProjectionCommit(t *testing.T) {
 	})
 	if err != nil || len(got) != 1 {
 		t.Fatalf("second exact projection context = %d rows, %v", len(got), err)
+	}
+}
+
+func TestMemoryIndexQueryRejectsStalePathApplicabilityContext(t *testing.T) {
+	gitDir := t.TempDir()
+	if err := os.Chmod(gitDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	actor := deterministicMemoryIdentity().Actor
+	row := indexRow("a", actor, "2026-08-30T10:00:00Z")
+	row.Data.Anchor.Subject = ""
+	row.Data.Anchor.Paths = []PathAnchor{{Path: "docs/a.md", Blob: "absent"}}
+	row.Data.Applicability = Applicability{Mode: memoryApplicabilityExact}
+	row.Data.Evidence = []string{}
+	row.Anchor = row.Data.Anchor
+	source := indexSource("a", "1")
+	source.Memory = []StoredMemory{indexStoredMemory(row)}
+	atCommit := strings.Repeat("a", 40)
+	options := memoryIndexRebuildOptions{
+		GitDir: gitDir,
+		Context: MemoryProjectionContext{
+			AtCommit: atCommit, Path: "docs/b.md", PolicyDigest: fullMemoryID("d"),
+			MemoryPolicy: &MemoryPolicy{TrustedActors: []string{actor}, TrustedKinds: []string{memoryKindDecision}},
+			Resolver:     &projectionResolverStub{probes: map[string]gitObjectProbe{atCommit: {Exists: true, Type: "commit"}}},
+		},
+		Collect: func(string) ([]memoryIndexSource, error) { return []memoryIndexSource{source}, nil },
+	}
+	stale, err := rebuildMemoryIndexV0(options)
+	if err != nil || stale.Records[0].Applicability != memoryApplicabilityInapplicable {
+		t.Fatalf("path-B projection = %#v, %v", stale.Records, err)
+	}
+	if _, err := queryMemoryIndexV0(stale, MemoryIndexQuery{
+		AtCommit: atCommit, Path: "docs/a.md", Applicabilities: []string{memoryApplicabilityApplicable},
+	}); err == nil || !strings.Contains(err.Error(), "projection context") {
+		t.Fatalf("path applicability mismatch error = %v", err)
+	}
+	options.Context.Path = "docs/a.md"
+	fresh, err := rebuildMemoryIndexV0(options)
+	if err != nil || fresh.Records[0].Applicability != memoryApplicabilityApplicable {
+		t.Fatalf("path-A projection = %#v, %v", fresh.Records, err)
+	}
+	got, err := queryMemoryIndexV0(fresh, MemoryIndexQuery{
+		AtCommit: atCommit, Path: "docs/a.md", Applicabilities: []string{memoryApplicabilityApplicable},
+	})
+	if err != nil || len(got) != 1 {
+		t.Fatalf("path-A query = %d rows, %v", len(got), err)
+	}
+}
+
+func TestMemoryIndexQueryRejectsStaleSubjectApplicabilityContext(t *testing.T) {
+	gitDir := t.TempDir()
+	if err := os.Chmod(gitDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	actor := deterministicMemoryIdentity().Actor
+	row := indexRow("a", actor, "2026-08-30T10:00:00Z")
+	row.Data.Anchor.Paths = nil
+	row.Data.Evidence = []string{}
+	row.Anchor = row.Data.Anchor
+	source := indexSource("a", "1")
+	source.Memory = []StoredMemory{indexStoredMemory(row)}
+	atCommit := strings.Repeat("a", 40)
+	matching := row.Anchor.Subject
+	nonmatching := "proposal:" + fullMemoryID("f")
+	options := memoryIndexRebuildOptions{
+		GitDir: gitDir,
+		Context: MemoryProjectionContext{
+			AtCommit: atCommit, Subject: nonmatching, PolicyDigest: fullMemoryID("d"),
+			MemoryPolicy: &MemoryPolicy{TrustedActors: []string{actor}, TrustedKinds: []string{memoryKindDecision}},
+			Resolver:     &projectionResolverStub{probes: map[string]gitObjectProbe{atCommit: {Exists: true, Type: "commit"}}},
+		},
+		Collect: func(string) ([]memoryIndexSource, error) { return []memoryIndexSource{source}, nil },
+	}
+	stale, err := rebuildMemoryIndexV0(options)
+	if err != nil || stale.Records[0].Applicability != memoryApplicabilityInapplicable {
+		t.Fatalf("nonmatching-subject projection = %#v, %v", stale.Records, err)
+	}
+	if _, err := queryMemoryIndexV0(stale, MemoryIndexQuery{
+		AtCommit: atCommit, Subject: matching, Applicabilities: []string{memoryApplicabilityApplicable},
+	}); err == nil || !strings.Contains(err.Error(), "projection context") {
+		t.Fatalf("subject applicability mismatch error = %v", err)
+	}
+	options.Context.Subject = matching
+	fresh, err := rebuildMemoryIndexV0(options)
+	if err != nil || fresh.Records[0].Applicability != memoryApplicabilityApplicable {
+		t.Fatalf("matching-subject projection = %#v, %v", fresh.Records, err)
+	}
+	got, err := queryMemoryIndexV0(fresh, MemoryIndexQuery{
+		AtCommit: atCommit, Subject: matching, Applicabilities: []string{memoryApplicabilityApplicable},
+	})
+	if err != nil || len(got) != 1 {
+		t.Fatalf("matching-subject query = %d rows, %v", len(got), err)
 	}
 }
 
@@ -831,39 +929,149 @@ func TestMemoryIndexTenThousandRecordsPerformanceAndRecovery(t *testing.T) {
 	if err := os.Chmod(gitDir, 0o700); err != nil {
 		t.Fatal(err)
 	}
-	actor := deterministicMemoryIdentity().Actor
+	identities := []*Identity{
+		deterministicIndexIdentity(1), deterministicIndexIdentity(2),
+		deterministicIndexIdentity(3), deterministicIndexIdentity(4),
+	}
+	kinds := []string{
+		memoryKindObservation, memoryKindDecision, memoryKindAssumption,
+		memoryKindAttempt, memoryKindVerification, memoryKindHandoff,
+	}
+	atCommit := strings.Repeat("a", 40)
+	otherCommit := strings.Repeat("b", 40)
+	missingCommit := strings.Repeat("c", 40)
+	invalidCommit := strings.Repeat("d", 40)
+	subject := "proposal:" + fullMemoryID("e")
+	streams := make([]string, len(identities))
+	previous := make([]string, len(identities))
+	sequences := make([]uint64, len(identities))
+	sourceMemories := make([][]StoredMemory, len(identities))
+	for i := range streams {
+		streams[i] = memoryID([]byte(fmt.Sprintf("mixed-stream-%d", i)))
+	}
 	memories := make([]StoredMemory, 10_000)
 	for i := range memories {
 		character := fmt.Sprintf("%064x", i+1)
-		row := indexRowHex(character, actor, fmt.Sprintf("2026-08-30T%02d:%02d:%02dZ", (i/3600)%24, (i/60)%60, i%60))
-		row.Data.Content = fmt.Sprintf("deterministic corpus token-%d shared 世界", i)
-		row.Data.Anchor.Paths = nil
-		row.Data.Anchor.Subject = ""
-		row.Data.Applicability = Applicability{Mode: memoryApplicabilityExact}
-		row.Data.Evidence = []string{}
+		actorIndex := i % len(identities)
+		identity := identities[actorIndex]
+		kind := kinds[i%len(kinds)]
+		row := indexRowHex(character, identity.Actor, fmt.Sprintf("2026-08-30T%02d:%02d:%02dZ", (i/3600)%24, (i/60)%60, i%60))
+		row.Kind = kind
+		row.Data = validMemoryRecordFixture(kind)
+		row.Data.Content = fmt.Sprintf("mixed %s actor-%d token-%d group-%d shared 世界 café", kind, i%len(identities), i, i%8)
+		row.Data.Topics = []string{fmt.Sprintf("group-%d", i%8), "shared", "unicode"}
+		row.Data.Anchor.Subject = subject
+		if i%2 == 0 {
+			row.Data.Anchor.Paths = []PathAnchor{{Path: fmt.Sprintf("src/group-%d/file-%05d.go", i%8, i), Blob: "absent"}}
+		} else {
+			row.Data.Anchor.Paths = nil
+		}
+		switch i % 4 {
+		case 0:
+			row.Data.Anchor.Commit = atCommit
+			row.Data.Applicability = Applicability{Mode: []string{memoryApplicabilityExact, memoryApplicabilityDescendants, memoryApplicabilitySubject}[i%3]}
+			if row.Data.Applicability.Mode == memoryApplicabilitySubject {
+				row.Data.Applicability.Subject = subject
+			}
+		case 1:
+			row.Data.Anchor.Commit = otherCommit
+			row.Data.Applicability = Applicability{Mode: memoryApplicabilityExact}
+		case 2:
+			row.Data.Anchor.Commit = missingCommit
+			row.Data.Applicability = Applicability{Mode: memoryApplicabilityExact}
+		case 3:
+			row.Data.Anchor.Commit = invalidCommit
+			row.Data.Applicability = Applicability{Mode: memoryApplicabilityExact}
+		}
+		if kind == memoryKindVerification {
+			row.Data.Evidence = []string{"git:" + atCommit}
+		} else {
+			row.Data.Evidence = []string{}
+		}
 		row.Anchor = row.Data.Anchor
+		row.Stream = streams[actorIndex]
 		row.ContentDigest = memoryID([]byte(row.Data.Content))
-		memories[i] = indexStoredMemory(row)
+		if err := validateMemoryRecord(row.Data); err != nil {
+			t.Fatalf("mixed corpus record %d: %v", i, err)
+		}
+		sequences[actorIndex]++
+		memories[i] = indexStoredMemoryForIdentity(row, identity, sequences[actorIndex], previous[actorIndex])
+		previous[actorIndex] = row.ID
+		sourceMemories[actorIndex] = append(sourceMemories[actorIndex], memories[i])
 	}
-	source := indexSource("a", "1")
-	source.Memory = memories
-	atCommit := strings.Repeat("a", 40)
+	sources := make([]memoryIndexSource, len(identities))
+	for i, identity := range identities {
+		ref, err := memoryRef(identity.Actor, streams[i])
+		if err != nil {
+			t.Fatal(err)
+		}
+		sources[i] = memoryIndexSource{
+			Ref: ref, Head: strings.TrimPrefix(sourceMemories[i][len(sourceMemories[i])-1].ID, "sha256:"),
+			Memory: sourceMemories[i],
+		}
+	}
+	trustedActors := []string{identities[0].Actor, identities[1].Actor}
+	sort.Strings(trustedActors)
+	trustedKinds := []string{memoryKindAssumption, memoryKindDecision, memoryKindObservation}
+	sort.Strings(trustedKinds)
 	context := MemoryProjectionContext{
-		AtCommit: atCommit, PolicyDigest: fullMemoryID("d"),
-		MemoryPolicy: &MemoryPolicy{TrustedActors: []string{actor}, TrustedKinds: []string{memoryKindDecision}},
+		AtCommit: atCommit, Subject: subject, PolicyDigest: fullMemoryID("d"),
+		MemoryPolicy: &MemoryPolicy{TrustedActors: trustedActors, TrustedKinds: trustedKinds},
 		Resolver: &projectionResolverStub{probes: map[string]gitObjectProbe{
-			atCommit: {Exists: true, Type: "commit"},
+			atCommit: {Exists: true, Type: "commit"}, otherCommit: {Exists: true, Type: "commit"},
+			invalidCommit: {Exists: true, Type: "blob"},
 		}},
 	}
 	options := memoryIndexRebuildOptions{
 		GitDir: gitDir, Context: context,
-		Collect: func(string) ([]memoryIndexSource, error) { return []memoryIndexSource{source}, nil },
+		Collect: func(string) ([]memoryIndexSource, error) { return sources, nil },
+		Project: func(got []StoredMemory, context MemoryProjectionContext) MemoryProjection {
+			projection := ProjectMemories(got, context)
+			for i := range projection.Rows {
+				row := &projection.Rows[i]
+				row.Challengers = []string{}
+				row.Successors = []string{}
+				row.Retractions = []string{}
+				switch i % 5 {
+				case 0:
+					row.Lifecycle = memoryLifecycleActive
+				case 1:
+					row.Lifecycle = memoryLifecycleSuperseded
+					row.Successors = []string{memoryID([]byte("mixed-successor-" + row.ID))}
+				case 2:
+					row.Lifecycle = memoryLifecycleRetracted
+					row.Retractions = []string{memoryID([]byte("mixed-retraction-" + row.ID))}
+				case 3:
+					row.Lifecycle = memoryLifecycleBranching
+					row.Successors = []string{
+						memoryID([]byte("mixed-branch-a-" + row.ID)),
+						memoryID([]byte("mixed-branch-b-" + row.ID)),
+					}
+					sort.Strings(row.Successors)
+				case 4:
+					row.Lifecycle = memoryLifecycleDependencyMissing
+					projection.MissingDependencies = append(projection.MissingDependencies, MemoryDependency{
+						Kind: "lifecycle-target", OwnerID: row.ID, Stream: row.Stream,
+						Operation: memoryOperationSupersede, MissingID: memoryID([]byte("mixed-missing-" + row.ID)), Reason: "target-unavailable",
+					})
+				}
+				if i%7 == 0 {
+					row.Challengers = []string{memoryID([]byte("mixed-challenge-" + row.ID))}
+				}
+				row.Trust = []string{
+					memoryTrustQualified, memoryTrustActorUntrusted,
+					memoryTrustKindUntrusted, memoryTrustPolicyMissing,
+				}[i%4]
+			}
+			return projection
+		},
 	}
 	started := time.Now()
 	index, err := rebuildMemoryIndexV0(options)
 	if err != nil || len(index.Records) != 10_000 {
 		t.Fatalf("10k production rebuild = %d rows, %v", len(index.Records), err)
 	}
+	assertMixedMemoryIndexCorpus(t, index)
 	if elapsed := time.Since(started); elapsed >= 30*time.Second {
 		t.Fatalf("10k production rebuild/persist took %s", elapsed)
 	} else {
@@ -878,7 +1086,7 @@ func TestMemoryIndexTenThousandRecordsPerformanceAndRecovery(t *testing.T) {
 	if err != nil || len(loaded.Records) != 10_000 {
 		t.Fatalf("strict load = %d rows, %v", len(loaded.Records), err)
 	}
-	if _, err := queryMemoryIndexV0(loaded, MemoryIndexQuery{AtCommit: atCommit}); err == nil {
+	if _, err := queryMemoryIndexV0(loaded, MemoryIndexQuery{AtCommit: atCommit, Subject: subject}); err == nil {
 		t.Fatal("strictly loaded but unverified cache was queryable")
 	}
 	verified, err := verifyMemoryIndexV0(options)
@@ -890,8 +1098,12 @@ func TestMemoryIndexTenThousandRecordsPerformanceAndRecovery(t *testing.T) {
 	for i := 0; i < 100; i++ {
 		started = time.Now()
 		got, err := queryMemoryIndexV0(verified, MemoryIndexQuery{
-			AtCommit: atCommit, Kinds: []string{memoryKindDecision}, Topics: []string{"alpha", "unicode"},
-			Applicabilities: []string{memoryApplicabilityApplicable}, Query: fmt.Sprintf("token %d 世界", i),
+			AtCommit: atCommit, Subject: subject, Kinds: kinds, Actors: memoryIndexActors(identities),
+			Topics:          []string{"shared", "unicode"},
+			Lifecycles:      []string{memoryLifecycleActive, memoryLifecycleSuperseded, memoryLifecycleRetracted, memoryLifecycleBranching, memoryLifecycleDependencyMissing},
+			Applicabilities: []string{memoryApplicabilityApplicable, memoryApplicabilityInapplicable, memoryApplicabilityAnchorMissing, memoryApplicabilityAnchorInvalid},
+			Trust:           []string{memoryTrustQualified, memoryTrustActorUntrusted, memoryTrustKindUntrusted, memoryTrustPolicyMissing},
+			Query:           fmt.Sprintf("token %d 世界", i),
 		})
 		if err != nil || len(got) == 0 {
 			t.Fatalf("10k query %d = %d rows, %v", i, len(got), err)
@@ -923,8 +1135,11 @@ func TestMemoryIndexTenThousandRecordsPerformanceAndRecovery(t *testing.T) {
 			t.Fatalf("verify after rebuild %d: %v", rebuild, err)
 		}
 		got, err := queryMemoryIndexV0(verified, MemoryIndexQuery{
-			AtCommit: atCommit, Kinds: []string{memoryKindDecision}, Topics: []string{"alpha", "unicode"},
-			Applicabilities: []string{memoryApplicabilityApplicable}, Query: "token 0 世界",
+			AtCommit: atCommit, Subject: subject, Kinds: kinds, Actors: memoryIndexActors(identities),
+			Topics:          []string{"shared", "unicode"},
+			Lifecycles:      []string{memoryLifecycleActive, memoryLifecycleSuperseded, memoryLifecycleRetracted, memoryLifecycleBranching, memoryLifecycleDependencyMissing},
+			Applicabilities: []string{memoryApplicabilityApplicable, memoryApplicabilityInapplicable, memoryApplicabilityAnchorMissing, memoryApplicabilityAnchorInvalid},
+			Trust:           []string{memoryTrustQualified, memoryTrustActorUntrusted, memoryTrustKindUntrusted, memoryTrustPolicyMissing}, Query: "token 0 世界",
 		})
 		if err != nil || !slices.Equal(memoryIndexRecordIDs(got), baseline) {
 			t.Fatalf("clean rebuild %d membership/order changed: %v", rebuild, err)
@@ -938,6 +1153,52 @@ func memoryIndexRecordIDs(rows []MemoryIndexRecordV0) []string {
 		ids[i] = rows[i].ID
 	}
 	return ids
+}
+
+func memoryIndexActors(identities []*Identity) []string {
+	actors := make([]string, len(identities))
+	for i := range identities {
+		actors[i] = identities[i].Actor
+	}
+	sort.Strings(actors)
+	return actors
+}
+
+func assertMixedMemoryIndexCorpus(t *testing.T, index MemoryIndexV0) {
+	t.Helper()
+	actors := make(map[string]bool)
+	kinds := make(map[string]bool)
+	lifecycles := make(map[string]bool)
+	trust := make(map[string]bool)
+	applicability := make(map[string]bool)
+	modes := make(map[string]bool)
+	topics := make(map[string]bool)
+	withPath, withoutPath, withUnicode := false, false, false
+	withChallenger, withSuccessor, withRetraction, withDependency := false, false, false, false
+	for _, row := range index.Records {
+		actors[row.Actor] = true
+		kinds[row.Kind] = true
+		lifecycles[row.Lifecycle] = true
+		trust[row.Trust] = true
+		applicability[row.Applicability] = true
+		modes[row.Data.Applicability.Mode] = true
+		for _, topic := range row.Data.Topics {
+			topics[topic] = true
+		}
+		withPath = withPath || len(row.Anchor.Paths) > 0
+		withoutPath = withoutPath || len(row.Anchor.Paths) == 0
+		withChallenger = withChallenger || len(row.Challengers) > 0
+		withSuccessor = withSuccessor || len(row.Successors) > 0
+		withRetraction = withRetraction || len(row.Retractions) > 0
+		withDependency = withDependency || len(row.Dependencies) > 0
+		withUnicode = withUnicode || strings.Contains(row.Data.Content, "世界") && strings.Contains(row.Data.Content, "café")
+	}
+	if len(actors) != 4 || len(kinds) != 6 || len(lifecycles) != 5 || len(trust) != 4 || len(applicability) != 4 || len(modes) != 3 || len(topics) < 10 ||
+		!withPath || !withoutPath || !withChallenger || !withSuccessor || !withRetraction || !withDependency || !withUnicode {
+		t.Fatalf("10k corpus coverage actors=%d kinds=%d lifecycle=%d trust=%d applicability=%d modes=%d topics=%d path=%v/%v edges=%v/%v/%v/%v unicode=%v",
+			len(actors), len(kinds), len(lifecycles), len(trust), len(applicability), len(modes), len(topics), withPath, withoutPath,
+			withChallenger, withSuccessor, withRetraction, withDependency, withUnicode)
+	}
 }
 
 func memoryIndexProjectionRow(row MemoryIndexRecordV0) MemoryProjectionRow {
@@ -955,6 +1216,25 @@ func indexStoredMemory(row MemoryIndexRecordV0) StoredMemory {
 		Protocol: memoryProtocolVersion, Operation: memoryOperationRecord, Actor: row.Actor,
 		ActorName: "Index fixture", PublicKey: deterministicMemoryIdentity().PublicKey,
 		Stream: row.Stream, Sequence: 1, Timestamp: row.SignedTimestamp, Record: &row.Data,
+	}
+	return StoredMemory{ID: row.ID, Envelope: envelope}
+}
+
+func deterministicIndexIdentity(marker byte) *Identity {
+	seed := bytes.Repeat([]byte{marker}, ed25519.SeedSize)
+	privateKey := ed25519.NewKeyFromSeed(seed)
+	publicKey := privateKey.Public().(ed25519.PublicKey)
+	return &Identity{
+		Actor: actorForPublicKey(publicKey), Name: fmt.Sprintf("Index actor %d", marker),
+		PublicKey: base64.RawStdEncoding.EncodeToString(publicKey), PrivateKey: base64.RawStdEncoding.EncodeToString(privateKey),
+	}
+}
+
+func indexStoredMemoryForIdentity(row MemoryIndexRecordV0, identity *Identity, sequence uint64, previous string) StoredMemory {
+	envelope := MemoryEnvelope{
+		Protocol: memoryProtocolVersion, Operation: memoryOperationRecord, Actor: identity.Actor,
+		ActorName: identity.Name, PublicKey: identity.PublicKey, Stream: row.Stream,
+		Sequence: sequence, Timestamp: row.SignedTimestamp, Previous: previous, Record: &row.Data,
 	}
 	return StoredMemory{ID: row.ID, Envelope: envelope}
 }

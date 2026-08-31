@@ -35,9 +35,15 @@ type MemoryIndexV0 struct {
 	SourceFingerprint string                 `json:"sourceFingerprint"`
 	Records           []MemoryIndexRecordV0  `json:"records"`
 	Tokens            []MemoryTokenPostingV0 `json:"tokens"`
-	// projectionCommit is deliberately not persisted: raw cache bytes are not
-	// queryable until rebuild or verification binds them to an exact context.
-	projectionCommit string
+	// projectionBinding is deliberately not persisted: raw cache bytes are not
+	// queryable until rebuild or verification binds every applicability input.
+	projectionBinding memoryIndexProjectionBinding
+}
+
+type memoryIndexProjectionBinding struct {
+	AtCommit string
+	Subject  string
+	Path     string
 }
 
 // MemoryIndexRecordV0 preserves a verified projection and the signed timestamp
@@ -303,7 +309,7 @@ func rebuildMemoryIndexV0(options memoryIndexRebuildOptions) (MemoryIndexV0, err
 	if err := options.Write(path, encoded); err != nil {
 		return MemoryIndexV0{}, fmt.Errorf("write private memory index: %w", err)
 	}
-	index.projectionCommit = options.Context.AtCommit
+	index.projectionBinding = memoryIndexBinding(options.Context)
 	return index, nil
 }
 
@@ -450,13 +456,20 @@ func cloneMemoryRecord(record MemoryRecord) MemoryRecord {
 	record.Evidence = append([]string(nil), record.Evidence...)
 	if record.Handoff != nil {
 		handoff := *record.Handoff
-		handoff.Completed = append([]string(nil), handoff.Completed...)
-		handoff.Assumptions = append([]string(nil), handoff.Assumptions...)
-		handoff.Blockers = append([]string(nil), handoff.Blockers...)
-		handoff.NextActions = append([]string(nil), handoff.NextActions...)
+		handoff.Completed = cloneMemoryIndexStrings(handoff.Completed)
+		handoff.Assumptions = cloneMemoryIndexStrings(handoff.Assumptions)
+		handoff.Blockers = cloneMemoryIndexStrings(handoff.Blockers)
+		handoff.NextActions = cloneMemoryIndexStrings(handoff.NextActions)
 		record.Handoff = &handoff
 	}
 	return record
+}
+
+func cloneMemoryIndexStrings(values []string) []string {
+	if values == nil {
+		return nil
+	}
+	return append([]string{}, values...)
 }
 
 func normalizeMemoryIndexRecord(row *MemoryIndexRecordV0) {
@@ -594,8 +607,12 @@ func verifyMemoryIndexV0(options memoryIndexRebuildOptions) (MemoryIndexV0, erro
 	if !bytes.Equal(persistedBytes, expectedBytes) {
 		return MemoryIndexV0{}, &MemoryIndexError{Kind: memoryIndexStale, Cause: fmt.Errorf("derived projection changed")}
 	}
-	persisted.projectionCommit = options.Context.AtCommit
+	persisted.projectionBinding = memoryIndexBinding(options.Context)
 	return persisted, nil
+}
+
+func memoryIndexBinding(context MemoryProjectionContext) memoryIndexProjectionBinding {
+	return memoryIndexProjectionBinding{AtCommit: context.AtCommit, Subject: context.Subject, Path: context.Path}
 }
 
 func validateMemoryIndexV0(index MemoryIndexV0) error {
@@ -647,7 +664,7 @@ func validateMemoryIndexRecord(row MemoryIndexRecordV0) error {
 		return fmt.Errorf("memory index record projection disagrees with inert data")
 	}
 	if err := validateMemoryRecord(row.Data); err != nil {
-		return fmt.Errorf("memory index contains invalid record data")
+		return fmt.Errorf("memory index contains invalid record data: %w", err)
 	}
 	if !isOneOf(row.Lifecycle, memoryLifecycleActive, memoryLifecycleSuperseded, memoryLifecycleRetracted, memoryLifecycleBranching, memoryLifecycleDependencyMissing) ||
 		!isOneOf(row.Applicability, memoryApplicabilityApplicable, memoryApplicabilityInapplicable, memoryApplicabilityAnchorMissing, memoryApplicabilityAnchorInvalid) ||
@@ -797,11 +814,12 @@ func queryMemoryIndexV0(index MemoryIndexV0, query MemoryIndexQuery) ([]MemoryIn
 	if err := validateMemoryIndexQuery(query); err != nil {
 		return nil, err
 	}
-	if index.projectionCommit == "" {
+	if index.projectionBinding.AtCommit == "" {
 		return nil, fmt.Errorf("verify memory index before query")
 	}
-	if query.AtCommit != index.projectionCommit {
-		return nil, fmt.Errorf("memory index projection commit does not match atCommit")
+	queryBinding := memoryIndexProjectionBinding{AtCommit: query.AtCommit, Subject: query.Subject, Path: query.Path}
+	if queryBinding != index.projectionBinding {
+		return nil, fmt.Errorf("memory index projection context does not match query")
 	}
 	exact := make([]MemoryIndexRecordV0, 0)
 	exactIDs := make(map[string]bool)
