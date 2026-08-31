@@ -1,0 +1,13 @@
+{
+  "wp_id": "WP02",
+  "captured_at": "2026-08-31T03:33:18Z",
+  "base_branch": "feat/agent-memory-protocol",
+  "base_commit": "cf02ac9fe702adf1f11e85846fbe975ba0f8d46b",
+  "test_runner": "pytest",
+  "total": 0,
+  "passed": 0,
+  "failed": 0,
+  "skipped": 0,
+  "failures": [],
+  "source_identity": "GateCoverageScopeSource/junit_xml"
+}

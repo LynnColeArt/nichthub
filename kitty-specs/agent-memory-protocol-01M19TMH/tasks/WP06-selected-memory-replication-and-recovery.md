@@ -1,34 +1,47 @@
 ---
-work_package_id: "WP06"
-title: "Selected Memory Replication and Recovery"
-dependencies: ["WP01", "WP02", "WP03"]
+work_package_id: WP06
+title: Selected Memory Replication and Recovery
+dependencies:
+- WP01
+- WP02
+- WP03
 requirement_refs:
-  - FR-006
-  - FR-007
-  - FR-022
-  - FR-023
-  - FR-024
-  - NFR-006
-  - NFR-009
-  - NFR-010
-  - NFR-011
-  - NFR-012
-  - C-003
-subtasks: ["T026", "T027", "T028", "T029", "T030"]
-owned_files:
-  - "replication.go"
-  - "quarantine.go"
-  - "shallow.go"
-  - "commands.go"
-  - "memory_replication_test.go"
-authoritative_surface: "replication.go"
+- FR-006
+- FR-007
+- FR-022
+- FR-023
+- FR-024
+- NFR-006
+- NFR-009
+- NFR-010
+- NFR-011
+- NFR-012
+- C-003
+planning_base_branch: feat/agent-memory-protocol
+merge_target_branch: feat/agent-memory-protocol
+branch_strategy: Planning artifacts for this mission were generated on feat/agent-memory-protocol. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/agent-memory-protocol unless the human explicitly redirects the landing branch.
+subtasks:
+- T026
+- T027
+- T028
+- T029
+- T030
+history: []
+agent_profile: implementer-ivan
+authoritative_surface: replication.go
 create_intent:
-  - "memory_replication_test.go"
-execution_mode: "code_change"
-agent_profile: "implementer-ivan"
-role: "implementer"
-agent: "codex"
-model: ""
+- memory_replication_test.go
+execution_mode: code_change
+model: ''
+owned_files:
+- replication.go
+- quarantine.go
+- shallow.go
+- commands.go
+- memory_replication_test.go
+role: implementer
+tags: []
+tracker_refs: []
 ---
 
 # Work Package Prompt: WP06 – Selected Memory Replication and Recovery
