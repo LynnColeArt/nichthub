@@ -38,7 +38,12 @@ func proposalHead(id string) (string, bool, error) {
 	fields := strings.Fields(out)
 	for index := 0; index+1 < len(fields); index += 2 {
 		ref, object := fields[index], fields[index+1]
-		if ref != "refs/nh/proposals/"+suffix && !strings.HasSuffix(ref, "/proposals/"+suffix) {
+		matched := ref == "refs/nh/proposals/"+suffix
+		if !matched {
+			_, acceptedID, ok := parseAcceptedProposalRef(ref)
+			matched = ok && acceptedID == id
+		}
+		if !matched {
 			continue
 		}
 		if found != "" && found != object {
@@ -171,11 +176,22 @@ func nextEvent(identity *Identity, kind string) (Event, error) {
 }
 
 func loadStoredEvent(commit string) (*StoredEvent, error) {
-	payload, err := gitOutput("show", commit+":event.json")
+	gitDir, err := requireGitRepository()
 	if err != nil {
 		return nil, err
 	}
-	signatureEncoded, err := gitOutput("show", commit+":signature")
+	if err := replicationPendingError(gitDir, commit); err != nil {
+		return nil, err
+	}
+	return loadStoredEventAt("", commit)
+}
+
+func loadStoredEventAt(gitDir, commit string) (*StoredEvent, error) {
+	payload, err := gitOutputAt(gitDir, "show", commit+":event.json")
+	if err != nil {
+		return nil, err
+	}
+	signatureEncoded, err := gitOutputAt(gitDir, "show", commit+":signature")
 	if err != nil {
 		return nil, err
 	}
@@ -189,7 +205,7 @@ func loadStoredEvent(commit string) (*StoredEvent, error) {
 	}
 	attachments := make(map[string][]byte)
 	if event.Kind == "run.result" {
-		log, err := gitOutput("show", commit+":log.txt")
+		log, err := gitOutputAt(gitDir, "show", commit+":log.txt")
 		if err != nil {
 			return nil, fmt.Errorf("run result %s has no log attachment", shortID(id))
 		}
@@ -199,6 +215,28 @@ func loadStoredEvent(commit string) (*StoredEvent, error) {
 		attachments["log.txt"] = log
 	}
 	return &StoredEvent{ID: id, Commit: commit, Event: event, Payload: payload, Signature: signature, Attachments: attachments}, nil
+}
+
+func loadActorEventsAt(gitDir, head string) ([]StoredEvent, error) {
+	chain, err := gitTextAt(gitDir, "rev-list", "--reverse", head)
+	if err != nil {
+		return nil, err
+	}
+	commits := strings.Fields(chain)
+	events := make([]StoredEvent, 0, len(commits))
+	for _, commit := range commits {
+		var stored *StoredEvent
+		if gitDir == "" {
+			stored, err = loadStoredEvent(commit)
+		} else {
+			stored, err = loadStoredEventAt(gitDir, commit)
+		}
+		if err != nil {
+			return nil, err
+		}
+		events = append(events, *stored)
+	}
+	return events, nil
 }
 
 func collectEvents() ([]StoredEvent, error) {
@@ -214,7 +252,12 @@ func collectEvents() ([]StoredEvent, error) {
 	fields := strings.Fields(refOutput)
 	for index := 0; index+1 < len(fields); index += 2 {
 		ref, head := fields[index], fields[index+1]
-		if !strings.HasPrefix(ref, "refs/nh/actors/") && !strings.Contains(ref, "/actors/") {
+		if strings.HasPrefix(ref, "refs/nh/actors/") {
+			actor := strings.TrimPrefix(ref, "refs/nh/actors/")
+			if !validActorFingerprint(actor) {
+				return nil, fmt.Errorf("invalid local actor ref %s", ref)
+			}
+		} else if _, _, ok := parseAcceptedActorRef(ref); !ok {
 			continue
 		}
 		chain, err := gitText("rev-list", "--reverse", head)
@@ -296,15 +339,36 @@ func validateEventRelationships(events []StoredEvent) error {
 			}
 		case "proposal.merged":
 			proposal, exists := byID[event.Subject]
-			if !exists || !isProposalKind(proposal.Event.Kind) || event.Head != proposal.Event.Head {
+			if !exists {
 				return fmt.Errorf("merge %s does not match an available proposal", shortID(stored.ID))
+			}
+			if err := validateProposalMergeBinding(stored, proposal); err != nil {
+				return err
 			}
 			if err := validateMergeEvent(stored, proposal, byID); err != nil {
 				return err
 			}
+		case "identity.accept":
+			authorization, exists := byID[event.Subject]
+			if !exists {
+				continue
+			}
+			if authorization.Event.Kind != "identity.authorize" {
+				return fmt.Errorf("identity acceptance %s does not reference an authorization", shortID(stored.ID))
+			}
+			if event.Actor != authorization.Event.TargetActor || event.PublicKey != authorization.Event.TargetKey {
+				return fmt.Errorf("identity acceptance %s is not signed by the authorization target", shortID(stored.ID))
+			}
 		}
 	}
 	return validateRevisionGraph(events, byID)
+}
+
+func validateProposalMergeBinding(merge, proposal StoredEvent) error {
+	if !isProposalKind(proposal.Event.Kind) || merge.Event.Subject != proposal.ID || merge.Event.Head != proposal.Event.Head {
+		return fmt.Errorf("merge %s does not match proposal %s immutable head %s", merge.ID, proposal.ID, proposal.Event.Head)
+	}
+	return nil
 }
 
 func validateRevisionGraph(events []StoredEvent, byID map[string]StoredEvent) error {

@@ -1,50 +1,81 @@
 # Nichthub protocol v0 experiment
 
-This document records the format implemented by the initial prototype. It is a
-testable sketch, not a compatibility promise.
+This document records the format implemented by the operational alpha. It is a
+testable sketch, not a compatibility promise. Existing version-0 event payloads
+and event IDs were not changed when identity continuity was added.
 
-## Identity
+## Actor identity
 
-An actor owns an Ed25519 key pair. Its actor identifier is the lowercase hex
-SHA-256 digest of the 32-byte public key:
+An actor is exactly one Ed25519 key pair. Its identifier is the lowercase
+hexadecimal SHA-256 digest of the 32-byte public key:
 
 ```text
 actor = hex(sha256(ed25519_public_key))
 ```
 
-The prototype includes the raw-base64 public key in every event. A future
-version may replace this repetition with identity events or key documents.
+Each actor has one append-only event chain. A device group or key lineage is a
+projection over distinct actors; it is never a shared actor secret. The
+raw-base64 public key remains in every event so each event can be verified from
+its own signed bytes.
 
-## Event payload
+## Event payload and identity
 
-An event is UTF-8 JSON produced without insignificant whitespace. Version 0
-uses this fixed field order:
+An event is UTF-8 JSON emitted without insignificant whitespace. The complete
+version-0 field order is:
 
 ```json
 {
   "protocol": "nh/0",
   "kind": "issue.open",
-  "actor": "<public-key fingerprint>",
+  "actor": "<full-public-key-fingerprint>",
   "actorName": "Alice",
-  "publicKey": "<raw-base64 Ed25519 public key>",
+  "publicKey": "<raw-base64-Ed25519-public-key>",
   "sequence": 1,
   "timestamp": "2026-08-29T12:00:00Z",
+  "previous": "<full-previous-event-id>",
+  "subject": "<full-subject-event-id>",
+  "relationship": "device",
+  "targetActor": "<full-target-actor-fingerprint>",
+  "targetKey": "<raw-base64-target-public-key>",
   "title": "An issue title",
-  "body": "Optional body"
+  "body": "Optional body",
+  "base": "<full-Git-commit-id>",
+  "head": "<full-Git-commit-id>",
+  "verdict": "approve",
+  "pipeline": "test",
+  "definition": "<full-pipeline-digest>",
+  "commit": "<full-Git-commit-id>",
+  "outcome": "passed",
+  "exitCode": 0,
+  "durationMs": 1,
+  "log": "<full-log-digest>",
+  "backend": "sandbox",
+  "platform": "linux/amd64",
+  "runner": "nichthub/0",
+  "policy": "<full-policy-digest>",
+  "evidence": ["<full-evidence-event-id>"]
 }
 ```
 
-Optional empty fields are omitted. `previous` identifies the preceding event
-from the same actor. `subject` identifies the event that a comment or other
-dependent event concerns. Proposal events add `base` and `head` Git commit
-object IDs. A `proposal.revise` event also uses `subject` for the exact
-predecessor proposal and may carry a `body`; its title is inherited rather
-than repeated. Review events add a `verdict` of `approve` or `request-changes`.
-Run events use `pipeline`, `definition`, `commit`, `outcome`, `exitCode`,
-`durationMs`, `log`, `backend`, `platform`, and `runner` as described below.
-Governance events use `policy` and an ordered set of `evidence` event IDs.
+This is a field inventory, not a valid single event: fields unused by an event
+kind are omitted. `previous` identifies the preceding event in the same actor
+chain. `subject` identifies the exact event on which a dependent fact relies.
+Optional string, integer-zero, and empty-list fields are omitted by the current
+encoder.
 
-The implemented event kinds are:
+The event identifier is independent of Git's configured object-hash format:
+
+```text
+event_id = "sha256:" + hex(sha256(exact_event_payload_bytes))
+```
+
+The signature is Ed25519 over those exact payload bytes. Verification does not
+reserialize JSON. Every accepted event must have protocol `nh/0`, a positive
+sequence, a valid RFC 3339 timestamp, a public key whose fingerprint equals
+`actor`, and a valid signature. Full event IDs have the form
+`sha256:<64-lowercase-hex>`.
+
+The implemented kinds are:
 
 ```text
 issue.open
@@ -56,154 +87,162 @@ run.request
 run.result
 proposal.decision
 proposal.merged
+identity.authorize
+identity.accept
 ```
 
-The event identifier is independent of Git's configured object hash:
+## Identity continuity events
 
-```text
-event_id = "sha256:" + hex(sha256(exact_event_payload_bytes))
+`identity.authorize` adds exactly these event-specific fields:
+
+```json
+{
+  "relationship": "device",
+  "targetActor": "<full-target-actor-fingerprint>",
+  "targetKey": "<raw-base64-target-public-key>"
+}
 ```
 
-The signature is Ed25519 over the exact event payload bytes. Verification does
-not reserialize the JSON.
+`relationship` is exactly `device` or `successor`. `targetActor` must be a full
+64-hex fingerprint, must equal the fingerprint derived from `targetKey`, and
+must differ from the signer. `body` may carry an explanation. Its ordinary
+`previous` field is present unless it is the signer's first event.
 
-### Proposal revisions
+`identity.accept` uses `subject` for the full authorization event ID. Its
+signer and public key must exactly equal that authorization's target actor and
+key. Its ordinary `previous` field is present unless it is the target actor's
+first event.
 
-`proposal.revise` is an immutable signed candidate with this event-specific
-shape:
+The deterministic projection applies the following rules over verified facts:
+
+- authorization without a matching acceptance is `pending`;
+- one or more matching acceptances produce one accepted edge; duplicate exact
+  claims remain inspectable but add no authority;
+- an accepted `device` edge keeps both actors active;
+- exactly one accepted acyclic `successor` edge retires the predecessor in the
+  identity projection;
+- multiple accepted outgoing successors are `competing-successors`;
+- accepted successor cycles are `successor-cycle` conflicts;
+- an acceptance whose authorization is absent is reported as a missing fact;
+- a signer/key mismatch is a conflict, never a relationship;
+- timestamps and cross-actor delivery order never pick a winner.
+
+Edges, actors, conflicts, acceptance IDs, and event IDs are sorted for stable
+inspection. Identity projection is descriptive only. It does not edit policy
+and does not grant a maintainer, reviewer, runner, or decision role.
+
+## Proposal candidates and revisions
+
+`proposal.open` signs a title and distinct `base`/`head` Git commit IDs.
+`proposal.revise` is a new immutable candidate and signs:
 
 ```text
-subject   full event ID of the exact predecessor proposal
-base      resolved Git commit object ID used as the revised diff base
-head      resolved Git commit object ID containing the revised code
-body      optional explanation of the revision
+subject   full event ID of the exact predecessor candidate
+base      full resolved Git commit used as the revised diff base
+head      full resolved Git commit containing the revised code
+body      optional explanation
 title     omitted; inherited from the lineage root
 ```
 
 The predecessor must be an available `proposal.open` or `proposal.revise`
-event, and the revision must be signed by that predecessor's author. Base and
-head must be distinct commits. Clients reject missing predecessors, author
-mismatches, and lineage cycles. These rules are exercised by
-`TestProposalRevisionSignedRoundTrip`, `TestProposalRevisionContentValidation`,
-`TestProposalRevisionRelationships`, and
-`TestProposalRevisionRelationshipRejections`.
+event, and the same actor must sign both. Base and head are distinct commits.
+Missing predecessors, actor mismatches, and cycles fail closed.
 
-One predecessor may have multiple successor revisions. Successor IDs are
-sorted for deterministic projection, but no timestamp, delivery order, or
-position in the author's chain establishes a global "latest" winner. The actor
-chain remains single-writer: serial sibling publication is supported, while
-disconnected devices concurrently appending with the same private key are not.
-`TestProposalRevisionSyncAndConvergence` presents the same verified facts in
-opposite orders and checks identical sibling, superseded, closed, and merged
-lineage state.
+One predecessor may have multiple successors. IDs are sorted for deterministic
+projection, but no timestamp, delivery order, or actor-chain position creates a
+global latest winner. Evidence always binds one exact candidate; evidence for
+a predecessor or sibling cannot qualify a revision.
 
-## Git representation
+## Git representation and refs
 
-Every event is represented by a Git commit whose tree contains:
+Every event is a Git commit whose tree contains:
 
 ```text
 event.json    exact signed payload bytes
 signature     raw-base64 Ed25519 signature
 ```
 
-A `run.result` tree additionally contains `log.txt`. Its exact bytes hash to
-the signed `log` event field. Therefore logs travel with the runner's actor
-history and can be verified without trusting the remote.
+A `run.result` tree also contains `log.txt`; the exact log bytes hash to the
+signed `log` field. No other tree entry is accepted. The commit parent is the
+preceding event commit for that actor. The signed `previous` event ID provides
+an independent protocol chain.
 
-The commit's parent is the preceding commit in that actor's chain. Keeping the
-relationship in the Git commit graph makes all earlier events reachable during
-fetch and garbage collection. The signed `previous` field independently links
-the protocol-level event IDs.
-
-An actor publishes the head of its chain at:
+Public roots are:
 
 ```text
-refs/nh/actors/<actor>
+refs/nh/actors/<full-actor-fingerprint>
+refs/nh/proposals/<candidate-event-sha256-without-prefix>
 ```
 
-A proposal or proposal revision also makes its signed `head` commit reachable
-at an immutable ref derived from that candidate's event ID:
+The candidate ref points to the exact signed `head` commit, making the proposed
+code reachable for transport and garbage collection. A mismatch fails closed.
+
+Accepted remote-tracking roots are local:
 
 ```text
-refs/nh/proposals/<event SHA-256 without the "sha256:" prefix>
+refs/nh/remotes/<remote>/actors/<full-actor-fingerprint>
+refs/nh/remotes/<remote>/proposals/<candidate-event-sha256-without-prefix>
 ```
 
-This separate ref is necessary because mentioning a Git object ID inside event
-JSON does not make that object reachable to Git's fetch or garbage-collection
-machinery. A reviewer must verify that the exact candidate ref points to the
-`head` recorded in its signed event before reviewing it. Conflicting local and
-fetched refs, or a ref whose object differs from the signed head, fail closed.
+Actor chains begin at sequence 1, increase by one, and match both Git parents
+and signed `previous` IDs. Different events at the same actor sequence are a
+fork and are rejected by the current projection.
 
-Fetched refs are stored locally at:
+## Runs and governance events
 
-```text
-refs/nh/remotes/<remote>/actors/<actor>
-refs/nh/remotes/<remote>/proposals/<proposal>
-```
+A `run.request` references a candidate through `subject` and signs the
+repository-local pipeline name, SHA-256 ID of the exact pipeline JSON bytes,
+and proposed Git head. A `run.result` references the request and repeats all
+three bindings. It also signs `passed` or `failed`, exit code, duration, exact
+log digest, backend, platform, and runner. Any mismatch is rejected.
 
-Each actor chain must begin at sequence 1, increase by one, and refer to the
-previous event ID. Two different events at the same actor sequence constitute
-a fork and are rejected by the current projection.
+These events are attestations. Signatures protect attribution and contents;
+they do not prove honest execution. The exact base policy chooses which actors'
+claims count.
 
-## Run requests and results
-
-A `run.request` references a proposal through `subject` and binds:
-
-```text
-pipeline     repository-local pipeline name
-definition   SHA-256 ID of the exact pipeline JSON bytes
-commit       proposed Git head commit
-```
-
-A `run.result` references the request through `subject` and repeats all three
-bindings. Clients reject a result if any repeated value differs from the signed
-request. The result also records `passed` or `failed`, its exit code, duration,
-the SHA-256 ID of its attached log, and signed claims about its backend,
-platform, and runner implementation.
-
-These events are attestations, not proofs of honest execution. A signature says
-which runner made the claim and protects its contents. Project policy decides
-which runner identities and execution environments count.
-
-Reviews, run requests, run results, decisions, and merge facts always reference
-one exact proposal event ID. Evidence for a predecessor or sibling cannot
-qualify a revision, even when the candidates share code or a lineage root.
-`TestRevisionEvidenceAndLineageGovernance` covers this isolation.
-
-## Governance events
-
-A `proposal.decision` references a proposal, the SHA-256 ID of the exact base
-policy bytes, and an `accept` or `reject` verdict. Accept decisions include the
-signed review and run-result event IDs that satisfy the policy. Rejections
+A `proposal.decision` references one candidate, the SHA-256 ID of its exact
+base policy bytes, and an `accept` or `reject` verdict. Accept decisions include
+the exact review and run-result event IDs that satisfy policy. Rejections
 require an explanation.
 
-A `proposal.merged` event binds the proposal, original proposed head, resulting
-Git commit, base policy digest, and acceptance-decision IDs. It is emitted only
-after Git creates the merge commit.
+A `proposal.merged` event binds the candidate, proposed head, resulting Git
+commit, base-policy digest, and acceptance-decision IDs. It is emitted after
+Git creates the merge commit; branch publication remains a separate ordinary
+Git action.
 
 ## Synchronization
 
-For remote `origin`, the fetch refspec is:
+`nh replication select` records full per-remote actor/candidate selectors and
+positive budgets below `.git/nh/`. A saved selection is authoritative. With no
+saved selection, version 0 uses bounded compatibility-all: it enumerates only
+advertised `refs/nh/actors/*` and `refs/nh/proposals/*`, then applies the same
+quarantine, budgets, validation, and promotion transaction.
 
-```text
-+refs/nh/actors/*:refs/nh/remotes/origin/actors/*
-+refs/nh/proposals/*:refs/nh/remotes/origin/proposals/*
-```
+Each selected ref is fetched with its own exact refspec into a generated bare
+quarantine repository. It is measured, structurally and cryptographically
+validated, and checked for exact relationships before objects are copied and
+accepted refs are atomically updated. Invalid, over-budget, or
+dependency-missing selections do not become accepted projection roots.
+Standard Git may download a selected pack before measurement, so the budgets
+are hard before promotion and retention, not portable pre-download network
+quotas. [Replication v0](replication-v0.md) defines the transaction and shallow
+recovery boundary in detail.
 
-The client pushes its current identity's actor ref and locally created proposal
-refs. Revisions use the existing proposal wildcard; they add no ref namespace
-or refspec. `TestProposalRevisionSyncAndConvergence` proves the signed event and
-exact code commit cross a real bare Git remote and remain usable for review.
-No server-side Nichthub process participates. Old `nh/0` clients fail closed on
-the unknown `proposal.revise` kind; new clients continue to read histories that
-contain no revisions with their original list, show, review, and sync behavior.
+Publication uses ordinary explicit Git pushes of local actor and candidate
+refs. `nh sync` never publishes the repository's primary branch; use a
+separate explicit `git push` for that outcome.
 
-## Known unanswered questions
+## Known limits
 
-- Which hosted Git services accept and faithfully retain the custom ref space?
-- How should one identity safely append from multiple devices?
-- How are key rotation and identity recovery expressed?
-- How do clients limit spam and resource exhaustion before fetching objects?
-- How should deletion requests coexist with immutable replicated history?
-- Which JSON canonicalization rules should a stable cross-language version use?
-- How should extensions be negotiated without fragmenting projections?
+- One actor remains single-writer; disconnected concurrent writers sharing a
+  private key are unsupported.
+- Planned rotation requires the predecessor key. Lost-key, compromise, social,
+  and organizational recovery are not implemented.
+- Continuity and selection never confer policy authority.
+- There is no portable hard pre-download byte quota, moderation network,
+  selective global deletion, redaction guarantee, or global erasure of
+  already replicated immutable facts.
+- JSON canonicalization and extension negotiation are not stable
+  cross-language contracts yet.
+- Hosted ref retention, large-scale behavior, and providers not listed in
+  [host compatibility](host-compatibility.md) remain unproven.

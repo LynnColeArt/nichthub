@@ -19,6 +19,12 @@ func cmdProposal(args []string) error {
 		if len(args) != 1 {
 			return usageError("usage: nh proposal list")
 		}
+		if err := prepareShallowVerification(shallowVerificationScope{Operation: "proposal list"}); err != nil {
+			return err
+		}
+		if err := guardShallowEventClosure("proposal list"); err != nil {
+			return err
+		}
 		return cmdProposalList()
 	case "show":
 		if len(args) != 2 {
@@ -50,16 +56,27 @@ func cmdProposalRevise(args []string) error {
 	if flags.NArg() != 0 || *baseRevision == "" || *headRevision == "" {
 		return usageError("usage: nh proposal revise PREDECESSOR --base REV --head REV [--body TEXT]")
 	}
-	base, err := resolveCommit(*baseRevision)
+	if err := prepareShallowVerification(shallowVerificationScope{
+		Operation: "proposal revision", Subject: predecessorQuery, Base: *baseRevision, Head: *headRevision,
+	}); err != nil {
+		return err
+	}
+	if err := guardShallowEventClosure("proposal revision"); err != nil {
+		return err
+	}
+	base, err := resolveCommitDependency("proposal revision", shallowBaseCommit, *baseRevision, "", "")
 	if err != nil {
 		return fmt.Errorf("resolve base: %w", err)
 	}
-	head, err := resolveCommit(*headRevision)
+	head, err := resolveCommitDependency("proposal revision", shallowProposalCodeRef, *headRevision, "", "")
 	if err != nil {
 		return fmt.Errorf("resolve head: %w", err)
 	}
 	if base == head {
 		return fmt.Errorf("proposal revision base and head resolve to the same commit")
+	}
+	if err := guardCandidateCreationDependencies("proposal revision", base, head); err != nil {
+		return err
 	}
 	events, err := collectEvents()
 	if err != nil {
@@ -123,16 +140,31 @@ func cmdProposalOpen(args []string) error {
 	if *baseRevision == "" || *headRevision == "" || title == "" {
 		return usageError("usage: nh proposal open --base REV --head REV [--body TEXT] TITLE")
 	}
-	base, err := resolveCommit(*baseRevision)
+	if err := prepareShallowVerification(shallowVerificationScope{
+		Operation: "proposal open", Base: *baseRevision, Head: *headRevision,
+	}); err != nil {
+		return err
+	}
+	if err := guardShallowEventClosure("proposal open"); err != nil {
+		return err
+	}
+	base, err := resolveCommitDependency("proposal open", shallowBaseCommit, *baseRevision, "", "")
 	if err != nil {
 		return fmt.Errorf("resolve base: %w", err)
 	}
-	head, err := resolveCommit(*headRevision)
+	head, err := resolveCommitDependency("proposal open", shallowProposalCodeRef, *headRevision, "", "")
 	if err != nil {
 		return fmt.Errorf("resolve head: %w", err)
 	}
 	if base == head {
 		return fmt.Errorf("proposal base and head resolve to the same commit")
+	}
+	if err := guardCandidateCreationDependencies("proposal open", base, head); err != nil {
+		return err
+	}
+	policyDiagnostic, err := policyAmendmentDiagnostic(base, head)
+	if err != nil {
+		return fmt.Errorf("inspect policy amendment: %w", err)
 	}
 	identity, err := loadIdentity()
 	if err != nil {
@@ -155,6 +187,9 @@ func cmdProposalOpen(args []string) error {
 	}
 	fmt.Printf("Opened proposal %s: %s\n", shortID(stored.ID), oneLine(title))
 	fmt.Printf("Code: %s..%s\n", shortOID(base), shortOID(head))
+	if policyDiagnostic != "" {
+		fmt.Println(policyDiagnostic)
+	}
 	return nil
 }
 
@@ -256,11 +291,17 @@ func cmdProposalList() error {
 }
 
 func cmdProposalShow(query string) error {
+	if err := prepareShallowVerification(shallowVerificationScope{Operation: "proposal show", Subject: query}); err != nil {
+		return err
+	}
+	if err := guardShallowEventClosure("proposal show"); err != nil {
+		return err
+	}
 	events, err := collectEvents()
 	if err != nil {
 		return err
 	}
-	proposal, err := resolveEvent(events, query)
+	proposal, err := resolveEventDependency("proposal show", query, shallowCandidateEvent, events)
 	if err != nil {
 		return err
 	}
@@ -382,16 +423,25 @@ func cmdReview(args []string) error {
 	if flags.NArg() != 0 || *approve == *requestChanges {
 		return usageError("choose exactly one of --approve or --request-changes")
 	}
+	if err := prepareShallowVerification(shallowVerificationScope{Operation: "proposal review", Subject: proposalQuery}); err != nil {
+		return err
+	}
+	if err := guardShallowEventClosure("proposal review"); err != nil {
+		return err
+	}
 	events, err := collectEvents()
 	if err != nil {
 		return err
 	}
-	proposal, err := resolveEvent(events, proposalQuery)
+	proposal, err := resolveEventDependency("proposal review", proposalQuery, shallowCandidateEvent, events)
 	if err != nil {
 		return err
 	}
 	if !isProposalKind(proposal.Event.Kind) {
 		return fmt.Errorf("%s is not a proposal", shortID(proposal.ID))
+	}
+	if err := guardProposalDependencies("proposal review", proposal, events); err != nil {
+		return err
 	}
 	head, exists, err := proposalHead(proposal.ID)
 	if err != nil {

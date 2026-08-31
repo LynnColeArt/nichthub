@@ -34,17 +34,25 @@ func cmdInit(args []string) error {
 }
 
 func cmdIdentity(args []string) error {
-	if len(args) != 1 || args[0] != "show" {
-		return usageError("usage: nh identity show")
+	if len(args) == 0 {
+		return usageError("usage: nh identity <show|list|public|authorize|accept|rotate>")
 	}
-	identity, err := loadIdentity()
-	if err != nil {
-		return err
+	switch args[0] {
+	case "show":
+		return cmdIdentityShow(args[1:])
+	case "list":
+		return cmdIdentityList(args[1:])
+	case "public":
+		return cmdIdentityPublic(args[1:])
+	case "authorize":
+		return cmdIdentityAuthorize(args[1:])
+	case "accept":
+		return cmdIdentityAccept(args[1:])
+	case "rotate":
+		return cmdIdentityRotate(args[1:])
+	default:
+		return fmt.Errorf("unknown identity command %q", args[0])
 	}
-	fmt.Printf("Name:   %s\n", oneLine(identity.Name))
-	fmt.Printf("Actor:  %s\n", identity.Actor)
-	fmt.Printf("Ref:    %s\n", actorRef(identity.Actor))
-	return nil
 }
 
 func cmdIssue(args []string) error {
@@ -196,59 +204,102 @@ func cmdIssueShow(query string) error {
 }
 
 func cmdSync(args []string) error {
-	if len(args) > 1 {
-		return usageError("usage: nh sync [REMOTE]")
-	}
 	remote := "origin"
-	if len(args) == 1 {
-		remote = args[0]
+	remoteSet := false
+	recoverShallow := false
+	for _, argument := range args {
+		switch {
+		case argument == "--recover-shallow":
+			if recoverShallow {
+				return usageError("usage: nh sync [REMOTE] [--recover-shallow]")
+			}
+			recoverShallow = true
+		case strings.HasPrefix(argument, "-"):
+			return usageError("usage: nh sync [REMOTE] [--recover-shallow]")
+		case !remoteSet:
+			remote = argument
+			remoteSet = true
+		default:
+			return usageError("usage: nh sync [REMOTE] [--recover-shallow]")
+		}
+	}
+	if !validReplicationRemote(remote) {
+		return fmt.Errorf("invalid remote name %q", remote)
+	}
+	if recoverShallow {
+		return recoverSelectedShallow(remote)
 	}
 	if _, err := gitOutput("remote", "get-url", remote); err != nil {
 		return fmt.Errorf("remote %q does not exist", remote)
 	}
 
-	actorRefspec := "+refs/nh/actors/*:refs/nh/remotes/" + remote + "/actors/*"
-	proposalRefspec := "+refs/nh/proposals/*:refs/nh/remotes/" + remote + "/proposals/*"
-	if _, err := gitOutput("fetch", "--no-tags", remote, actorRefspec, proposalRefspec); err != nil {
-		return fmt.Errorf("fetch Nichthub refs: %w", err)
+	selection, _, err := loadReplicationSelection(remote)
+	if err != nil {
+		return err
+	}
+	result, importErr := runReplicationTransaction(selection)
+	for _, outcome := range result.Outcomes {
+		if outcome.Status == replicationPromoted {
+			fmt.Printf("Replication %s %s: promoted\n", outcome.Kind, outcome.ID)
+		} else {
+			fmt.Printf("Replication %s %s: failed (%s): %s\n", outcome.Kind, outcome.ID, outcome.Status, oneLine(outcome.Diagnostic))
+		}
 	}
 
-	identity, identityErr := loadIdentity()
-	if identityErr == nil {
-		ref := actorRef(identity.Actor)
-		if _, exists, err := refValue(ref); err != nil {
-			return err
-		} else if exists {
-			pushSpec := ref + ":" + ref
-			if _, err := gitOutput("push", remote, pushSpec); err != nil {
-				return fmt.Errorf("publish actor events: %w", err)
-			}
+	publicationErr := publishLocalFacts(remote)
+	events, collectErr := collectEvents()
+	if collectErr == nil {
+		fmt.Printf("Synchronized %d verified events with %s; promoted %d selections\n", len(events), remote, result.Promoted)
+	}
+	if importErr != nil {
+		if publicationErr != nil {
+			return fmt.Errorf("import phase failed: %v; publication phase failed: %w", importErr, publicationErr)
+		}
+		return fmt.Errorf("import phase failed (publication phase completed): %w", importErr)
+	}
+	if publicationErr != nil {
+		return fmt.Errorf("publication phase failed after replication: %w", publicationErr)
+	}
+	if collectErr != nil {
+		return collectErr
+	}
+	if result.hasFailures() {
+		return fmt.Errorf("replication import phase failed for one or more exact selections; independently valid selections were promoted")
+	}
+	return nil
+}
+
+func publishLocalFacts(remote string) error {
+	actorRefs, err := gitText("for-each-ref", "--format=%(refname)", "refs/nh/actors")
+	if err != nil {
+		return replicationPhaseError(remote, "actor publication inspection")
+	}
+	for _, ref := range strings.Fields(actorRefs) {
+		if _, err := gitOutput("push", remote, ref+":"+ref); err != nil {
+			return replicationPhaseError(remote, "actor publication")
 		}
 	}
 	proposalRefs, err := gitText("for-each-ref", "--format=%(refname)", "refs/nh/proposals")
 	if err != nil {
-		return err
+		return replicationPhaseError(remote, "proposal publication inspection")
 	}
 	for _, ref := range strings.Fields(proposalRefs) {
 		if _, err := gitOutput("push", remote, ref+":"+ref); err != nil {
-			return fmt.Errorf("publish proposal code: %w", err)
+			return replicationPhaseError(remote, "proposal publication")
 		}
 	}
-	if _, err := gitOutput("fetch", "--no-tags", remote, actorRefspec, proposalRefspec); err != nil {
-		return fmt.Errorf("refresh Nichthub refs: %w", err)
-	}
-
-	events, err := collectEvents()
-	if err != nil {
-		return err
-	}
-	fmt.Printf("Synchronized %d verified events with %s\n", len(events), remote)
 	return nil
 }
 
 func cmdLog(args []string) error {
 	if len(args) != 0 {
 		return usageError("usage: nh log")
+	}
+	if err := prepareShallowVerification(shallowVerificationScope{Operation: "log"}); err != nil {
+		return err
+	}
+	if err := guardShallowEventClosure("log"); err != nil {
+		return err
 	}
 	events, err := collectEvents()
 	if err != nil {
