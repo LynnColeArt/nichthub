@@ -66,6 +66,42 @@ type RecallRequestV0 struct {
 	IncludeUntrusted bool     `json:"includeUntrusted,omitempty"`
 }
 
+// recallRequestInputV0 tracks presence separately from value so the machine
+// interface can apply documented defaults only to omitted bounds. Explicit
+// zero, negative, or null values remain fail-closed.
+type recallRequestInputV0 struct {
+	Version          *int                `json:"version"`
+	AtCommit         string              `json:"atCommit"`
+	Subject          string              `json:"subject,omitempty"`
+	Path             string              `json:"path,omitempty"`
+	Topics           []string            `json:"topic,omitempty"`
+	Kinds            []string            `json:"kind,omitempty"`
+	Actors           []string            `json:"actor,omitempty"`
+	Lifecycles       []string            `json:"lifecycle,omitempty"`
+	Trust            []string            `json:"trust,omitempty"`
+	Query            string              `json:"query,omitempty"`
+	MaxRecords       optionalRecallIntV0 `json:"maxRecords"`
+	MaxContentBytes  optionalRecallIntV0 `json:"maxContentBytes"`
+	Cursor           string              `json:"cursor,omitempty"`
+	IncludeUntrusted bool                `json:"includeUntrusted,omitempty"`
+}
+
+type optionalRecallIntV0 struct {
+	Present bool
+	Value   int
+}
+
+func (value *optionalRecallIntV0) UnmarshalJSON(encoded []byte) error {
+	value.Present = true
+	if bytes.Equal(encoded, []byte("null")) {
+		return fmt.Errorf("must be an integer")
+	}
+	if err := json.Unmarshal(encoded, &value.Value); err != nil {
+		return fmt.Errorf("must be an integer")
+	}
+	return nil
+}
+
 type MemoryRecallEnvelopeV0 struct {
 	Version             int                   `json:"version"`
 	Warning             string                `json:"warning"`
@@ -93,14 +129,15 @@ type memoryCommandResultV0 struct {
 }
 
 type memoryShowEnvelopeV0 struct {
-	Version       int                          `json:"version"`
-	Warning       string                       `json:"warning"`
-	MemoryID      string                       `json:"memoryId"`
-	Commit        string                       `json:"commit"`
-	Envelope      memoryShowEnvelopeMetadataV0 `json:"envelope"`
-	Projection    *MemoryProjectionRow         `json:"projection,omitempty"`
-	Relationships []MemoryRelationship         `json:"relationships"`
-	Missing       []MemoryDependency           `json:"missingDependencies"`
+	Version          int                          `json:"version"`
+	Warning          string                       `json:"warning"`
+	MemoryID         string                       `json:"memoryId"`
+	Commit           string                       `json:"commit"`
+	Envelope         memoryShowEnvelopeMetadataV0 `json:"envelope"`
+	Projection       *MemoryProjectionRow         `json:"projection,omitempty"`
+	TargetProjection *MemoryProjectionRow         `json:"targetProjection,omitempty"`
+	Relationships    []MemoryRelationship         `json:"relationships"`
+	Missing          []MemoryDependency           `json:"missingDependencies"`
 }
 
 // memoryShowEnvelopeMetadataV0 preserves the exact signed identity and
@@ -119,6 +156,7 @@ type memoryShowEnvelopeMetadataV0 struct {
 	Target    string   `json:"target,omitempty"`
 	Reason    string   `json:"reason,omitempty"`
 	Evidence  []string `json:"evidence,omitempty"`
+	Signature string   `json:"signature"`
 }
 
 type stringListFlag []string
@@ -204,12 +242,30 @@ func decodeRecordRequestV0(reader io.Reader) (RecordRequestV0, error) {
 }
 
 func decodeRecallRequestV0(reader io.Reader) (RecallRequestV0, error) {
-	var request RecallRequestV0
-	if err := decodeStrictMemoryJSON(reader, &request); err != nil {
+	var input recallRequestInputV0
+	if err := decodeStrictMemoryJSON(reader, &input); err != nil {
 		return RecallRequestV0{}, fmt.Errorf("recall input: %w", err)
 	}
-	if request.Version == nil || *request.Version != memoryCommandVersion {
+	if input.Version == nil || *input.Version != memoryCommandVersion {
 		return RecallRequestV0{}, fmt.Errorf("recall input field version must be integer 0")
+	}
+	request := RecallRequestV0{
+		Version: input.Version, AtCommit: input.AtCommit, Subject: input.Subject, Path: input.Path,
+		Topics: input.Topics, Kinds: input.Kinds, Actors: input.Actors, Lifecycles: input.Lifecycles,
+		Trust: input.Trust, Query: input.Query, Cursor: input.Cursor, IncludeUntrusted: input.IncludeUntrusted,
+		MaxRecords: defaultRecallRecords, MaxContentBytes: defaultRecallContentBytes,
+	}
+	if input.MaxRecords.Present {
+		request.MaxRecords = input.MaxRecords.Value
+	}
+	if input.MaxContentBytes.Present {
+		request.MaxContentBytes = input.MaxContentBytes.Value
+	}
+	if request.MaxRecords <= 0 {
+		return RecallRequestV0{}, fmt.Errorf("recall input field maxRecords must be a positive integer")
+	}
+	if request.MaxContentBytes <= 0 {
+		return RecallRequestV0{}, fmt.Errorf("recall input field maxContentBytes must be a positive integer")
 	}
 	return request, nil
 }
@@ -718,9 +774,12 @@ func cmdMemoryShow(args []string) error {
 		Commit: stored.Commit, Envelope: memoryShowMetadata(stored.Envelope), Relationships: []MemoryRelationship{}, Missing: []MemoryDependency{},
 	}
 	for index := range projection.Rows {
-		if projection.Rows[index].ID == stored.ID {
-			row := projection.Rows[index]
+		row := projection.Rows[index]
+		if row.ID == stored.ID {
 			result.Projection = &row
+		}
+		if stored.Envelope.Target != "" && row.ID == stored.Envelope.Target {
+			result.TargetProjection = &row
 		}
 	}
 	for _, edge := range projection.Relationships {
@@ -729,7 +788,8 @@ func cmdMemoryShow(args []string) error {
 		}
 	}
 	for _, dependency := range projection.MissingDependencies {
-		if dependency.OwnerID == stored.ID || dependency.MissingID == stored.ID {
+		if dependency.OwnerID == stored.ID || dependency.MissingID == stored.ID ||
+			(stored.Envelope.Target != "" && (dependency.OwnerID == stored.Envelope.Target || dependency.MissingID == stored.Envelope.Target)) {
 			result.Missing = append(result.Missing, dependency)
 		}
 	}
@@ -738,12 +798,18 @@ func cmdMemoryShow(args []string) error {
 	}
 	fmt.Println(memoryRecallWarning)
 	fmt.Printf("Memory: %s\nCommit: %s\nActor: %s\nStream: %s\nOperation: %s\n", stored.ID, stored.Commit, stored.Envelope.Actor, stored.Envelope.Stream, stored.Envelope.Operation)
-	if result.Projection != nil {
-		row := result.Projection
-		fmt.Printf("Signature: %s\nLifecycle: %s\nApplicability: %s\nEvidence: %s\nTrust: %s\nContent digest: %s\nContent (inert): %s\n",
-			row.Signature, row.Lifecycle, row.Applicability, row.Evidence, row.Trust, row.ContentDigest, safeText(row.Data.Content))
-	}
+	fmt.Printf("Signature: %s\n", result.Envelope.Signature)
+	printMemoryShowProjection("Projection", result.Projection)
+	printMemoryShowProjection("Target projection", result.TargetProjection)
 	return nil
+}
+
+func printMemoryShowProjection(label string, row *MemoryProjectionRow) {
+	if row == nil {
+		return
+	}
+	fmt.Printf("%s: %s\nLifecycle: %s\nApplicability: %s\nEvidence: %s\nTrust: %s\nContent digest: %s\nContent (inert): %s\n",
+		label, row.ID, row.Lifecycle, row.Applicability, row.Evidence, row.Trust, row.ContentDigest, safeText(row.Data.Content))
 }
 
 func memoryShowMetadata(envelope MemoryEnvelope) memoryShowEnvelopeMetadataV0 {
@@ -751,7 +817,7 @@ func memoryShowMetadata(envelope MemoryEnvelope) memoryShowEnvelopeMetadataV0 {
 		Protocol: envelope.Protocol, Operation: envelope.Operation, Actor: envelope.Actor,
 		ActorName: envelope.ActorName, PublicKey: envelope.PublicKey, Stream: envelope.Stream,
 		Sequence: envelope.Sequence, Timestamp: envelope.Timestamp, Previous: envelope.Previous,
-		Target: envelope.Target, Reason: envelope.Reason, Evidence: append([]string(nil), envelope.Evidence...),
+		Target: envelope.Target, Reason: envelope.Reason, Evidence: append([]string(nil), envelope.Evidence...), Signature: "valid",
 	}
 }
 
@@ -950,6 +1016,15 @@ func memoryProjectionContextAt(commit, subject, path string) (MemoryProjectionCo
 		return MemoryProjectionContext{}, err
 	}
 	context := MemoryProjectionContext{AtCommit: resolved, Subject: subject, Path: path, Events: events}
+	_, exists, err := exactTreeEntry(resolved, ".nh/policy.json")
+	if err != nil {
+		return MemoryProjectionContext{}, fmt.Errorf("inspect memory policy at commit %s", resolved)
+	}
+	if !exists {
+		context.PolicyCommit = resolved
+		context.PolicyDigest = memoryID([]byte("nh-memory-policy-missing-v0"))
+		return context, nil
+	}
 	return LoadMemoryProjectionPolicy(resolved, context)
 }
 
@@ -974,6 +1049,18 @@ func buildMemoryRecallEnvelope(request RecallRequestV0, queryDigest string, rows
 	}
 	rows = append([]MemoryIndexRecordV0(nil), rows...)
 	sort.Slice(rows, func(i, j int) bool { return memoryIndexRecordLess(rows[i], rows[j]) })
+	// A record is atomic recall data. Reject an incapable byte budget before
+	// emitting any page so a later oversized match cannot create a partial
+	// traversal with an unrepresentable gap.
+	for _, row := range rows {
+		encodedContent, err := json.Marshal(row.Data.Content)
+		if err != nil {
+			return MemoryRecallEnvelopeV0{}, fmt.Errorf("encode inert memory content")
+		}
+		if len(encodedContent) > request.MaxContentBytes {
+			return MemoryRecallEnvelopeV0{}, fmt.Errorf("memory %s encoded content exceeds maxContentBytes; raise the explicit bound", row.ID)
+		}
+	}
 	start := 0
 	if request.Cursor != "" {
 		cursor, err := decodeMemoryRecallCursor(request.Cursor, queryDigest)
@@ -1006,9 +1093,6 @@ func buildMemoryRecallEnvelope(request RecallRequestV0, queryDigest string, rows
 			return MemoryRecallEnvelopeV0{}, fmt.Errorf("encode inert memory content")
 		}
 		if contentBytes+len(encodedContent) > request.MaxContentBytes {
-			if len(result.Memories) == 0 {
-				return MemoryRecallEnvelopeV0{}, fmt.Errorf("memory %s encoded content exceeds maxContentBytes; raise the explicit bound", row.ID)
-			}
 			break
 		}
 		contentBytes += len(encodedContent)
