@@ -439,3 +439,7 @@ indexes.
 Implementation command:
 
 `spec-kitty agent action implement WP06 --agent <name>`
+
+## Activity Log
+
+- 2026-08-31T05:16:58Z – codex – shell_pid=2156508 – Blocked moving to for_review: lane-hygiene guard detects committed kitty-specs inherited on lane-f versus feat/agent-memory-protocol; pre-review architectural gate authority tests.architectural is unavailable. Implementation commit 4e9b7a4 and all Go gates pass; no force or kitty-specs edit attempted.
