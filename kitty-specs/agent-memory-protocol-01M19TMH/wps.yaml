@@ -246,10 +246,6 @@ work_packages:
       - "docs/host-compatibility.md"
       - "docs/memory-v0.md"
       - "docs/memory-safety.md"
-      - "kitty-specs/agent-memory-protocol-01M19TMH/quickstart.md"
-      - "kitty-specs/agent-memory-protocol-01M19TMH/contracts/memory-wire-v0.md"
-      - "kitty-specs/agent-memory-protocol-01M19TMH/contracts/memory-cli-v0.md"
-      - "kitty-specs/agent-memory-protocol-01M19TMH/contracts/memory-replication-v0.md"
     requirement_refs:
       - FR-001
       - FR-005
