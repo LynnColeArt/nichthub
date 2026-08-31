@@ -1,11 +1,109 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
+
+func TestMemoryPolicyLegacyAndQualification(t *testing.T) {
+	alice := deterministicMemoryIdentity()
+	legacy := PolicyDocument{
+		Version: policyVersion, Maintainers: []string{alice.Actor},
+		Proposals: ProposalPolicy{RequiredAccepts: 1}, Pipelines: map[string]PipelinePolicy{},
+	}
+	encoded, err := json.Marshal(legacy)
+	if err != nil {
+		t.Fatal(err)
+	}
+	parsed, digest, err := parsePolicyBytes(encoded)
+	if err != nil || parsed.Memory != nil || digest != eventID(encoded) {
+		t.Fatalf("legacy parse = %#v, %q, %v", parsed, digest, err)
+	}
+	if got := classifyMemoryTrust(nil, alice.Actor, memoryKindDecision); got != memoryTrustPolicyMissing {
+		t.Fatalf("legacy trust = %q", got)
+	}
+
+	policy := &MemoryPolicy{TrustedActors: []string{alice.Actor}, TrustedKinds: []string{memoryKindDecision}}
+	for _, test := range []struct {
+		actor string
+		kind  string
+		want  string
+	}{
+		{alice.Actor, memoryKindDecision, memoryTrustQualified},
+		{strings.Repeat("a", 64), memoryKindDecision, memoryTrustActorUntrusted},
+		{alice.Actor, memoryKindAssumption, memoryTrustKindUntrusted},
+		{strings.Repeat("a", 64), memoryKindAssumption, memoryTrustActorUntrusted},
+	} {
+		if got := classifyMemoryTrust(policy, test.actor, test.kind); got != test.want {
+			t.Errorf("classifyMemoryTrust(%q, %q) = %q, want %q", test.actor, test.kind, got, test.want)
+		}
+	}
+}
+
+func TestMemoryPolicyValidation(t *testing.T) {
+	alice := deterministicMemoryIdentity()
+	base := PolicyDocument{
+		Version: policyVersion, Maintainers: []string{alice.Actor},
+		Proposals: ProposalPolicy{RequiredAccepts: 1}, Pipelines: map[string]PipelinePolicy{},
+		Memory: &MemoryPolicy{TrustedActors: []string{alice.Actor}, TrustedKinds: []string{memoryKindDecision}},
+	}
+	if err := validatePolicy(base); err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		name string
+		edit func(*PolicyDocument)
+		want string
+	}{
+		{"invalid actor", func(p *PolicyDocument) { p.Memory.TrustedActors = []string{"short"} }, "memory trustedActors contains invalid actor"},
+		{"duplicate actor", func(p *PolicyDocument) { p.Memory.TrustedActors = []string{alice.Actor, alice.Actor} }, "memory trustedActors contains duplicate actor"},
+		{"invalid kind", func(p *PolicyDocument) { p.Memory.TrustedKinds = []string{"wish"} }, "memory trustedKinds contains invalid kind"},
+		{"duplicate kind", func(p *PolicyDocument) { p.Memory.TrustedKinds = []string{memoryKindDecision, memoryKindDecision} }, "memory trustedKinds contains duplicate kind"},
+		{"unsorted actors", func(p *PolicyDocument) { p.Memory.TrustedActors = []string{strings.Repeat("f", 64), alice.Actor} }, "memory trustedActors must be sorted"},
+		{"unsorted kinds", func(p *PolicyDocument) { p.Memory.TrustedKinds = []string{memoryKindObservation, memoryKindDecision} }, "memory trustedKinds must be sorted"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			policy := base
+			memory := *base.Memory
+			memory.TrustedActors = append([]string(nil), base.Memory.TrustedActors...)
+			memory.TrustedKinds = append([]string(nil), base.Memory.TrustedKinds...)
+			policy.Memory = &memory
+			test.edit(&policy)
+			if err := validatePolicy(policy); err == nil || !strings.Contains(err.Error(), test.want) {
+				t.Fatalf("error = %v, want %q", err, test.want)
+			}
+		})
+	}
+}
+
+func TestMemoryPolicyStrictJSONAndExactBytes(t *testing.T) {
+	alice := deterministicMemoryIdentity()
+	policy := PolicyDocument{
+		Version: policyVersion, Maintainers: []string{alice.Actor},
+		Proposals: ProposalPolicy{RequiredAccepts: 1}, Pipelines: map[string]PipelinePolicy{},
+		Memory: &MemoryPolicy{TrustedActors: []string{}, TrustedKinds: []string{}},
+	}
+	encoded, err := json.Marshal(policy)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, digest, err := parsePolicyBytes(encoded); err != nil || digest != eventID(encoded) {
+		t.Fatalf("exact byte digest = %q, %v", digest, err)
+	}
+	unknown := bytes.Replace(encoded, []byte(`"trustedKinds":[]`), []byte(`"trustedKinds":[],"surprise":true`), 1)
+	if _, _, err := parsePolicyBytes(unknown); err == nil {
+		t.Fatal("accepted unknown memory policy field")
+	}
+	if _, _, err := parsePolicyBytes(append(encoded, []byte(` {}`)...)); err == nil {
+		t.Fatal("accepted trailing policy JSON")
+	}
+}
 
 func TestPolicyEvidenceDecisionAndMerge(t *testing.T) {
 	originalDirectory, err := os.Getwd()

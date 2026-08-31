@@ -1,0 +1,249 @@
+{
+  "mission_slug": "agent-memory-protocol-01M19TMH",
+  "mission_number": "",
+  "mission_type": "software-dev",
+  "overall_verdict": "pass",
+  "criteria": [
+    {
+      "criterion_id": "FR-001",
+      "description": "Verify FR-001 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP independent review approval; go test ./...; go test -race ./...",
+      "pass_fail": "pass",
+      "verified_by": "Codex",
+      "verified_at": "2026-08-31T18:22:10.571170+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-002",
+      "description": "Verify FR-002 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP independent review approval; go test ./...; go test -race ./...",
+      "pass_fail": "pass",
+      "verified_by": "Codex",
+      "verified_at": "2026-08-31T18:22:14.319486+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-003",
+      "description": "Verify FR-003 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP independent review approval; go test ./...; go test -race ./...",
+      "pass_fail": "pass",
+      "verified_by": "Codex",
+      "verified_at": "2026-08-31T18:22:18.000996+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-004",
+      "description": "Verify FR-004 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP independent review approval; go test ./...; go test -race ./...",
+      "pass_fail": "pass",
+      "verified_by": "Codex",
+      "verified_at": "2026-08-31T18:22:21.795493+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-005",
+      "description": "Verify FR-005 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP independent review approval; go test ./...; go test -race ./...",
+      "pass_fail": "pass",
+      "verified_by": "Codex",
+      "verified_at": "2026-08-31T18:22:25.451309+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-006",
+      "description": "Verify FR-006 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP independent review approval; go test ./...; go test -race ./...",
+      "pass_fail": "pass",
+      "verified_by": "Codex",
+      "verified_at": "2026-08-31T18:22:28.953554+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-007",
+      "description": "Verify FR-007 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP independent review approval; go test ./...; go test -race ./...",
+      "pass_fail": "pass",
+      "verified_by": "Codex",
+      "verified_at": "2026-08-31T18:22:31.821590+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-008",
+      "description": "Verify FR-008 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP independent review approval; go test ./...; go test -race ./...",
+      "pass_fail": "pass",
+      "verified_by": "Codex",
+      "verified_at": "2026-08-31T18:22:35.406516+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-009",
+      "description": "Verify FR-009 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP independent review approval; go test ./...; go test -race ./...",
+      "pass_fail": "pass",
+      "verified_by": "Codex",
+      "verified_at": "2026-08-31T18:22:39.056252+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-010",
+      "description": "Verify FR-010 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP independent review approval; go test ./...; go test -race ./...",
+      "pass_fail": "pass",
+      "verified_by": "Codex",
+      "verified_at": "2026-08-31T18:22:42.695446+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-011",
+      "description": "Verify FR-011 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP independent review approval; go test ./...; go test -race ./...",
+      "pass_fail": "pass",
+      "verified_by": "Codex",
+      "verified_at": "2026-08-31T18:22:46.291202+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-012",
+      "description": "Verify FR-012 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP independent review approval; go test ./...; go test -race ./...",
+      "pass_fail": "pass",
+      "verified_by": "Codex",
+      "verified_at": "2026-08-31T18:22:49.165231+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-013",
+      "description": "Verify FR-013 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP independent review approval; go test ./...; go test -race ./...",
+      "pass_fail": "pass",
+      "verified_by": "Codex",
+      "verified_at": "2026-08-31T18:22:52.096124+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-014",
+      "description": "Verify FR-014 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP independent review approval; go test ./...; go test -race ./...",
+      "pass_fail": "pass",
+      "verified_by": "Codex",
+      "verified_at": "2026-08-31T18:22:55.710246+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-015",
+      "description": "Verify FR-015 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP independent review approval; go test ./...; go test -race ./...",
+      "pass_fail": "pass",
+      "verified_by": "Codex",
+      "verified_at": "2026-08-31T18:22:59.346138+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-016",
+      "description": "Verify FR-016 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP independent review approval; go test ./...; go test -race ./...",
+      "pass_fail": "pass",
+      "verified_by": "Codex",
+      "verified_at": "2026-08-31T18:23:12.086462+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-017",
+      "description": "Verify FR-017 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP independent review approval; go test ./...; go test -race ./...",
+      "pass_fail": "pass",
+      "verified_by": "Codex",
+      "verified_at": "2026-08-31T18:23:15.038887+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-018",
+      "description": "Verify FR-018 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP independent review approval; go test ./...; go test -race ./...",
+      "pass_fail": "pass",
+      "verified_by": "Codex",
+      "verified_at": "2026-08-31T18:23:18.299502+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-019",
+      "description": "Verify FR-019 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP independent review approval; go test ./...; go test -race ./...",
+      "pass_fail": "pass",
+      "verified_by": "Codex",
+      "verified_at": "2026-08-31T18:23:21.193995+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-020",
+      "description": "Verify FR-020 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP independent review approval; go test ./...; go test -race ./...",
+      "pass_fail": "pass",
+      "verified_by": "Codex",
+      "verified_at": "2026-08-31T18:23:24.051744+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-021",
+      "description": "Verify FR-021 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP independent review approval; go test ./...; go test -race ./...",
+      "pass_fail": "pass",
+      "verified_by": "Codex",
+      "verified_at": "2026-08-31T18:23:27.684387+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-022",
+      "description": "Verify FR-022 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP independent review approval; go test ./...; go test -race ./...",
+      "pass_fail": "pass",
+      "verified_by": "Codex",
+      "verified_at": "2026-08-31T18:23:31.274690+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-023",
+      "description": "Verify FR-023 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP independent review approval; go test ./...; go test -race ./...",
+      "pass_fail": "pass",
+      "verified_by": "Codex",
+      "verified_at": "2026-08-31T18:23:34.139890+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-024",
+      "description": "Verify FR-024 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP independent review approval; go test ./...; go test -race ./...",
+      "pass_fail": "pass",
+      "verified_by": "Codex",
+      "verified_at": "2026-08-31T18:23:36.969968+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    }
+  ],
+  "negative_invariants": []
+}

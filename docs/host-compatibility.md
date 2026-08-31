@@ -7,9 +7,9 @@ that were not tested. Hosting UI/API state is not evidence.
 
 | Remote | Result | Observed |
 | --- | --- | --- |
-| Local bare Git repository | Actor/candidate refs, exact selected fetch, quarantine, budgets, and depth-limited reconstruction passed | 2026-08-30 |
+| Local bare Git repository | Actor/candidate/memory refs, exact selected fetch, quarantine, budgets, and fresh-clone reconstruction passed | 2026-08-31 |
 | GitHub.com private repository over HTTPS | Actor ref push, advertisement, and two-actor reconstruction passed | 2026-08-29 |
-| GitHub.com public repository over HTTPS | Two-stage actor/candidate publication, separate primary-branch advancement, exact selected fetch, quarantine, and identity-free depth-1 reconstruction passed | 2026-08-30 |
+| GitHub.com public repository over HTTPS | Actor/candidate/memory publication, exact selected quarantine fetch, and identity-free fresh-clone reconstruction passed | 2026-08-31 |
 | GitLab | Not tested | — |
 | Other hosted providers | Not tested | — |
 
@@ -28,6 +28,22 @@ fixtures directly establish:
   candidate, CI, review, decision, merge, and Git commit bindings;
 - selected recovery can obtain an exact missing predecessor while the
   repository remains shallow and without importing an unselected actor.
+
+On 2026-08-31, `TestOperationalAgentMemory` separately created two actors,
+recorded all six memory kinds, superseded and retracted exact records, added a
+cross-actor challenge, and published the two exact memory stream refs through
+`nh sync`. A credential-disabled fresh clone initially had no local or accepted
+memory refs, private identity, or index. After saving only those two full stream
+selectors, it synchronized through quarantine, rebuilt
+`.git/nh/memory/index-v0.json`, and recalled the same full IDs, ownership,
+anchors, lifecycle edges, evidence, trust classes, content digests, and inert
+handoff lists. Deleting and rebuilding the index produced byte-identical index
+and recall JSON. Three consecutive offline runs passed.
+
+That local-bare observation establishes ordinary Git transport and protocol
+behavior, not public-host policy or retention. Hostile memory containing shell-
+and tool-shaped prose, ANSI controls, newlines, and Unicode produced no marker
+effect and remained nested under the recall data boundary.
 
 The detailed run evidence and bounds are in
 [self-hosting-alpha.md](self-hosting-alpha.md).
@@ -92,6 +108,90 @@ no private keyring, legacy identity record, or local public actor ref.
 The complete event, policy, object, and commit record is in
 [the public proof record](self-hosting-alpha.md).
 
+## GitHub.com public agent-memory observation
+
+On 2026-08-31, the public endpoint
+`https://github.com/LynnColeArt/nichthub.git` was exercised using ordinary
+`git` and `nh` commands only. No provider API, UI state, Docker operation,
+service, model API, copied keyring, or copied index participated.
+
+At `2026-08-31T17:51:34Z`, `git ls-remote` showed `main` at
+`7e41574792be828ba507e5df7adda71662475483`, with no
+`proof/agent-memory-v0-20260831` branch and no advertised memory refs. The
+proof then pushed only the exact new branch and exact actor/memory refs. It did
+not force, delete, wildcard-push, tag, or update `main`. At
+`2026-08-31T17:55:59Z`, advertisement was:
+
+```text
+fc6e3fff308658f3c1e33ab819631d6001ddf9a5 refs/heads/proof/agent-memory-v0-20260831
+3f1257bd84ef354390b5f82d25c056663976bc3e refs/nh/actors/9584bdce9dcefc43a05c8dd34c77f4967419d610a28041e2da4b4fad33f726fc
+c7700147f216d7edd474b33364a6ea5415c965b5 refs/nh/actors/d91339c192742a9a7676ec2da81d8e6177dbe0b07058729e6c0674a7a20e01f1
+a0db69f5dbf77ecaa2f6d3a5ebe0f8e686369d51 refs/nh/memory/9584bdce9dcefc43a05c8dd34c77f4967419d610a28041e2da4b4fad33f726fc/52fa6c89cf8a92cc1be017bd1d49957f0ce0210f56386f7a57af7b9249add648
+a50f4a004dcd89858b599d9ed85df7ece72173a3 refs/nh/memory/d91339c192742a9a7676ec2da81d8e6177dbe0b07058729e6c0674a7a20e01f1/aaaaa298cb8ff0bb41a6e59c899fe64e0a6d0989921e2ace7b12359c0c8d77f7
+```
+
+The branch policy digest was
+`sha256:ff545e1bbe0e07176b6ee7639093f1143b17af4797dd3af165bf4d14c19d7804`.
+It qualified both exact actors and all six memory kinds. The author stream
+contained this decision and handoff:
+
+```text
+sha256:3579329703b5ee53d0c124e42fadcacafd9f74eb062f426c96f0ffedff211333 decision
+sha256:e6113e0985758ebaaa39f130df7b26f13913fee6bf732c5b034c0c1c8ae94e1f handoff
+```
+
+The successor stream contained challenge
+`sha256:f468dcea0749451404c3e21806e2cbddd438d8cf06c0c6408e7f3a94c18f3c7d`
+against that exact decision, with evidence bound to proof commit
+`fc6e3fff308658f3c1e33ab819631d6001ddf9a5`.
+
+Publication of each brand-new local stream completed before its first import
+snapshot knew the ref, so that first `nh sync` reported the exact new stream as
+`dependency-missing` while still advertising it. After `git ls-remote`
+confirmed the full ref and OID, an unchanged retry promoted every exact
+selection. No accepted ref was inferred from push output.
+
+A new `--single-branch` HTTPS clone ran with an empty isolated home,
+`GIT_CONFIG_NOSYSTEM=1`, terminal prompts and askpass disabled, token variables
+empty, and no SSH agent. Before selection it had no `refs/nh/*`, `.git/nh`
+identity, index, embedding, adapter, or Docker state. The verifier saved these
+full selectors with positive budgets:
+
+```sh
+nh replication select origin \
+  --actor 9584bdce9dcefc43a05c8dd34c77f4967419d610a28041e2da4b4fad33f726fc \
+  --actor d91339c192742a9a7676ec2da81d8e6177dbe0b07058729e6c0674a7a20e01f1 \
+  --memory sha256:52fa6c89cf8a92cc1be017bd1d49957f0ce0210f56386f7a57af7b9249add648 \
+  --memory sha256:aaaaa298cb8ff0bb41a6e59c899fe64e0a6d0989921e2ace7b12359c0c8d77f7 \
+  --max-events 10000 --max-objects 30000 \
+  --max-object-bytes 16777216 --max-attachment-bytes 1048576 \
+  --max-total-bytes 134217728
+nh sync origin
+nh memory index rebuild
+nh memory recall --at HEAD --json
+```
+
+All four selections reported `promoted`. Clone, synchronization, index build,
+and recall took 1.35 s, 2.70 s, 0.05 s, and 0.05 s respectively on the observed
+client. The index had mode `0600`, 5,805 bytes, source fingerprint
+`sha256:4203a45253c628959b593929bc17bec1f7a4f622c7a22d8a87566ced5cf0df47`,
+and file SHA-256
+`2b14b5c3d82aaa9f98589e00f6d65fc248c74444501860e5a86723acef6ef04c`.
+Deleting and rebuilding it produced the identical digest.
+
+Recall returned exactly two qualified, applicable, active, evidence-resolved,
+signature-valid records with query digest
+`sha256:3db4aec9870c5ea2b792b23153e2141e7f3e79cda88129f933276b89368f21a9`.
+The decision retained the full challenge ID, and the handoff retained all four
+inert lists. A record attempt exited 1 with `no identity`; the verifier did not
+gain either originating key.
+
+The proof establishes exact transport and reconstruction for these two actors,
+streams, branch bytes, client, endpoint, and observation time. It does not
+establish distinct humans, semantic truth, prompt or operational authority,
+permanent host retention, portable pre-download quotas, provider generality,
+moderation, redaction, deletion, or global erasure.
+
 ## Clone behavior
 
 An ordinary `git clone` and ordinary branch fetch do not import custom refs,
@@ -106,12 +206,14 @@ updated; verify both with ordinary Git:
 ```sh
 git ls-remote --symref origin HEAD
 git ls-remote origin 'refs/heads/main' 'refs/nh/actors/*' 'refs/nh/proposals/*'
+git ls-remote origin 'refs/nh/memory/*/*'
 ```
 
 ## Limits not established by these observations
 
 - GitHub Enterprise Server or organization-specific ref policies;
 - very large actor/candidate counts, histories, or packs;
+- very large memory-stream counts, histories, or packs;
 - provider garbage-collection and long-term custom-ref retention;
 - deletion, rollback, force-push, and global redaction behavior;
 - partial-clone filters;
