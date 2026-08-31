@@ -158,7 +158,7 @@
     },
     "WP06": {
       "actor": "user",
-      "agent": "codex",
+      "agent": null,
       "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
       "force_count": 2,
@@ -179,14 +179,14 @@
         "verdict": "changes_requested"
       },
       "role": "reviewer",
-      "shell_pid": 2156508,
-      "shell_pid_created_at": "1788012444.72",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T026": "done",
-        "T027": "done",
-        "T028": "done",
-        "T029": "done",
-        "T030": "done"
+        "T026": "planned",
+        "T027": "planned",
+        "T028": "planned",
+        "T029": "planned",
+        "T030": "planned"
       }
     },
     "WP07": {
