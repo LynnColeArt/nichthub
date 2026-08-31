@@ -126,6 +126,9 @@
       "last_event_id": "01M1B3ZYPP6Y824QQT00MCX6X3",
       "last_transition_at": "2026-08-31T05:17:08.694661+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for independent review; full/race/vet/build and 10k determinism/performance gates passed; architectural gate authority unavailable"
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 2156508,
