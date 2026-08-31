@@ -1,7 +1,7 @@
 {
-  "event_count": 2,
-  "last_event_id": "01M1AVFJ96DN37KQYC8CSEAK9E",
-  "materialized_at": "2026-08-31T02:48:23.078786+00:00",
+  "event_count": 3,
+  "last_event_id": "01M1AVFMGYD75K0ZSR1BCRY607",
+  "materialized_at": "2026-08-31T02:48:25.374408+00:00",
   "mission_number": "",
   "mission_slug": "agent-memory-protocol-01M19TMH",
   "mission_type": "software-dev",
@@ -14,7 +14,7 @@
     "for_review": 0,
     "in_progress": 0,
     "in_review": 0,
-    "planned": 2
+    "planned": 3
   },
   "work_packages": {
     "WP01": {
@@ -30,6 +30,13 @@
       "lane": "planned",
       "last_event_id": "01M1AVFJ96DN37KQYC8CSEAK9E",
       "last_transition_at": "2026-08-31T02:48:23.078786+00:00"
+    },
+    "WP03": {
+      "actor": "finalize-tasks",
+      "force_count": 0,
+      "lane": "planned",
+      "last_event_id": "01M1AVFMGYD75K0ZSR1BCRY607",
+      "last_transition_at": "2026-08-31T02:48:25.374408+00:00"
     }
   }
 }
