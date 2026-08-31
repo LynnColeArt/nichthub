@@ -157,7 +157,7 @@
     },
     "WP06": {
       "actor": "user",
-      "agent": "codex",
+      "agent": null,
       "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
       "force_count": 1,
@@ -169,6 +169,7 @@
         "Ready for independent review; focused/full/race/vet/build replication gates passed; architectural gate authority unavailable"
       ],
       "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "feedback_path": "/home/lynn/projects/nichthub/kitty-specs/agent-memory-protocol-01M19TMH/tasks/WP06-selected-memory-replication-and-recovery/review-cycle-1.md",
         "reference": "review-cycle://agent-memory-protocol-01M19TMH/WP06-selected-memory-replication-and-recovery/review-cycle-1.md",
@@ -176,14 +177,14 @@
         "verdict": "changes_requested"
       },
       "role": "reviewer",
-      "shell_pid": 2156508,
-      "shell_pid_created_at": "1788012444.72",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T026": "done",
-        "T027": "done",
-        "T028": "done",
-        "T029": "done",
-        "T030": "done"
+        "T026": "planned",
+        "T027": "planned",
+        "T028": "planned",
+        "T029": "planned",
+        "T030": "planned"
       }
     },
     "WP07": {
