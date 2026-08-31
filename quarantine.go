@@ -1414,9 +1414,8 @@ func classifyReplicationMemoryDependencies(selection ReplicationSelection, quara
 		outcome.MissingID = missing.MissingID
 		outcome.OwnerMemoryID = missing.OwnerID
 		outcome.OwnerStream = missing.Stream
-		outcome.RequiredRef = outcome.request.SourceRef
-		outcome.RequiredSelectors = memoryReplicationRequiredSelectors(selection, acceptedEvents, missing.MissingID)
-		outcome.Recovery = memoryReplicationRecovery(selection, missing.Stream)
+		outcome.RequiredSelectors, outcome.RequiredRef = memoryReplicationRequiredSupplier(selection, acceptedGitDir, acceptedEvents, missing)
+		outcome.Recovery = memoryReplicationRecovery(selection, missing, outcome.RequiredSelectors)
 		outcome.Diagnostic = fmt.Sprintf("selection memory %s memory %s missing %s dependency %s: %s; recovery: %s", outcome.ID, missing.OwnerID, missing.Kind, missing.MissingID, missing.Reason, outcome.Recovery)
 		if err := recordReplicationMemoryShallowGap(selection, outcome, missing); err != nil {
 			outcome.Diagnostic += "; durable shallow gap recording failed"
@@ -1494,9 +1493,8 @@ func revalidateReplicationMemoryObjectDependencies(selection ReplicationSelectio
 			outcome.MissingID = object
 			outcome.OwnerMemoryID = missing.OwnerID
 			outcome.OwnerStream = missing.Stream
-			outcome.RequiredRef = outcome.request.SourceRef
-			outcome.RequiredSelectors = memoryReplicationRequiredSelectors(selection, acceptedEvents, missing.MissingID)
-			outcome.Recovery = memoryReplicationRecovery(selection, missing.Stream)
+			outcome.RequiredSelectors, outcome.RequiredRef = memoryReplicationRequiredSupplier(selection, acceptedGitDir, acceptedEvents, missing)
+			outcome.Recovery = memoryReplicationRecovery(selection, missing, outcome.RequiredSelectors)
 			outcome.Diagnostic = fmt.Sprintf("selection memory %s has unavailable exact Git dependency %s; recovery: %s", outcome.ID, object, outcome.Recovery)
 			if err := recordReplicationMemoryShallowGap(selection, outcome, missing); err != nil {
 				outcome.Diagnostic += "; durable shallow gap recording failed"
@@ -1506,34 +1504,99 @@ func revalidateReplicationMemoryObjectDependencies(selection ReplicationSelectio
 	}
 }
 
-func memoryReplicationRequiredSelectors(selection ReplicationSelection, events []StoredEvent, missing string) []string {
-	selected := make(map[string]bool, len(selection.Proposals))
-	for _, proposal := range selection.Proposals {
-		selected[proposal] = true
-	}
-	selectors := make([]string, 0)
+func memoryReplicationRequiredSupplier(selection ReplicationSelection, gitDir string, events []StoredEvent, dependency MemoryDependency) ([]string, string) {
 	for _, event := range events {
-		if selected[event.ID] && isProposalKind(event.Event.Kind) && event.Event.Head == missing {
-			selectors = append(selectors, replicationProposal+":"+event.ID)
+		if isProposalKind(event.Event.Kind) && event.Event.Head == dependency.MissingID {
+			return []string{replicationProposal + ":" + event.ID}, proposalRef(event.ID)
 		}
 	}
-	return sortedUniqueStrings(selectors...)
+	remoteURL, err := gitText("remote", "get-url", selection.Remote)
+	if err != nil {
+		return nil, ""
+	}
+	advertised, err := gitText("ls-remote", "--refs", "--", remoteURL, "refs/nh/actors/*", "refs/nh/memory/*/*")
+	if err != nil {
+		return nil, ""
+	}
+	fields := strings.Fields(advertised)
+	if len(fields)%2 != 0 {
+		return nil, ""
+	}
+	for index := 0; index < len(fields); index += 2 {
+		head, ref := fields[index], fields[index+1]
+		probe, err := probeExactGitObjectAt(gitDir, head)
+		if err != nil || !probe.Exists || probe.Type != "commit" {
+			continue
+		}
+		switch dependency.Kind {
+		case "evidence-event":
+			actor := strings.TrimPrefix(ref, "refs/nh/actors/")
+			if !validActorFingerprint(actor) || ref != actorRef(actor) {
+				continue
+			}
+			events, err := loadActorEventsAt(gitDir, head)
+			if err != nil {
+				continue
+			}
+			for _, event := range events {
+				if event.ID == dependency.MissingID {
+					return []string{replicationActor + ":" + actor}, ref
+				}
+			}
+		case "lifecycle-target", "evidence-memory":
+			actor, stream, ok := parseMemoryRef(ref)
+			if !ok {
+				continue
+			}
+			memories, err := loadMemoryStreamAt(gitDir, memoryStreamSource{Ref: ref, Actor: actor, Stream: stream, Head: head})
+			if err != nil {
+				continue
+			}
+			for _, memory := range memories {
+				if memory.ID == dependency.MissingID {
+					return []string{replicationMemory + ":" + stream}, ref
+				}
+			}
+		}
+	}
+	return nil, ""
 }
 
-func memoryReplicationRecovery(selection ReplicationSelection, stream string) string {
+func memoryReplicationRecovery(selection ReplicationSelection, dependency MemoryDependency, required []string) string {
 	shallow, _ := repositoryIsShallow()
-	for _, selected := range selection.Memories {
-		if shallow && !selection.All && selected == stream {
-			return "nh sync " + selection.Remote + " --recover-shallow"
-		} else if !selection.All && selected == stream {
-			return "repair the exact advertised dependency, then nh sync " + selection.Remote
+	missing := make([]string, 0)
+	for _, selector := range required {
+		kind, id, ok := strings.Cut(selector, ":")
+		if !ok {
+			continue
+		}
+		selected := selection.All
+		switch kind {
+		case replicationActor:
+			selected = selected || stringInSlice(id, selection.Actors)
+		case replicationProposal:
+			selected = selected || stringInSlice(id, selection.Proposals)
+		case replicationMemory:
+			selected = selected || stringInSlice(id, selection.Memories)
+		}
+		if !selected {
+			missing = append(missing, "--"+kind+" "+id)
 		}
 	}
-	recovery := "nh sync " + selection.Remote
-	if shallow {
-		recovery += " --recover-shallow"
+	if len(required) == 0 {
+		return "supplier for exact " + dependency.Kind + " dependency " + dependency.MissingID + " is not derivable from signed facts; select its exact supplier, then retry"
 	}
-	return "nh replication select " + selection.Remote + " --memory " + stream + " (preserve existing selectors and budgets), then " + recovery
+	if len(missing) != 0 {
+		sync := "nh sync " + selection.Remote
+		if shallow {
+			sync += " --recover-shallow"
+		}
+		return "nh replication select " + selection.Remote + " " + strings.Join(missing, " ") + " (preserve existing selectors and budgets), then " + sync
+	}
+	if shallow {
+		return "nh sync " + selection.Remote + " --recover-shallow"
+	}
+	return "repair the exact advertised dependency, then nh sync " + selection.Remote
 }
 
 func recordReplicationMemoryShallowGap(selection ReplicationSelection, outcome *ReplicationOutcome, dependency MemoryDependency) error {
@@ -1548,7 +1611,7 @@ func recordReplicationMemoryShallowGap(selection ReplicationSelection, outcome *
 		Operation: "memory replication", Kind: memoryShallowDependencyKind(dependency.Kind),
 		MissingID: dependency.MissingID, OwnerKind: replicationMemory, OwnerID: dependency.Stream,
 		OwnerMemoryID: dependency.OwnerID, OwnerStream: dependency.Stream,
-		Remote: selection.Remote, RequiredRef: outcome.request.SourceRef,
+		Remote: selection.Remote, RequiredRef: outcome.RequiredRef,
 		RequiredSelectors: append([]string(nil), outcome.RequiredSelectors...),
 		Recovery:          outcome.Recovery, Cause: fmt.Errorf("required exact memory dependency %s is unavailable", dependency.MissingID),
 	}
