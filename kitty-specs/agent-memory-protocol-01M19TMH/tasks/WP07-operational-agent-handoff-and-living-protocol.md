@@ -1,69 +1,77 @@
 ---
-work_package_id: "WP07"
-title: "Operational Agent Handoff and Living Protocol"
-dependencies: ["WP05", "WP06"]
+work_package_id: WP07
+title: Operational Agent Handoff and Living Protocol
+dependencies:
+- WP05
+- WP06
 requirement_refs:
-  - "FR-001"
-  - "FR-005"
-  - "FR-006"
-  - "FR-007"
-  - "FR-008"
-  - "FR-009"
-  - "FR-010"
-  - "FR-011"
-  - "FR-012"
-  - "FR-013"
-  - "FR-014"
-  - "FR-015"
-  - "FR-016"
-  - "FR-017"
-  - "FR-018"
-  - "FR-019"
-  - "FR-020"
-  - "FR-021"
-  - "FR-022"
-  - "FR-023"
-  - "FR-024"
-  - "NFR-001"
-  - "NFR-002"
-  - "NFR-003"
-  - "NFR-005"
-  - "NFR-006"
-  - "NFR-007"
-  - "NFR-008"
-  - "NFR-009"
-  - "NFR-010"
-  - "NFR-011"
-  - "NFR-012"
-  - "C-001"
-  - "C-009"
-  - "C-011"
-  - "C-012"
-subtasks: ["T031", "T032", "T033", "T034", "T035"]
-owned_files:
-  - "memory_acceptance_test.go"
-  - ".nh/policy.json"
-  - "README.md"
-  - "docs/protocol-v0.md"
-  - "docs/replication-v0.md"
-  - "docs/host-compatibility.md"
-  - "docs/memory-v0.md"
-  - "docs/memory-safety.md"
-  - "kitty-specs/agent-memory-protocol-01M19TMH/quickstart.md"
-  - "kitty-specs/agent-memory-protocol-01M19TMH/contracts/memory-wire-v0.md"
-  - "kitty-specs/agent-memory-protocol-01M19TMH/contracts/memory-cli-v0.md"
-  - "kitty-specs/agent-memory-protocol-01M19TMH/contracts/memory-replication-v0.md"
-authoritative_surface: "memory_acceptance_test.go"
+- FR-001
+- FR-005
+- FR-006
+- FR-007
+- FR-008
+- FR-009
+- FR-010
+- FR-011
+- FR-012
+- FR-013
+- FR-014
+- FR-015
+- FR-016
+- FR-017
+- FR-018
+- FR-019
+- FR-020
+- FR-021
+- FR-022
+- FR-023
+- FR-024
+- NFR-001
+- NFR-002
+- NFR-003
+- NFR-005
+- NFR-006
+- NFR-007
+- NFR-008
+- NFR-009
+- NFR-010
+- NFR-011
+- NFR-012
+- C-001
+- C-009
+- C-011
+- C-012
+planning_base_branch: feat/agent-memory-protocol
+merge_target_branch: feat/agent-memory-protocol
+branch_strategy: Planning artifacts for this mission were generated on feat/agent-memory-protocol. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/agent-memory-protocol unless the human explicitly redirects the landing branch.
+subtasks:
+- T031
+- T032
+- T033
+- T034
+- T035
+history: []
+agent_profile: reviewer-renata
+authoritative_surface: memory_acceptance_test.go
 create_intent:
-  - "memory_acceptance_test.go"
-  - "docs/memory-v0.md"
-  - "docs/memory-safety.md"
-execution_mode: "code_change"
-task_type: "implement"
-agent_profile: "reviewer-renata"
-role: "reviewer"
-agent: "codex"
-model: ""
+- memory_acceptance_test.go
+- docs/memory-v0.md
+- docs/memory-safety.md
+execution_mode: code_change
+model: ''
+owned_files:
+- memory_acceptance_test.go
+- .nh/policy.json
+- README.md
+- docs/protocol-v0.md
+- docs/replication-v0.md
+- docs/host-compatibility.md
+- docs/memory-v0.md
+- docs/memory-safety.md
+role: reviewer
+tags: []
+task_type: implement
+tracker_refs: []
 ---
 
 # Work Package Prompt: WP07 – Operational Agent Handoff and Living Protocol
@@ -274,53 +282,51 @@ documentation without overstating truth, authority, deletion, or host support.
 - Search docs for claims that collapse trust dimensions or promise execution/
   erasure; record completion with `spec-kitty agent tasks mark-status T033 --status done`.
 
-### Subtask T034: Reconcile mission contracts and quickstart with shipped behavior
+### Subtask T034: Prove shipped behavior conforms to frozen mission contracts
 
 **Purpose**
 
-Convert planning-era contracts into exact implementation-facing records so
-the mission remains a reliable compatibility and security reference after merge.
+Treat the mission contracts and quickstart as read-only acceptance authorities,
+and prove the shipped code and public documentation conform without editing
+coordination artifacts from an implementation lane.
 
 **Steps**
 
-1. Diff each contract and `quickstart.md` against the landed public CLI, wire
-   structs/tags, validation constants, ref parsers, projection, and replication outcomes.
-2. Update `contracts/memory-wire-v0.md` with exact encoded field names/order,
-   omission rules, operation/kind shapes, chosen path/handoff limits, and signatures.
+1. Diff each frozen contract and `quickstart.md` against the landed public CLI,
+   wire structs/tags, validation constants, ref parsers, projection, and outcomes.
+2. Verify encoded field names, omission rules, operation/kind shapes, bounds,
+   signatures, and ref grammar exactly; correct owned code when it diverges.
 3. Preserve the distinction between payload memory ID, Git commit ID, actor
    fingerprint, stream ID, collaboration event ID, and typed evidence ID.
-4. Update `contracts/memory-cli-v0.md` with exact subcommands, flags, strict
-   request/response versions, defaults, error classes, output fields, and cursors.
-5. State the precise encoded-content accounting rule and the exact conditions
-   that stale or invalidate a cursor; do not leave implementation-defined prose.
-6. Update `contracts/memory-replication-v0.md` with saved selection compatibility,
-   memory discovery/ref grammar, budgets, outcomes, transaction, and recovery behavior.
-7. Verify legacy selection JSON without `memories`, explicit actor/proposal-only
-   imports, and compatibility `--all` match the final shipped behavior.
-8. Rewrite quickstart commands and sample JSON to be copyable, while using
-   placeholders safely and avoiding shell interpolation in machine-input examples.
-9. Exercise record, handoff, correction, policy, recall, index, selection,
-   synchronization, shallow recovery, and fresh-clone steps in disposable repos.
-10. Mark commands that require a local signer separately from read-only fresh-clone
-    commands; never imply that a clone receives or can recover another actor's key.
-11. Reconcile error/recovery language with full-ID, missing-versus-invalid,
-    selected-supplier, no-global-unshallow, and no-network-recall behavior.
-12. Use one vocabulary for canonical memory, accepted refs, quarantine,
-    qualification, evidence resolution, lifecycle, and inert data across all artifacts.
-13. Retain explicit limits: repository-local v0, no cross-project federation,
-    semantic truth, autonomous action, automatic capture, or erasure guarantee.
-14. Prefer shipped behavior when a harmless draft detail changed; if shipped
-    behavior violates a requirement/security invariant, stop and return it to the owning WP.
+4. Verify subcommands, flags, strict request/response versions, defaults, error
+   classes, output fields, cursor rules, and encoded-content accounting.
+5. Verify saved-selection compatibility, memory discovery, budgets, independent
+   outcomes, transaction behavior, publication, and recovery against the contract.
+6. Exercise every quickstart phase in disposable repositories, including record,
+   handoff, correction, policy, recall, index, selection, sync, and fresh clone.
+7. Keep signer-required commands distinct from read-only fresh-clone commands;
+   never imply that a clone receives or recovers another actor's private key.
+8. Reconcile public docs with full-ID, missing-versus-invalid, selected-supplier,
+   no-global-unshallow, and no-network-recall behavior.
+9. Use one vocabulary for canonical memory, accepted refs, quarantine,
+   qualification, evidence resolution, lifecycle, and inert data.
+10. Retain explicit limits: repository-local v0, no federation, semantic truth,
+    autonomous action, automatic capture, redaction, or erasure guarantee.
+11. If shipped behavior violates a contract or security invariant, return the
+    defect to its owning WP; do not weaken or edit `kitty-specs/` from this lane.
+12. Record a concise contract-conformance table in the WP review evidence so
+    mission acceptance can audit every frozen surface.
 
 **Files**
 
-- Modify the three files below `contracts/` and the mission `quickstart.md`;
-  do not change `spec.md`, `plan.md`, `research.md`, or `data-model.md` in this WP.
+- Read the three mission contracts and `quickstart.md` without modifying them.
+- Correct only WP07-owned source/public-documentation surfaces when they drift.
 
 **Validation**
 
 - Run quickstart smoke commands with the built binary and strict-decode every
-  JSON example; compare documented constants/ref forms against production definitions.
+  JSON example; compare all documented constants/ref forms against production definitions.
+- Confirm `git diff` contains no `kitty-specs/` changes from the WP07 lane.
 - `git diff --check` passes; record completion with
   `spec-kitty agent tasks mark-status T034 --status done`.
 

@@ -1,50 +1,62 @@
 ---
-work_package_id: "WP05"
-title: "Deliberate Record and Safe Recall CLI"
-dependencies: ["WP03", "WP04"]
+work_package_id: WP05
+title: Deliberate Record and Safe Recall CLI
+dependencies:
+- WP03
+- WP04
 requirement_refs:
-  - "FR-001"
-  - "FR-002"
-  - "FR-003"
-  - "FR-004"
-  - "FR-005"
-  - "FR-008"
-  - "FR-009"
-  - "FR-010"
-  - "FR-011"
-  - "FR-012"
-  - "FR-013"
-  - "FR-014"
-  - "FR-015"
-  - "FR-016"
-  - "FR-018"
-  - "FR-020"
-  - "FR-021"
-  - "FR-022"
-  - "NFR-001"
-  - "NFR-002"
-  - "NFR-003"
-  - "NFR-004"
-  - "NFR-009"
-  - "NFR-011"
-  - "C-005"
-  - "C-007"
-  - "C-012"
-subtasks: ["T021", "T022", "T023", "T024", "T025"]
-owned_files:
-  - "memory_commands.go"
-  - "memory_commands_test.go"
-  - "main.go"
-authoritative_surface: "memory_commands.go"
+- FR-001
+- FR-002
+- FR-003
+- FR-004
+- FR-005
+- FR-008
+- FR-009
+- FR-010
+- FR-011
+- FR-012
+- FR-013
+- FR-014
+- FR-015
+- FR-016
+- FR-018
+- FR-020
+- FR-021
+- FR-022
+- NFR-001
+- NFR-002
+- NFR-003
+- NFR-004
+- NFR-009
+- NFR-011
+- C-005
+- C-007
+- C-012
+planning_base_branch: feat/agent-memory-protocol
+merge_target_branch: feat/agent-memory-protocol
+branch_strategy: Planning artifacts for this mission were generated on feat/agent-memory-protocol. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/agent-memory-protocol unless the human explicitly redirects the landing branch.
+subtasks:
+- T021
+- T022
+- T023
+- T024
+- T025
+history: []
+agent_profile: implementer-ivan
+authoritative_surface: memory_commands.go
 create_intent:
-  - "memory_commands.go"
-  - "memory_commands_test.go"
-execution_mode: "code_change"
-task_type: "implement"
-agent_profile: "implementer-ivan"
-role: "implementer"
-agent: "codex"
-model: ""
+- memory_commands.go
+- memory_commands_test.go
+execution_mode: code_change
+model: ''
+owned_files:
+- memory_commands.go
+- memory_commands_test.go
+- main.go
+role: implementer
+tags: []
+task_type: implement
+tracker_refs: []
 ---
 
 # Work Package Prompt: WP05 – Deliberate Record and Safe Recall CLI
