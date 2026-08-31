@@ -28,7 +28,8 @@
       "last_transition_at": "2026-08-31T03:25:03.707529+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "Ready for review: canonical nh-memory/0 envelope, strict validation, Ed25519 signing, exact IDs, hostile-input and boundary coverage; all required gates pass"
+        "Ready for review: canonical nh-memory/0 envelope, strict validation, Ed25519 signing, exact IDs, hostile-input and boundary coverage; all required gates pass",
+        "Review round 1 addressed: reject every .. path segment while allowing two-dot filenames; exact adjacent multibyte content and aggregate handoff boundary fixtures; all WP gates pass"
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
