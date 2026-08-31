@@ -288,6 +288,18 @@ func publishLocalFacts(remote string) error {
 			return replicationPhaseError(remote, "proposal publication")
 		}
 	}
+	memoryRefs, err := gitText("for-each-ref", "--format=%(refname)", memoryRefPrefix)
+	if err != nil {
+		return replicationPhaseError(remote, "memory publication inspection")
+	}
+	for _, ref := range strings.Fields(memoryRefs) {
+		if _, _, ok := parseMemoryRef(ref); !ok {
+			return replicationPhaseError(remote, "memory publication inspection")
+		}
+		if _, err := gitOutput("push", remote, ref+":"+ref); err != nil {
+			return replicationPhaseError(remote, "memory publication")
+		}
+	}
 	return nil
 }
 
