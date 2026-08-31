@@ -254,12 +254,151 @@ func TestMemoryReplicationValidationIsolatedFromValidStream(t *testing.T) {
 	assertRefAbsent(t, badAccepted)
 }
 
+func TestMemoryReplicationMixedHostileTransactionPreservesCollaborationBytes(t *testing.T) {
+	root := t.TempDir()
+	publisher := filepath.Join(root, "publisher")
+	remote := filepath.Join(root, "project.git")
+	receiver := filepath.Join(root, "receiver")
+	mustGit(t, "init", "-q", "-b", "main", publisher)
+	mustGit(t, "-C", publisher, "config", "user.name", "Publisher")
+	mustGit(t, "-C", publisher, "config", "user.email", "publisher@nh.invalid")
+	mustGit(t, "-C", publisher, "commit", "--allow-empty", "-q", "-m", "base")
+	original, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(original) })
+	if err := os.Chdir(publisher); err != nil {
+		t.Fatal(err)
+	}
+	base := mustGitText(t, "rev-parse", "HEAD")
+	mustGit(t, "commit", "--allow-empty", "-q", "-m", "candidate")
+	head := mustGitText(t, "rev-parse", "HEAD")
+	alice := deterministicMemoryIdentity()
+	proposalEvent := newEvent(alice, "proposal.open", 1, "")
+	proposalEvent.Title, proposalEvent.Base, proposalEvent.Head = "mixed candidate", base, head
+	proposal, err := appendEvent(proposalEvent, alice)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := createProposalRef(proposal.ID, head); err != nil {
+		t.Fatal(err)
+	}
+	bob := testIdentity(t, "Independent Collaborator")
+	issue := newEvent(bob, "issue.open", 1, "")
+	issue.Title = "collaboration survives hostile memory"
+	if _, err := appendEvent(issue, bob); err != nil {
+		t.Fatal(err)
+	}
+	wantEvents, err := collectEvents()
+	if err != nil {
+		t.Fatal(err)
+	}
+	valid := appendReplicableMemory(t, alice, fullMemoryID("1"), nil, "valid memory")
+	bad := appendReplicableMemory(t, bob, fullMemoryID("2"), nil, "invalid signature")
+	badSignature := append([]byte(nil), bad.Signature...)
+	badSignature[0] ^= 0xff
+	badCommit := writeRawMemoryCommit(t, bad.Payload, badSignature, nil)
+	badRef, _ := memoryRef(bob.Actor, bad.Envelope.Stream)
+	mustGit(t, "update-ref", badRef, badCommit)
+	missingEnvelope := validMemoryEnvelopeFixture(memoryOperationRecord)
+	missingEnvelope.Stream = fullMemoryID("3")
+	missingEnvelope.Record.Anchor = MemoryAnchor{Commit: strings.Repeat("9", 40)}
+	missingEnvelope.Record.Applicability = Applicability{Mode: memoryApplicabilityExact}
+	missingEnvelope.Record.Evidence = []string{}
+	missing, err := appendMemory(missingEnvelope, alice)
+	if err != nil {
+		t.Fatal(err)
+	}
+	over := appendReplicableMemory(t, alice, fullMemoryID("4"), nil, "over one")
+	over = appendReplicableMemory(t, alice, over.Envelope.Stream, over, "over two")
+	over = appendReplicableMemory(t, alice, over.Envelope.Stream, over, "over three")
+
+	mustGit(t, "init", "--bare", "-q", remote)
+	mustGit(t, "remote", "add", "origin", remote)
+	refs := []string{actorRef(alice.Actor), actorRef(bob.Actor), proposalRef(proposal.ID)}
+	for _, stored := range []*StoredMemory{valid, missing, over} {
+		ref, _ := memoryRef(stored.Envelope.Actor, stored.Envelope.Stream)
+		refs = append(refs, ref)
+	}
+	refs = append(refs, badRef)
+	for _, ref := range append([]string{"main"}, refs...) {
+		mustGit(t, "push", "-q", "origin", ref+":"+ref)
+	}
+	mustGit(t, "clone", "-q", remote, receiver)
+	if err := os.Chdir(receiver); err != nil {
+		t.Fatal(err)
+	}
+	budgets := defaultReplicationBudgets()
+	budgets.MaxEvents = 2
+	result, err := runReplicationTransaction(ReplicationSelection{
+		Version: replicationSelectionVersion, Remote: "origin",
+		Actors: []string{alice.Actor, bob.Actor}, Proposals: []string{proposal.ID},
+		Memories: []string{valid.Envelope.Stream, bad.Envelope.Stream, missing.Envelope.Stream, over.Envelope.Stream}, Budgets: budgets,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []struct{ kind, id, status string }{
+		{replicationActor, alice.Actor, replicationPromoted}, {replicationActor, bob.Actor, replicationPromoted},
+		{replicationProposal, proposal.ID, replicationPromoted}, {replicationMemory, valid.Envelope.Stream, replicationPromoted},
+		{replicationMemory, bad.Envelope.Stream, replicationStructuralInvalid},
+		{replicationMemory, missing.Envelope.Stream, replicationDependencyMissing},
+		{replicationMemory, over.Envelope.Stream, replicationOverBudget},
+	} {
+		if !replicationOutcomeHasStatus(result.Outcomes, want.kind, want.id, want.status) {
+			t.Fatalf("missing outcome %s %s %s: %#v", want.kind, want.id, want.status, result.Outcomes)
+		}
+	}
+	gotEvents, err := collectEvents()
+	if err != nil || len(gotEvents) != len(wantEvents) {
+		t.Fatalf("collaboration projection = %#v, err=%v", gotEvents, err)
+	}
+	for index := range wantEvents {
+		if gotEvents[index].ID != wantEvents[index].ID || !reflect.DeepEqual(gotEvents[index].Payload, wantEvents[index].Payload) {
+			t.Fatalf("collaboration bytes changed at %d", index)
+		}
+	}
+	for _, stored := range []*StoredMemory{bad, missing, over} {
+		ref, _ := acceptedMemoryRef("origin", stored.Envelope.Actor, stored.Envelope.Stream)
+		assertRefAbsent(t, ref)
+	}
+}
+
 func TestMemoryReplicationBudgetCountsCommits(t *testing.T) {
 	publisher, remote, receiver, identity, first := setupMemoryReplicationFixture(t)
 	if err := os.Chdir(publisher); err != nil {
 		t.Fatal(err)
 	}
 	second := appendReplicableMemory(t, identity, first.Envelope.Stream, first, "second")
+	empty := filepath.Join(t.TempDir(), "empty.git")
+	mustGit(t, "init", "--bare", "-q", empty)
+	fullMeasurements, err := measureQuarantinedSelection(filepath.Join(publisher, ".git"), empty, replicationMemory, second.Commit)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fullMeasurements.LargestAttachmentBytes != 0 {
+		t.Fatalf("valid v0 memory attachment measurement = %d", fullMeasurements.LargestAttachmentBytes)
+	}
+	for _, dimension := range []struct {
+		name  string
+		value int64
+		set   func(*ReplicationBudgets, int64)
+	}{
+		{"events", fullMeasurements.Events, func(b *ReplicationBudgets, n int64) { b.MaxEvents = n }},
+		{"objects", fullMeasurements.Objects, func(b *ReplicationBudgets, n int64) { b.MaxObjects = n }},
+		{"object-bytes", fullMeasurements.LargestObjectBytes, func(b *ReplicationBudgets, n int64) { b.MaxObjectBytes = n }},
+		{"total-bytes", fullMeasurements.TotalBytes, func(b *ReplicationBudgets, n int64) { b.MaxTotalBytes = n }},
+	} {
+		for _, delta := range []int64{-1, 0, 1} {
+			budgets := defaultReplicationBudgets()
+			dimension.set(&budgets, dimension.value+delta)
+			err := enforceReplicationBudgets("memory "+first.Envelope.Stream, budgets, fullMeasurements)
+			if (delta < 0) != (err != nil) {
+				t.Fatalf("%s boundary delta %d: %v", dimension.name, delta, err)
+			}
+		}
+	}
 	ref, _ := memoryRef(identity.Actor, first.Envelope.Stream)
 	mustGit(t, "push", "-q", "--force", "origin", ref+":"+ref)
 	if err := os.Chdir(receiver); err != nil {
@@ -278,62 +417,409 @@ func TestMemoryReplicationBudgetCountsCommits(t *testing.T) {
 	}
 }
 
+func TestMemoryReplicationValidationRejectsAttemptedAttachment(t *testing.T) {
+	inReplicationTestRepository(t)
+	identity := deterministicMemoryIdentity()
+	stored := appendReplicableMemory(t, identity, defaultMemoryStream(identity.Actor), nil, "no attachments")
+	attachment := mustGitTextFromInput(t, []byte("forbidden"), "hash-object", "-w", "--stdin")
+	entries := exactTreeEntriesForTest(t, stored.Commit)
+	treeInput := "100644 blob " + attachment + "\tattachment.bin\n" +
+		"100644 blob " + entries["memory.json"] + "\tmemory.json\n" +
+		"100644 blob " + entries["signature"] + "\tsignature\n"
+	tree := mustGitTextFromInput(t, []byte(treeInput), "mktree")
+	commit := mustGitTextFromInput(t, nil, "commit-tree", tree, "-m", "hostile memory attachment")
+	_, err := loadMemoryStreamAt("", memoryStreamSource{
+		Ref: mustMemoryRef(t, identity.Actor, stored.Envelope.Stream), Actor: identity.Actor, Stream: stored.Envelope.Stream, Head: commit,
+	})
+	if err == nil || !strings.Contains(err.Error(), "unexpected entry") {
+		t.Fatalf("attempted attachment validation = %v", err)
+	}
+}
+
+func exactTreeEntriesForTest(t *testing.T, commit string) map[string]string {
+	t.Helper()
+	entries, err := exactMemoryTreeAt("", commit)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return entries
+}
+
+func mustMemoryRef(t *testing.T, actor, stream string) string {
+	t.Helper()
+	ref, err := memoryRef(actor, stream)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return ref
+}
+
 func TestMemoryReplicationTransactionInterruptionPreservesAcceptedRef(t *testing.T) {
-	_, _, receiver, identity, stored := setupMemoryReplicationFixture(t)
+	for _, phase := range []string{"after-fetch", "after-measure", "after-copy", "before-promote"} {
+		t.Run(phase, func(t *testing.T) {
+			_, _, receiver, identity, stored := setupMemoryReplicationFixture(t)
+			if err := os.Chdir(receiver); err != nil {
+				t.Fatal(err)
+			}
+			selection := ReplicationSelection{Version: replicationSelectionVersion, Remote: "origin", Memories: []string{stored.Envelope.Stream}, Budgets: defaultReplicationBudgets()}
+			hook := func() error { return os.ErrClosed }
+			switch phase {
+			case "after-fetch":
+				replicationAfterFetchHook = hook
+			case "after-measure":
+				replicationAfterMeasureHook = hook
+			case "after-copy":
+				replicationAfterCopyHook = hook
+			case "before-promote":
+				replicationBeforePromoteHook = hook
+			}
+			_, err := runReplicationTransaction(selection)
+			replicationAfterFetchHook, replicationAfterMeasureHook, replicationAfterCopyHook, replicationBeforePromoteHook = nil, nil, nil, nil
+			if err == nil {
+				t.Fatalf("%s interruption succeeded", phase)
+			}
+			accepted, _ := acceptedMemoryRef("origin", identity.Actor, stored.Envelope.Stream)
+			assertRefAbsent(t, accepted)
+			if memories, collectErr := collectMemories(); collectErr != nil || len(memories) != 0 {
+				t.Fatalf("%s exposed residue: %#v, %v", phase, memories, collectErr)
+			}
+			result, err := runReplicationTransaction(selection)
+			if err != nil || !replicationOutcomeHasStatus(result.Outcomes, replicationMemory, stored.Envelope.Stream, replicationPromoted) {
+				t.Fatalf("%s retry outcomes = %#v, err=%v", phase, result.Outcomes, err)
+			}
+			assertRefValue(t, accepted, stored.Commit)
+		})
+	}
+}
+
+func TestMemoryReplicationTransactionReceiptFailuresAreTruthful(t *testing.T) {
+	t.Run("validated receipt", func(t *testing.T) {
+		_, _, receiver, identity, stored := setupMemoryReplicationFixture(t)
+		if err := os.Chdir(receiver); err != nil {
+			t.Fatal(err)
+		}
+		selection := ReplicationSelection{Version: replicationSelectionVersion, Remote: "origin", Memories: []string{stored.Envelope.Stream}, Budgets: defaultReplicationBudgets()}
+		original := replicationRecordTransaction
+		replicationRecordTransaction = func(_ string, _ replicationTransactionResult, state string) error {
+			if state == "validated" {
+				return os.ErrClosed
+			}
+			return nil
+		}
+		_, err := runReplicationTransaction(selection)
+		replicationRecordTransaction = original
+		if err == nil || !strings.Contains(err.Error(), "validated transaction recording") {
+			t.Fatalf("validated receipt failure = %v", err)
+		}
+		accepted, _ := acceptedMemoryRef("origin", identity.Actor, stored.Envelope.Stream)
+		assertRefAbsent(t, accepted)
+	})
+	t.Run("completion receipt", func(t *testing.T) {
+		_, _, receiver, identity, stored := setupMemoryReplicationFixture(t)
+		if err := os.Chdir(receiver); err != nil {
+			t.Fatal(err)
+		}
+		selection := ReplicationSelection{Version: replicationSelectionVersion, Remote: "origin", Memories: []string{stored.Envelope.Stream}, Budgets: defaultReplicationBudgets()}
+		original := replicationRecordTransaction
+		replicationRecordTransaction = func(gitDir string, result replicationTransactionResult, state string) error {
+			if state == "complete" {
+				return os.ErrClosed
+			}
+			return original(gitDir, result, state)
+		}
+		_, err := runReplicationTransaction(selection)
+		replicationRecordTransaction = original
+		if err == nil || !strings.Contains(err.Error(), "promotion succeeded") {
+			t.Fatalf("completion receipt failure = %v", err)
+		}
+		accepted, _ := acceptedMemoryRef("origin", identity.Actor, stored.Envelope.Stream)
+		assertRefValue(t, accepted, stored.Commit)
+		if _, err := runReplicationTransaction(selection); err != nil {
+			t.Fatalf("completion retry: %v", err)
+		}
+		assertRefValue(t, accepted, stored.Commit)
+	})
+	t.Run("pending anchor process boundary", func(t *testing.T) {
+		_, _, receiver, identity, stored := setupMemoryReplicationFixture(t)
+		if err := os.Chdir(receiver); err != nil {
+			t.Fatal(err)
+		}
+		selection := ReplicationSelection{Version: replicationSelectionVersion, Remote: "origin", Memories: []string{stored.Envelope.Stream}, Budgets: defaultReplicationBudgets()}
+		t.Setenv("NH_INTERNAL_TESTING", "1")
+		t.Setenv("NH_TEST_REPLICATION_INTERRUPT_AFTER", "after-pending-anchor")
+		_, err := runReplicationTransaction(selection)
+		if err == nil || !strings.Contains(err.Error(), "pending anchor") {
+			t.Fatalf("pending anchor interruption = %v", err)
+		}
+		accepted, _ := acceptedMemoryRef("origin", identity.Actor, stored.Envelope.Stream)
+		assertRefAbsent(t, accepted)
+		t.Setenv("NH_TEST_REPLICATION_INTERRUPT_AFTER", "")
+		if _, err := runReplicationTransaction(selection); err != nil {
+			t.Fatalf("pending-anchor retry: %v", err)
+		}
+		assertRefValue(t, accepted, stored.Commit)
+	})
+	t.Run("completion process boundary", func(t *testing.T) {
+		_, _, receiver, identity, stored := setupMemoryReplicationFixture(t)
+		if err := os.Chdir(receiver); err != nil {
+			t.Fatal(err)
+		}
+		selection := ReplicationSelection{Version: replicationSelectionVersion, Remote: "origin", Memories: []string{stored.Envelope.Stream}, Budgets: defaultReplicationBudgets()}
+		t.Setenv("NH_INTERNAL_TESTING", "1")
+		t.Setenv("NH_TEST_REPLICATION_INTERRUPT_AFTER", "before-completion-receipt")
+		_, err := runReplicationTransaction(selection)
+		if err == nil || !strings.Contains(err.Error(), "promotion succeeded") {
+			t.Fatalf("completion boundary = %v", err)
+		}
+		accepted, _ := acceptedMemoryRef("origin", identity.Actor, stored.Envelope.Stream)
+		assertRefValue(t, accepted, stored.Commit)
+		t.Setenv("NH_TEST_REPLICATION_INTERRUPT_AFTER", "")
+		if _, err := runReplicationTransaction(selection); err != nil {
+			t.Fatalf("completion-boundary retry: %v", err)
+		}
+	})
+	t.Run("atomic ref transaction", func(t *testing.T) {
+		_, _, receiver, _, stored := setupMemoryReplicationFixture(t)
+		if err := os.Chdir(receiver); err != nil {
+			t.Fatal(err)
+		}
+		selection := ReplicationSelection{Version: replicationSelectionVersion, Remote: "origin", Memories: []string{stored.Envelope.Stream}, Budgets: defaultReplicationBudgets()}
+		accepted, _ := acceptedMemoryRef("origin", stored.Envelope.Actor, stored.Envelope.Stream)
+		competitor := mustGitText(t, "rev-parse", "HEAD")
+		replicationBeforePromoteHook = func() error {
+			mustGit(t, "update-ref", accepted, competitor)
+			return nil
+		}
+		_, err := runReplicationTransaction(selection)
+		replicationBeforePromoteHook = nil
+		if err == nil || !strings.Contains(err.Error(), "accepted-ref transaction failed") {
+			t.Fatalf("ref transaction failure = %v", err)
+		}
+		assertRefValue(t, accepted, competitor)
+	})
+}
+
+func TestMemoryReplicationShallowGapAndRecoveryUseProductionPath(t *testing.T) {
+	root := t.TempDir()
+	publisher := filepath.Join(root, "publisher")
+	remote := filepath.Join(root, "project.git")
+	receiver := filepath.Join(root, "receiver")
+	mustGit(t, "init", "-q", "-b", "main", publisher)
+	mustGit(t, "-C", publisher, "config", "user.name", "Publisher")
+	mustGit(t, "-C", publisher, "config", "user.email", "publisher@nh.invalid")
+	mustGit(t, "-C", publisher, "commit", "--allow-empty", "-q", "-m", "base")
+	original, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(original) })
+	if err := os.Chdir(publisher); err != nil {
+		t.Fatal(err)
+	}
+	base := mustGitText(t, "rev-parse", "HEAD")
+	tree := mustGitText(t, "rev-parse", "HEAD^{tree}")
+	anchor := mustGitTextFromInput(t, nil, "commit-tree", tree, "-p", base, "-m", "unadvertised anchor")
+	identity := deterministicMemoryIdentity()
+	proposalEvent := newEvent(identity, "proposal.open", 1, "")
+	proposalEvent.Title = "memory anchor supplier"
+	proposalEvent.Base = base
+	proposalEvent.Head = anchor
+	proposal, err := appendEvent(proposalEvent, identity)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := createProposalRef(proposal.ID, anchor); err != nil {
+		t.Fatal(err)
+	}
+	envelope := validMemoryEnvelopeFixture(memoryOperationRecord)
+	envelope.Record.Anchor = MemoryAnchor{Commit: anchor}
+	envelope.Record.Applicability = Applicability{Mode: memoryApplicabilityExact}
+	envelope.Record.Evidence = []string{}
+	memory, err := appendMemory(envelope, identity)
+	if err != nil {
+		t.Fatal(err)
+	}
+	memoryLocal, _ := memoryRef(identity.Actor, memory.Envelope.Stream)
+	mustGit(t, "init", "--bare", "-q", remote)
+	mustGit(t, "remote", "add", "origin", remote)
+	mustGit(t, "push", "-q", "origin", "main:main")
+	mustGit(t, "push", "-q", "origin", memoryLocal+":"+memoryLocal)
+	mustGit(t, "clone", "-q", remote, receiver)
 	if err := os.Chdir(receiver); err != nil {
 		t.Fatal(err)
 	}
+	if err := copyGitObjects(filepath.Join(publisher, ".git"), filepath.Join(receiver, ".git"), []string{proposal.Commit}); err != nil {
+		t.Fatal(err)
+	}
+	mustGit(t, "update-ref", acceptedActorRef("origin", identity.Actor), proposal.Commit)
+	gitDir := mustGitText(t, "rev-parse", "--absolute-git-dir")
+	if err := os.WriteFile(filepath.Join(gitDir, "shallow"), []byte(mustGitText(t, "rev-parse", "HEAD")+"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
 	selection := ReplicationSelection{
-		Version: replicationSelectionVersion, Remote: "origin", Memories: []string{stored.Envelope.Stream}, Budgets: defaultReplicationBudgets(),
+		Version: replicationSelectionVersion, Remote: "origin",
+		Proposals: []string{proposal.ID}, Memories: []string{memory.Envelope.Stream}, Budgets: defaultReplicationBudgets(),
 	}
-	replicationBeforePromoteHook = func() error { return os.ErrClosed }
-	t.Cleanup(func() { replicationBeforePromoteHook = nil })
-	_, err := runReplicationTransaction(selection)
-	replicationBeforePromoteHook = nil
-	if err == nil || !strings.Contains(err.Error(), "accepted refs and trust projection are unchanged") {
-		t.Fatalf("pre-promotion interruption = %v", err)
+	if err := saveReplicationSelection(selection); err != nil {
+		t.Fatal(err)
 	}
-	accepted, _ := acceptedMemoryRef("origin", identity.Actor, stored.Envelope.Stream)
-	assertRefAbsent(t, accepted)
+	before, err := os.ReadFile(mustSelectionPath(t, "origin"))
+	if err != nil {
+		t.Fatal(err)
+	}
 	result, err := runReplicationTransaction(selection)
-	if err != nil || !replicationOutcomeHasStatus(result.Outcomes, replicationMemory, stored.Envelope.Stream, replicationPromoted) {
-		t.Fatalf("retry outcomes = %#v, err=%v", result.Outcomes, err)
+	if err != nil {
+		t.Fatal(err)
 	}
-	assertRefValue(t, accepted, stored.Commit)
+	if !replicationOutcomeHasStatus(result.Outcomes, replicationMemory, memory.Envelope.Stream, replicationDependencyMissing) {
+		t.Fatalf("initial shallow outcomes = %#v", result.Outcomes)
+	}
+	gap, err := loadShallowDependencyGap()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if gap.OwnerMemoryID != memory.ID || gap.OwnerStream != memory.Envelope.Stream || gap.MissingID != anchor ||
+		gap.Kind != shallowMemoryAnchor || gap.Remote != "origin" || !strings.Contains(gap.Recovery, "nh sync origin --recover-shallow") ||
+		!reflect.DeepEqual(gap.RequiredSelectors, []string{replicationProposal + ":" + proposal.ID}) {
+		t.Fatalf("durable memory gap = %#v", gap)
+	}
+	if err := os.Chdir(publisher); err != nil {
+		t.Fatal(err)
+	}
+	mustGit(t, "push", "-q", "origin", proposalRef(proposal.ID)+":"+proposalRef(proposal.ID))
+	if err := os.Chdir(receiver); err != nil {
+		t.Fatal(err)
+	}
+	if err := recoverSelectedShallow("origin"); err != nil {
+		t.Fatal(err)
+	}
+	after, err := os.ReadFile(mustSelectionPath(t, "origin"))
+	if err != nil || !reflect.DeepEqual(before, after) {
+		t.Fatalf("recovery changed selection bytes: err=%v", err)
+	}
+	accepted, _ := acceptedMemoryRef("origin", identity.Actor, memory.Envelope.Stream)
+	assertRefValue(t, accepted, memory.Commit)
+	assertRefValue(t, acceptedProposalRef("origin", proposal.ID), anchor)
+	if _, err := loadShallowDependencyGap(); !os.IsNotExist(err) {
+		t.Fatalf("successful recovery retained gap: %v", err)
+	}
 }
 
-func TestMemoryReplicationShallowRecoverySubsetIsExact(t *testing.T) {
-	stream := fullMemoryID("6")
-	other := fullMemoryID("7")
-	selection := ReplicationSelection{
-		Version: replicationSelectionVersion, Remote: "origin", Memories: []string{stream, other}, Budgets: defaultReplicationBudgets(),
+func TestMemoryReplicationShallowWrongTypeIsNotRecoverableGap(t *testing.T) {
+	publisher, _, receiver, identity, _ := setupMemoryReplicationFixture(t)
+	if err := os.Chdir(publisher); err != nil {
+		t.Fatal(err)
 	}
-	subset, err := recoverySelectionSubset(selection, &ShallowDependencyGap{
-		OwnerKind: replicationMemory, OwnerID: stream, MissingID: fullMemoryID("8"), Recovery: "retry",
+	blobPayload := []byte("wrong type anchor")
+	blob := mustGitTextFromInput(t, blobPayload, "hash-object", "-w", "--stdin")
+	envelope := validMemoryEnvelopeFixture(memoryOperationRecord)
+	envelope.Stream = fullMemoryID("a")
+	envelope.Record.Anchor = MemoryAnchor{Commit: blob}
+	envelope.Record.Applicability = Applicability{Mode: memoryApplicabilityExact}
+	envelope.Record.Evidence = []string{}
+	stored, err := appendMemory(envelope, identity)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ref := mustMemoryRef(t, identity.Actor, stored.Envelope.Stream)
+	mustGit(t, "push", "-q", "origin", ref+":"+ref)
+	if err := os.Chdir(receiver); err != nil {
+		t.Fatal(err)
+	}
+	if got := mustGitTextFromInput(t, blobPayload, "hash-object", "-w", "--stdin"); got != blob {
+		t.Fatalf("blob identity changed: %s", got)
+	}
+	gitDir := mustGitText(t, "rev-parse", "--absolute-git-dir")
+	if err := os.WriteFile(filepath.Join(gitDir, "shallow"), []byte(mustGitText(t, "rev-parse", "HEAD")+"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	result, err := runReplicationTransaction(ReplicationSelection{
+		Version: replicationSelectionVersion, Remote: "origin", Memories: []string{stored.Envelope.Stream}, Budgets: defaultReplicationBudgets(),
 	})
-	if err != nil || !reflect.DeepEqual(subset.Memories, []string{stream}) || len(subset.Actors) != 0 || len(subset.Proposals) != 0 {
-		t.Fatalf("memory recovery subset = %#v, err=%v", subset, err)
+	if err != nil {
+		t.Fatal(err)
 	}
+	if !replicationOutcomeHasStatus(result.Outcomes, replicationMemory, stored.Envelope.Stream, replicationRelationshipBad) {
+		t.Fatalf("wrong-type anchor outcomes = %#v", result.Outcomes)
+	}
+	if _, err := loadShallowDependencyGap(); !os.IsNotExist(err) {
+		t.Fatalf("wrong-type anchor became a shallow gap: %v", err)
+	}
+}
+
+func mustSelectionPath(t *testing.T, remote string) string {
+	t.Helper()
+	path, err := replicationSelectionPath(remote)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return path
 }
 
 func TestMemoryReplicationFreshCloneConvergesWithoutPrivateState(t *testing.T) {
-	_, _, receiver, identity, stored := setupMemoryReplicationFixture(t)
+	publisher, remote, receiver, identity, stored := setupMemoryReplicationFixture(t)
+	if err := os.Chdir(publisher); err != nil {
+		t.Fatal(err)
+	}
+	supersede := nextMemoryEnvelope(t, identity, stored.Envelope.Stream, stored, "superseded content")
+	supersede.Operation = memoryOperationSupersede
+	supersede.Target = stored.ID
+	supersede.Record.Anchor = MemoryAnchor{Commit: mustGitText(t, "rev-parse", "HEAD")}
+	supersede.Record.Applicability = Applicability{Mode: memoryApplicabilityExact}
+	supersede.Record.Evidence = []string{}
+	successor, err := appendMemory(supersede, identity)
+	if err != nil {
+		t.Fatal(err)
+	}
+	verificationEnvelope := validMemoryEnvelopeFixture(memoryOperationRecord)
+	verificationEnvelope.Stream = fullMemoryID("8")
+	verificationEnvelope.Record.Kind = memoryKindVerification
+	verificationEnvelope.Record.Anchor = MemoryAnchor{Commit: mustGitText(t, "rev-parse", "HEAD")}
+	verificationEnvelope.Record.Applicability = Applicability{Mode: memoryApplicabilityExact}
+	verificationEnvelope.Record.Evidence = []string{"memory:" + stored.ID, "git:" + mustGitText(t, "rev-parse", "HEAD")}
+	verification, err := appendMemory(verificationEnvelope, identity)
+	if err != nil {
+		t.Fatal(err)
+	}
+	collaborator := testIdentity(t, "Clone Collaborator")
+	issue := newEvent(collaborator, "issue.open", 1, "")
+	issue.Title = "collaboration-only compatibility"
+	if _, err := appendEvent(issue, collaborator); err != nil {
+		t.Fatal(err)
+	}
+	for _, ref := range []string{mustMemoryRef(t, identity.Actor, stored.Envelope.Stream), mustMemoryRef(t, identity.Actor, verification.Envelope.Stream), actorRef(collaborator.Actor)} {
+		mustGit(t, "push", "-q", "--force", "origin", ref+":"+ref)
+	}
+	publisherMemories, err := collectMemories()
+	if err != nil {
+		t.Fatal(err)
+	}
+	atCommit := mustGitText(t, "rev-parse", "HEAD")
+	publisherProjection := ProjectMemories(publisherMemories, MemoryProjectionContext{AtCommit: atCommit})
 	if err := os.Chdir(receiver); err != nil {
 		t.Fatal(err)
 	}
 	t.Setenv("GIT_CONFIG_GLOBAL", filepath.Join(t.TempDir(), "no-global-config"))
 	t.Setenv("GIT_CONFIG_NOSYSTEM", "1")
-	if err := cmdReplication([]string{"select", "origin", "--memory", stored.Envelope.Stream}); err != nil {
+	if err := cmdReplication([]string{"select", "origin", "--memory", stored.Envelope.Stream, "--memory", verification.Envelope.Stream}); err != nil {
 		t.Fatal(err)
 	}
 	if output, err := captureTestOutput(t, func() error { return cmdSync(nil) }); err != nil {
 		t.Fatalf("fresh-clone sync failed: %v\n%s", err, output)
 	}
 	accepted, _ := acceptedMemoryRef("origin", identity.Actor, stored.Envelope.Stream)
-	assertRefValue(t, accepted, stored.Commit)
+	assertRefValue(t, accepted, successor.Commit)
 	memories, err := collectMemories()
-	if err != nil || len(memories) != 1 || memories[0].ID != stored.ID {
+	if err != nil || len(memories) != 3 {
 		t.Fatalf("fresh clone memories = %#v, err=%v", memories, err)
+	}
+	cloneProjection := ProjectMemories(memories, MemoryProjectionContext{AtCommit: atCommit})
+	if !reflect.DeepEqual(cloneProjection, publisherProjection) {
+		t.Fatalf("fresh clone projection diverged:\npublisher=%#v\nclone=%#v", publisherProjection, cloneProjection)
+	}
+	if len(cloneProjection.Relationships) != 1 || cloneProjection.Relationships[0].Operation != memoryOperationSupersede ||
+		len(cloneProjection.Rows) != 3 || cloneProjection.Rows[0].Applicability == "" {
+		t.Fatalf("fresh clone omitted lifecycle/applicability/evidence: %#v", cloneProjection)
 	}
 	gitDir := mustGitText(t, "rev-parse", "--absolute-git-dir")
 	for _, private := range []string{
@@ -344,6 +830,20 @@ func TestMemoryReplicationFreshCloneConvergesWithoutPrivateState(t *testing.T) {
 		if _, err := os.Stat(private); !os.IsNotExist(err) {
 			t.Fatalf("fresh-clone sync created private state %s: %v", filepath.Base(private), err)
 		}
+	}
+	collaborationOnly := filepath.Join(t.TempDir(), "collaboration-only")
+	mustGit(t, "clone", "-q", remote, collaborationOnly)
+	if err := os.Chdir(collaborationOnly); err != nil {
+		t.Fatal(err)
+	}
+	result, err := runReplicationTransaction(ReplicationSelection{
+		Version: replicationSelectionVersion, Remote: "origin", Actors: []string{collaborator.Actor}, Budgets: defaultReplicationBudgets(),
+	})
+	if err != nil || result.hasFailures() {
+		t.Fatalf("collaboration-only sync = %#v, err=%v", result.Outcomes, err)
+	}
+	if refs := mustGitText(t, "for-each-ref", "--format=%(refname)", "refs/nh/remotes/origin/memory"); refs != "" {
+		t.Fatalf("collaboration-only selection imported memory refs: %s", refs)
 	}
 }
 
