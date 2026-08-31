@@ -152,7 +152,7 @@
     },
     "WP05": {
       "actor": "user",
-      "agent": "codex",
+      "agent": null,
       "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
       "force_count": 1,
@@ -164,6 +164,7 @@
         "Ready for independent review; focused x3/full/race/vet/build/diff gates passed; implementation recovered after agent capacity interruption"
       ],
       "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "feedback_path": "/home/lynn/projects/nichthub/kitty-specs/agent-memory-protocol-01M19TMH/tasks/WP05-deliberate-record-and-safe-recall-cli/review-cycle-1.md",
         "reference": "review-cycle://agent-memory-protocol-01M19TMH/WP05-deliberate-record-and-safe-recall-cli/review-cycle-1.md",
@@ -171,14 +172,14 @@
         "verdict": "changes_requested"
       },
       "role": "reviewer",
-      "shell_pid": 2156508,
-      "shell_pid_created_at": "1788012444.72",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T021": "done",
-        "T022": "done",
-        "T023": "done",
-        "T024": "done",
-        "T025": "done"
+        "T021": "planned",
+        "T022": "planned",
+        "T023": "planned",
+        "T024": "planned",
+        "T025": "planned"
       }
     },
     "WP06": {
