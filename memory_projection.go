@@ -229,6 +229,10 @@ func ProjectMemories(memories []StoredMemory, context MemoryProjectionContext) M
 			result.Diagnostics = append(result.Diagnostics, relationshipDiagnostic(source, "actor-mismatch"))
 			continue
 		}
+		if envelope.Operation == memoryOperationChallenge && envelope.Actor == target.Envelope.Actor {
+			result.Diagnostics = append(result.Diagnostics, relationshipDiagnostic(source, "challenge-actor-rule"))
+			continue
+		}
 		result.Relationships = append(result.Relationships, MemoryRelationship{
 			MemoryID: source.ID, Stream: envelope.Stream, Actor: envelope.Actor,
 			Operation: envelope.Operation, TargetID: envelope.Target,
