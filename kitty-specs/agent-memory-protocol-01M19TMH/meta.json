@@ -14,9 +14,8 @@
   "accepted_by": "lynn",
   "accepted_from_commit": "bdc58b8e65bbe9282fb763882994a81cd075fa48",
   "baseline_merge_commit": "cfc418c1d780a152a4b6d21d7a98663347570be3",
-  "coordination_branch": "kitty/mission-agent-memory-protocol-01M19TMH",
   "created_at": "2026-08-30T17:14:22.797749+00:00",
-  "flattened": false,
+  "flattened": true,
   "friendly_name": "Agent Memory Protocol",
   "mission_id": "01M19TMH6CW346NQAAKAB9E20V",
   "mission_number": null,
@@ -28,7 +27,6 @@
   "slug": "agent-memory-protocol-01M19TMH",
   "status_phase": "1",
   "target_branch": "feat/agent-memory-protocol",
-  "topology": "coord",
   "vcs": "git",
   "vcs_locked_at": "2026-08-31T02:53:01.087140+00:00"
 }
