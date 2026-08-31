@@ -18,6 +18,14 @@ type PolicyDocument struct {
 	Maintainers []string                  `json:"maintainers"`
 	Proposals   ProposalPolicy            `json:"proposals"`
 	Pipelines   map[string]PipelinePolicy `json:"pipelines"`
+	Memory      *MemoryPolicy             `json:"memory,omitempty"`
+}
+
+// MemoryPolicy is deliberately optional so repositories with an nh.policy/0
+// document predating memory remain valid. Absence is not implicit trust.
+type MemoryPolicy struct {
+	TrustedActors []string `json:"trustedActors"`
+	TrustedKinds  []string `json:"trustedKinds"`
 }
 
 type ProposalPolicy struct {
@@ -134,6 +142,20 @@ func validatePolicy(policy PolicyDocument) error {
 			return fmt.Errorf("pipeline %q requiredResults exceeds its trusted runner count", name)
 		}
 	}
+	if policy.Memory != nil {
+		if policy.Memory.TrustedActors == nil {
+			return fmt.Errorf("memory trustedActors is required")
+		}
+		if policy.Memory.TrustedKinds == nil {
+			return fmt.Errorf("memory trustedKinds is required")
+		}
+		if err := validateSortedActorList("memory trustedActors", policy.Memory.TrustedActors); err != nil {
+			return err
+		}
+		if err := validateMemoryKindList(policy.Memory.TrustedKinds); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -149,6 +171,68 @@ func validateActorList(name string, actors []string) error {
 		seen[actor] = true
 	}
 	return nil
+}
+
+func validateSortedActorList(name string, actors []string) error {
+	if err := validateActorList(name, actors); err != nil {
+		return err
+	}
+	if !sort.StringsAreSorted(actors) {
+		return fmt.Errorf("%s must be sorted", name)
+	}
+	return nil
+}
+
+func validMemoryKind(kind string) bool {
+	switch kind {
+	case memoryKindObservation, memoryKindDecision, memoryKindAssumption,
+		memoryKindAttempt, memoryKindVerification, memoryKindHandoff:
+		return true
+	default:
+		return false
+	}
+}
+
+func validateMemoryKindList(kinds []string) error {
+	seen := make(map[string]bool, len(kinds))
+	for _, kind := range kinds {
+		if !validMemoryKind(kind) {
+			return fmt.Errorf("memory trustedKinds contains invalid kind %q", kind)
+		}
+		if seen[kind] {
+			return fmt.Errorf("memory trustedKinds contains duplicate kind %s", kind)
+		}
+		seen[kind] = true
+	}
+	if !sort.StringsAreSorted(kinds) {
+		return fmt.Errorf("memory trustedKinds must be sorted")
+	}
+	return nil
+}
+
+// classifyMemoryTrust keeps policy qualification separate from signatures,
+// evidence, applicability, and lifecycle. Actor failure takes deterministic
+// precedence when both policy dimensions fail.
+func classifyMemoryTrust(policy *MemoryPolicy, actor, kind string) string {
+	if policy == nil {
+		return memoryTrustPolicyMissing
+	}
+	if !actorListed(actor, policy.TrustedActors) {
+		return memoryTrustActorUntrusted
+	}
+	if !stringListed(kind, policy.TrustedKinds) {
+		return memoryTrustKindUntrusted
+	}
+	return memoryTrustQualified
+}
+
+func stringListed(value string, values []string) bool {
+	for _, candidate := range values {
+		if candidate == value {
+			return true
+		}
+	}
+	return false
 }
 
 func actorListed(actor string, actors []string) bool {
