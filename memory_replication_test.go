@@ -599,6 +599,51 @@ func TestMemoryReplicationTransactionReceiptFailuresAreTruthful(t *testing.T) {
 	})
 }
 
+func TestMemoryReplicationTransactionDoesNotClearAnotherPendingStream(t *testing.T) {
+	publisher, _, receiver, identity, first := setupMemoryReplicationFixture(t)
+	if err := os.Chdir(publisher); err != nil {
+		t.Fatal(err)
+	}
+	second := appendReplicableMemory(t, identity, fullMemoryID("b"), nil, "independent second stream")
+	secondRef := mustMemoryRef(t, identity.Actor, second.Envelope.Stream)
+	mustGit(t, "push", "-q", "origin", secondRef+":"+secondRef)
+	if err := os.Chdir(receiver); err != nil {
+		t.Fatal(err)
+	}
+	firstSelection := ReplicationSelection{Version: replicationSelectionVersion, Remote: "origin", Memories: []string{first.Envelope.Stream}, Budgets: defaultReplicationBudgets()}
+	secondSelection := ReplicationSelection{Version: replicationSelectionVersion, Remote: "origin", Memories: []string{second.Envelope.Stream}, Budgets: defaultReplicationBudgets()}
+	replicationAfterCopyHook = func() error { return os.ErrClosed }
+	_, err := runReplicationTransaction(firstSelection)
+	replicationAfterCopyHook = nil
+	if err == nil {
+		t.Fatal("first transaction did not stop after copy")
+	}
+	gitDir := mustGitText(t, "rev-parse", "--absolute-git-dir")
+	anchorsBefore, err := filepath.Glob(filepath.Join(gitDir, "nh", "replication", "anchors", "*.json"))
+	if err != nil || len(anchorsBefore) != 1 {
+		t.Fatalf("pending anchors before independent transaction = %v, %v", anchorsBefore, err)
+	}
+	if _, err := runReplicationTransaction(secondSelection); err != nil {
+		t.Fatal(err)
+	}
+	anchorsAfter, err := filepath.Glob(filepath.Join(gitDir, "nh", "replication", "anchors", "*.json"))
+	if err != nil || len(anchorsAfter) != 1 || anchorsAfter[0] != anchorsBefore[0] {
+		t.Fatalf("independent transaction changed pending anchor: before=%v after=%v err=%v", anchorsBefore, anchorsAfter, err)
+	}
+	firstAccepted, _ := acceptedMemoryRef("origin", identity.Actor, first.Envelope.Stream)
+	secondAccepted, _ := acceptedMemoryRef("origin", identity.Actor, second.Envelope.Stream)
+	assertRefAbsent(t, firstAccepted)
+	assertRefValue(t, secondAccepted, second.Commit)
+	memories, err := collectMemories()
+	if err != nil || len(memories) != 1 || memories[0].ID != second.ID {
+		t.Fatalf("pending residue crossed into accepted projection: %#v, %v", memories, err)
+	}
+	if _, err := runReplicationTransaction(firstSelection); err != nil {
+		t.Fatal(err)
+	}
+	assertRefValue(t, firstAccepted, first.Commit)
+}
+
 func TestMemoryReplicationShallowGapAndRecoveryUseProductionPath(t *testing.T) {
 	root := t.TempDir()
 	publisher := filepath.Join(root, "publisher")
@@ -890,11 +935,12 @@ func setupMemoryReplicationFixture(t *testing.T) (publisher, remote, receiver st
 	}
 	identity = deterministicMemoryIdentity()
 	stored = appendReplicableMemory(t, identity, defaultMemoryStream(identity.Actor), nil, "replicable")
-	mustGit(t, "clone", "-q", "--bare", publisher, remote)
+	mustGit(t, "init", "--bare", "-q", remote)
 	mustGit(t, "remote", "add", "origin", remote)
+	mustGit(t, "push", "-q", "origin", "main:main")
+	mustGit(t, "clone", "-q", remote, receiver)
 	ref, _ := memoryRef(identity.Actor, stored.Envelope.Stream)
 	mustGit(t, "push", "-q", "origin", ref+":"+ref)
-	mustGit(t, "clone", "-q", remote, receiver)
 	return publisher, remote, receiver, identity, stored
 }
 
