@@ -169,7 +169,8 @@
       "model": "__resolved_model_absent__",
       "notes": [
         "Ready for independent review; focused/full/race/vet/build replication gates passed; architectural gate authority unavailable",
-        "Ready for review cycle 2; real shallow recovery and full transaction/budget/crash/fresh-clone matrix pass; architectural gate authority unavailable"
+        "Ready for review cycle 2; real shallow recovery and full transaction/budget/crash/fresh-clone matrix pass; architectural gate authority unavailable",
+        "Review passed cycle 3: f1325c7 binds lifecycle, event, memory, Git-anchor, and Git-evidence gaps to exact known actor/proposal/memory suppliers and RequiredRef values; unknown suppliers remain explicitly non-derivable without unauthorized discovery, and recovery subsets promote only saved exact selectors with unchanged selection bytes. Memory budgets now prove full versus same-stream incremental discount, unreferenced/shared-object charging, zero attachments, and every numeric boundary. Mixed actor+proposal+memory tests prove all-old/all-new refs and byte-identical collaboration projection across fetch, measure, copy, pre-promote, validated receipt, ref-transaction, completion receipt, retry, and independent pending state. Fresh-clone and collaboration-only convergence remain green. Focused suites, high-risk suite x5, full go test, full race, vet, build, and diff-check pass. Anti-patterns: dead code PASS; synthetic fixtures PASS; silent empty PASS; FR coverage PASS; frozen surface PASS; locked decisions PASS; shared ownership PASS; production fragility PASS."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
