@@ -330,12 +330,15 @@ func TestMemoryContentTopicEvidenceBoundaries(t *testing.T) {
 			t.Fatalf("topic size %d: %v", size, got)
 		}
 	}
-	for _, runes := range []int{maxMemoryContentBytes/2 - 1, maxMemoryContentBytes / 2, maxMemoryContentBytes/2 + 1} {
+	for _, size := range []int{maxMemoryContentBytes - 1, maxMemoryContentBytes, maxMemoryContentBytes + 1} {
 		record := validMemoryRecordFixture(memoryKindDecision)
-		record.Content = strings.Repeat("é", runes)
+		record.Content = mixedWidthMemoryContent(size)
+		if len(record.Content) != size {
+			t.Fatalf("multibyte fixture size = %d, want %d", len(record.Content), size)
+		}
 		got := validateMemoryRecord(record)
-		if (len(record.Content) <= maxMemoryContentBytes) != (got == nil) {
-			t.Fatalf("multibyte content size %d: %v", len(record.Content), got)
+		if (size <= maxMemoryContentBytes) != (got == nil) {
+			t.Fatalf("multibyte content size %d: %v", size, got)
 		}
 	}
 	for _, count := range []int{maxMemoryTopics - 1, maxMemoryTopics, maxMemoryTopics + 1} {
@@ -360,6 +363,14 @@ func TestMemoryContentTopicEvidenceBoundaries(t *testing.T) {
 			t.Fatalf("evidence count %d: %v", count, got)
 		}
 	}
+}
+
+func mixedWidthMemoryContent(size int) string {
+	content := strings.Repeat("é", size/2)
+	if size%2 != 0 {
+		content += "x"
+	}
+	return content
 }
 
 func leftPaddedDecimal(value int) string {
@@ -420,21 +431,48 @@ func TestMemoryPathAndHandoffBoundaries(t *testing.T) {
 	}
 	for _, total := range []int{maxMemoryHandoffBytes - 1, maxMemoryHandoffBytes, maxMemoryHandoffBytes + 1} {
 		record := validMemoryRecordFixture(memoryKindHandoff)
-		chunks := make([]string, 16)
+		chunks := make([]string, 17)
 		remaining := total
 		for index := range chunks {
 			size := remaining / (len(chunks) - index)
 			chunks[index] = strings.Repeat("x", size)
 			remaining -= size
+			if len(chunks[index]) > maxMemoryHandoffEntryBytes {
+				t.Fatalf("aggregate fixture entry %d has %d bytes", index, len(chunks[index]))
+			}
 		}
 		record.Handoff.Completed = chunks
 		record.Handoff.Assumptions = []string{}
 		record.Handoff.Blockers = []string{}
 		record.Handoff.NextActions = []string{}
 		got := validateMemoryRecord(record)
-		if (total <= maxMemoryHandoffBytes) != (got == nil) {
+		if total <= maxMemoryHandoffBytes && got != nil {
 			t.Fatalf("handoff total %d: %v", total, got)
 		}
+		if total > maxMemoryHandoffBytes && (got == nil || got.Error() != "memory handoff bytes exceed limit") {
+			t.Fatalf("handoff total %d did not reach aggregate bound: %v", total, got)
+		}
+	}
+}
+
+func TestMemoryPathsRejectTraversalSegmentsOnly(t *testing.T) {
+	tests := []struct {
+		path string
+		want bool
+	}{
+		{"..", false},
+		{"../secret", false},
+		{"a/../../secret", false},
+		{"a/../secret", false},
+		{"docs/file..md", true},
+		{"two..dots/are-valid", true},
+	}
+	for _, test := range tests {
+		t.Run(test.path, func(t *testing.T) {
+			if got := validMemoryPath(test.path); got != test.want {
+				t.Fatalf("validMemoryPath(%q) = %t, want %t", test.path, got, test.want)
+			}
+		})
 	}
 }
 
