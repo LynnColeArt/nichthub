@@ -1,39 +1,51 @@
 ---
-work_package_id: "WP03"
-title: "Lifecycle, Applicability, and Trust Projection"
-dependencies: ["WP01", "WP02"]
+work_package_id: WP03
+title: Lifecycle, Applicability, and Trust Projection
+dependencies:
+- WP01
+- WP02
 requirement_refs:
-  - FR-003
-  - FR-004
-  - FR-008
-  - FR-010
-  - FR-012
-  - FR-013
-  - FR-014
-  - FR-015
-  - FR-016
-  - FR-017
-  - FR-022
-  - NFR-001
-  - NFR-005
-  - NFR-010
-  - C-004
-  - C-010
-subtasks: ["T011", "T012", "T013", "T014", "T015"]
-owned_files:
-  - "memory_projection.go"
-  - "memory_projection_test.go"
-  - "policy.go"
-  - "policy_test.go"
-authoritative_surface: "memory_projection.go"
+- FR-003
+- FR-004
+- FR-008
+- FR-010
+- FR-012
+- FR-013
+- FR-014
+- FR-015
+- FR-016
+- FR-017
+- FR-022
+- NFR-001
+- NFR-005
+- NFR-010
+- C-004
+- C-010
+planning_base_branch: feat/agent-memory-protocol
+merge_target_branch: feat/agent-memory-protocol
+branch_strategy: Planning artifacts for this mission were generated on feat/agent-memory-protocol. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/agent-memory-protocol unless the human explicitly redirects the landing branch.
+subtasks:
+- T011
+- T012
+- T013
+- T014
+- T015
+history: []
+agent_profile: implementer-ivan
+authoritative_surface: memory_projection.go
 create_intent:
-  - "memory_projection.go"
-  - "memory_projection_test.go"
-execution_mode: "code_change"
-agent_profile: "implementer-ivan"
-role: "implementer"
-agent: "codex"
-model: ""
+- memory_projection.go
+- memory_projection_test.go
+execution_mode: code_change
+model: ''
+owned_files:
+- memory_projection.go
+- memory_projection_test.go
+- policy.go
+- policy_test.go
+role: implementer
+tags: []
+tracker_refs: []
 ---
 
 # Work Package Prompt: WP03 – Lifecycle, Applicability, and Trust Projection
