@@ -2,7 +2,7 @@
 
 **Mission Branch**: `feat/agent-memory-protocol`  
 **Created**: 2026-08-30  
-**Status**: Draft  
+**Status**: Ready for planning
 **Input**: Give agents working in Git projects a durable, distributed, attributable memory layer without turning retrieved text into trusted instructions.
 
 ## Intent

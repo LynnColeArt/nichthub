@@ -40,5 +40,8 @@
 - Memory streams are independently selectable from collaboration histories so
   volume or hostile content cannot become a prerequisite for code review.
 - The operational self-hosting alpha is an explicit implementation dependency,
-  allowing this mission to be fully specified now without competing for its
-  foundational identity and replication boundaries.
+  and that dependency is now satisfied by the completed and accepted
+  `self-hosting-alpha-loop-01M18YXX` mission.
+- Research resolves stream separation, lifecycle, trust classification,
+  bounded inert recall, rebuildable indexing, and replication isolation without
+  adding implementation choices to this product specification.

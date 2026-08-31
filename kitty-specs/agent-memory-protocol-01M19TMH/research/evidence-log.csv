@@ -1,0 +1,15 @@
+evidence_id,source_id,finding,decision_ids
+EV-001,SRC-003,Existing collaboration Event JSON and IDs are public compatibility surfaces and memory fields would alter their protocol boundary,D1 D10
+EV-002,SRC-004,Actor collaboration is currently one append-only ref per actor so memory on that ref would couple collaboration replication to memory volume,D1 D8
+EV-003,SRC-005,Saved replication selections are strict private JSON with compatibility-all behavior and positive post-fetch budgets,D8 D9
+EV-004,SRC-006,Quarantine already separates request outcomes and promotes validated refs atomically so memory should be a third independent request kind,D8
+EV-005,SRC-007,Shallow recovery already distinguishes missing exact dependencies from malformed or invalid facts and can supply memory recovery language,D4 D8
+EV-006,SRC-008,Policy is loaded from exact Git bytes and optional zero-value fields can preserve legacy documents,D5
+EV-007,SRC-001,Git must remain canonical and mandatory services Docker and ambient trust are prohibited,D1 D7 D10
+EV-008,SRC-002,Memory content is a signed claim rather than truth and must be returned as bounded inert data,D5 D6
+EV-009,SRC-002,Correction requires immutable same-author supersession or retraction plus non-erasing cross-author challenge,D3
+EV-010,SRC-002,Fresh clones must reproduce canonical IDs lifecycle and exact recall without keys indexes embeddings or vendor state,D2 D3 D7
+EV-011,SRC-009,Current content addressing uses exact JSON payload bytes and full SHA-256 IDs while Git commit IDs remain storage identities,D1
+EV-012,SRC-010,Selected replication treats fetched data as hostile and does not claim portable pre-download quotas or erasure,D8 D9
+EV-013,SRC-011,Actor fingerprints bind Ed25519 public keys and private identities stay below the private Git directory,D1 D5
+EV-014,SRC-012,Operational alpha proved identities policy replication budgets and shallow handling needed by mission constraint C-001,D1 D4 D5 D8

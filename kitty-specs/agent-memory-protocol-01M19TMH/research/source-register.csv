@@ -1,0 +1,13 @@
+source_id,type,location,authority,scope
+SRC-001,project-charter,.kittify/charter/charter.md,authoritative-project,architecture and quality constraints
+SRC-002,mission-spec,kitty-specs/agent-memory-protocol-01M19TMH/spec.md,authoritative-mission,product requirements and boundaries
+SRC-003,source-code,event.go,implemented-current,collaboration wire identity signing and validation
+SRC-004,source-code,store.go,implemented-current,Git commit tree storage actor refs and relationship projection
+SRC-005,source-code,replication.go,implemented-current,selection schema private state and positive budgets
+SRC-006,source-code,quarantine.go,implemented-current,hostile fetch validation dependency isolation and atomic promotion
+SRC-007,source-code,shallow.go,implemented-current,exact dependency classification and explicit recovery
+SRC-008,source-code,policy.go,implemented-current,exact-commit policy validation and trust evaluation
+SRC-009,protocol-doc,docs/protocol-v0.md,implemented-current,public collaboration wire contract
+SRC-010,protocol-doc,docs/replication-v0.md,implemented-current,public selected replication and quarantine contract
+SRC-011,protocol-doc,docs/identity-v0.md,implemented-current,actor continuity and keyring safety
+SRC-012,protocol-doc,docs/self-hosting-alpha.md,verified-current,operational dependency proof and known limits
