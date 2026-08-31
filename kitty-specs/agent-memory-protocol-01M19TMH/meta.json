@@ -12,5 +12,7 @@
   "purpose_tldr": "Give agents durable, distributed, signed project memory bound to exact Git and Nichthub state.",
   "slug": "agent-memory-protocol-01M19TMH",
   "target_branch": "feat/agent-memory-protocol",
-  "topology": "coord"
+  "topology": "coord",
+  "vcs": "git",
+  "vcs_locked_at": "2026-08-31T02:53:01.087140+00:00"
 }
