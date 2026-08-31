@@ -19,7 +19,7 @@
   "work_packages": {
     "WP01": {
       "actor": "user",
-      "agent": "codex",
+      "agent": null,
       "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
       "force_count": 1,
@@ -31,6 +31,7 @@
         "Ready for review: canonical nh-memory/0 envelope, strict validation, Ed25519 signing, exact IDs, hostile-input and boundary coverage; all required gates pass"
       ],
       "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "feedback_path": "/home/lynn/projects/nichthub/kitty-specs/agent-memory-protocol-01M19TMH/tasks/WP01-signed-memory-envelope/review-cycle-1.md",
         "reference": "review-cycle://agent-memory-protocol-01M19TMH/WP01-signed-memory-envelope/review-cycle-1.md",
@@ -38,14 +39,14 @@
         "verdict": "changes_requested"
       },
       "role": "reviewer",
-      "shell_pid": 2156508,
-      "shell_pid_created_at": "1788012444.72",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T001": "done",
-        "T002": "done",
-        "T003": "done",
-        "T004": "done",
-        "T005": "done"
+        "T001": "planned",
+        "T002": "planned",
+        "T003": "planned",
+        "T004": "planned",
+        "T005": "planned"
       }
     },
     "WP02": {
