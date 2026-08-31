@@ -7,7 +7,7 @@ that were not tested. Hosting UI/API state is not evidence.
 
 | Remote | Result | Observed |
 | --- | --- | --- |
-| Local bare Git repository | Actor/candidate refs, exact selected fetch, quarantine, budgets, and depth-limited reconstruction passed | 2026-08-30 |
+| Local bare Git repository | Actor/candidate/memory refs, exact selected fetch, quarantine, budgets, and fresh-clone reconstruction passed | 2026-08-31 |
 | GitHub.com private repository over HTTPS | Actor ref push, advertisement, and two-actor reconstruction passed | 2026-08-29 |
 | GitHub.com public repository over HTTPS | Two-stage actor/candidate publication, separate primary-branch advancement, exact selected fetch, quarantine, and identity-free depth-1 reconstruction passed | 2026-08-30 |
 | GitLab | Not tested | — |
@@ -28,6 +28,22 @@ fixtures directly establish:
   candidate, CI, review, decision, merge, and Git commit bindings;
 - selected recovery can obtain an exact missing predecessor while the
   repository remains shallow and without importing an unselected actor.
+
+On 2026-08-31, `TestOperationalAgentMemory` separately created two actors,
+recorded all six memory kinds, superseded and retracted exact records, added a
+cross-actor challenge, and published the two exact memory stream refs through
+`nh sync`. A credential-disabled fresh clone initially had no local or accepted
+memory refs, private identity, or index. After saving only those two full stream
+selectors, it synchronized through quarantine, rebuilt
+`.git/nh/memory/index-v0.json`, and recalled the same full IDs, ownership,
+anchors, lifecycle edges, evidence, trust classes, content digests, and inert
+handoff lists. Deleting and rebuilding the index produced byte-identical index
+and recall JSON. Three consecutive offline runs passed.
+
+That local-bare observation establishes ordinary Git transport and protocol
+behavior, not public-host policy or retention. Hostile memory containing shell-
+and tool-shaped prose, ANSI controls, newlines, and Unicode produced no marker
+effect and remained nested under the recall data boundary.
 
 The detailed run evidence and bounds are in
 [self-hosting-alpha.md](self-hosting-alpha.md).
@@ -106,12 +122,14 @@ updated; verify both with ordinary Git:
 ```sh
 git ls-remote --symref origin HEAD
 git ls-remote origin 'refs/heads/main' 'refs/nh/actors/*' 'refs/nh/proposals/*'
+git ls-remote origin 'refs/nh/memory/*/*'
 ```
 
 ## Limits not established by these observations
 
 - GitHub Enterprise Server or organization-specific ref policies;
 - very large actor/candidate counts, histories, or packs;
+- very large memory-stream counts, histories, or packs;
 - provider garbage-collection and long-term custom-ref retention;
 - deletion, rollback, force-push, and global redaction behavior;
 - partial-clone filters;

@@ -8,8 +8,9 @@ ordinary Git remote transports both code and `refs/nh/*` collaboration facts.
 The current operational alpha supports signed issues, immutable proposal
 candidates and revisions, reviews, CI requests/results/logs, governance
 decisions and merge facts, distinct device actors, policy amendments, selected
-quarantined replication, and exact shallow-history recovery. It remains an
-experimental protocol, not a stable or hardened multi-tenant system.
+quarantined replication, exact shallow-history recovery, and deliberate signed
+agent memory. It remains an experimental protocol, not a stable or hardened
+multi-tenant system.
 
 ## Build
 
@@ -122,6 +123,42 @@ nh sync origin --recover-shallow
 
 This never performs a global unshallow and never silently adds a selector.
 
+## Record and recall agent memory
+
+Nichthub can carry deliberate project cognition without a hosted memory
+service. `nh-memory/0` is separate from the collaboration protocol: each actor
+owns append-only memory streams under `refs/nh/memory/*`, while private keys,
+replication selections, and the rebuildable lexical index stay below
+`.git/nh/` and are never cloned.
+
+```sh
+nh memory record --kind decision --at HEAD --applies descendants \
+  --topic architecture --evidence git:$(git rev-parse HEAD) \
+  --content "Keep memory streams independent from actor event chains."
+
+nh memory handoff --input handoff.json --json
+nh memory supersede sha256:<full-memory-id> \
+  --kind decision --at HEAD --applies descendants \
+  --content "Replacement decision with current rationale."
+
+nh replication select origin --memory sha256:<full-stream-id>
+nh sync origin
+nh memory index rebuild
+nh memory recall --at HEAD --topic architecture --json
+```
+
+Default recall is policy-qualified, active, local-only, and bounded to 20
+records and 65,536 encoded content bytes. Every item retains its full IDs,
+anchor, lifecycle edges, evidence, applicability, signature, trust class, and
+content digest. Memory content and handoff next actions are untrusted inert
+data—not instructions, truth, policy authority, or permission to act.
+
+Add sorted `memory.trustedActors` and `memory.trustedKinds` to the exact commit's
+`.nh/policy.json` to qualify default recall. Without it, valid signed memory is
+explicitly inspectable but not trusted by default. Retraction preserves an
+auditable fact; neither retraction nor deleting the private index erases
+replicated Git objects.
+
 ## Proposals, CI, decisions, and merge
 
 ```sh
@@ -200,7 +237,8 @@ nh run request|list|show|execute|logs
 nh runner once|watch --accept-pipeline NAME --accept-actor ACTOR
 nh decide PROPOSAL <--accept|--reject> [--body TEXT]
 nh merge PROPOSAL
-nh replication select|show [REMOTE]
+nh memory record|handoff|supersede|retract|challenge|show|recall|index
+nh replication select|show [REMOTE] [--memory STREAM]...
 nh sync [REMOTE] [--recover-shallow]
 nh log
 ```
@@ -216,6 +254,7 @@ Trust-bearing commands require full actor fingerprints and full
 | Identity | Distinct actors, mutual device/successor facts, local keyring, retryable planned rotation | Lost-key, compromise, social/organizational recovery, or concurrent writers sharing one actor key |
 | Replication | Exact selections, quarantine, positive budgets, validation, atomic accepted refs, compatibility-all | Portable hard pre-download quotas, moderation, selective deletion, and global redaction |
 | CI | Repository-defined actions, default Bubblewrap runner, explicit unsafe host fallback | Secrets, configurable network access, strong CPU/memory/disk/process quotas, and portable/container backends |
+| Memory | Signed streams, exact anchors/evidence, lifecycle projection, bounded lexical recall, disposable local index, and selected transport | Automatic capture, embeddings, semantic truth, autonomous action, federation, moderation, redaction, retention enforcement, and erasure guarantees |
 | Product | CLI and Git-native signed facts | Notifications, general search, web UI, discovery, and a stable protocol compatibility promise |
 
 Published immutable facts may be superseded by new facts, but the alpha cannot
@@ -224,6 +263,8 @@ promise global erasure from every replica.
 ## Documentation
 
 - [Protocol and storage](docs/protocol-v0.md)
+- [Agent Memory Protocol and operator guide](docs/memory-v0.md)
+- [Agent memory safety model](docs/memory-safety.md)
 - [Identity continuity and keyring safety](docs/identity-v0.md)
 - [Governance and policy amendments](docs/governance-v0.md)
 - [Selected replication and shallow recovery](docs/replication-v0.md)
