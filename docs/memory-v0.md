@@ -120,14 +120,16 @@ nh memory retract sha256:<full-memory-id> --reason incorrect
 nh memory challenge sha256:<another-actor-memory-id> \
   --reason evidence-mismatch --evidence git:$(git rev-parse HEAD)
 
-nh memory handoff --input handoff.json --json
+nh memory handoff --at HEAD --applies descendants --input handoff.json --json
 ```
 
-Machine record and handoff requests are strict version-0 JSON. Unknown or
-duplicate fields, ambiguous flag/input combinations, invalid UTF-8, and
-oversized input fail before append. Nichthub reads only explicitly supplied
-fields; it does not capture prompts, responses, terminal history, environment,
-clipboard, credentials, or unrelated working-tree files.
+Machine record and handoff requests are strict version-0 JSON. For handoff
+input, `--at` and `--applies` supply omitted anchor/applicability context; if
+the JSON also supplies either field it must match exactly. Other record flags
+cannot be combined with `--input`. Unknown or duplicate fields, conflicts,
+invalid UTF-8, and oversized input fail before append. Nichthub reads only
+explicitly supplied fields; it does not capture prompts, responses, terminal
+history, environment, clipboard, credentials, or unrelated working-tree files.
 
 ## Bounded recall
 
@@ -140,8 +142,9 @@ nh memory show sha256:<full-memory-id> --json
 Recall filters exact commit, subject, path, topic, kind, actor, lifecycle,
 trust, and deterministic lexical terms. Defaults are active lifecycle,
 policy-qualified trust, at most 20 records, and at most 65,536 bytes of encoded
-`data.content`. Stable order is signed timestamp descending, then full memory
-ID. Every result carries full memory, actor, and stream IDs; anchor; signature;
+`data.content`. Stable order is applicability class, lifecycle class, signed
+timestamp descending, then full memory ID. Every result carries full memory,
+actor, and stream IDs; anchor; signature;
 lifecycle edges; applicability; evidence details; trust class; content digest;
 and nested inert data.
 

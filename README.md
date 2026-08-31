@@ -136,7 +136,7 @@ nh memory record --kind decision --at HEAD --applies descendants \
   --topic architecture --evidence git:$(git rev-parse HEAD) \
   --content "Keep memory streams independent from actor event chains."
 
-nh memory handoff --input handoff.json --json
+nh memory handoff --at HEAD --applies descendants --input handoff.json --json
 nh memory supersede sha256:<full-memory-id> \
   --kind decision --at HEAD --applies descendants \
   --content "Replacement decision with current rationale."
