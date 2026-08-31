@@ -27,6 +27,9 @@
       "last_event_id": "01M1AWQD3X6AN9PG12HZQX7ZTM",
       "last_transition_at": "2026-08-31T03:10:08.509851+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for review: canonical nh-memory/0 envelope, strict validation, Ed25519 signing, exact IDs, hostile-input and boundary coverage; all required gates pass"
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 2156508,
