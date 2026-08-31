@@ -7,15 +7,15 @@
     "requiredApprovals": 1,
     "requiredAccepts": 1,
     "trustedReviewers": [
-      "36944394addccd027292abc8183f332af8b4590925291ee8f1e8d8f09446b7dd"
+      "10425b859ef6c86afe46e9586a1c26a9fe007f7a0aa38a46a3c316fcfc69a1db"
     ],
-    "allowAuthorApproval": true
+    "allowAuthorApproval": false
   },
   "pipelines": {
     "test": {
       "requiredResults": 1,
       "trustedRunners": [
-        "36944394addccd027292abc8183f332af8b4590925291ee8f1e8d8f09446b7dd"
+        "10425b859ef6c86afe46e9586a1c26a9fe007f7a0aa38a46a3c316fcfc69a1db"
       ]
     }
   }
