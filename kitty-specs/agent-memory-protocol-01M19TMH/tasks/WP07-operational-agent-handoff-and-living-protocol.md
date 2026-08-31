@@ -464,3 +464,8 @@ Do not approve T035 from a local-only substitute or an unverified transcript.
 ```bash
 spec-kitty agent action implement WP07 --agent <name>
 ```
+
+## Activity Log
+
+- 2026-08-31T18:05:21Z – codex – shell_pid=2156508 – Contract conformance: wire PASS (nh-memory/0 two-file signed streams, full IDs, lifecycle and bounds); CLI PASS (strict v0 record/handoff/recall, frozen handoff composition, filters/cursors/index); replication PASS (exact memory selectors, quarantine, independent outcomes, accepted refs, recovery); quickstart PASS (real binary, two actors, correction/challenge, fresh clone, deterministic rebuild); public Git PASS (GitHub HTTPS proof branch plus two actor/two memory refs, credential-disabled verifier, full OIDs/digests recorded). Gates: focused x3, full, race, vet, build, diff, links, secret/private-state scan.
+- 2026-08-31T18:05:55Z – codex – shell_pid=2156508 – for_review transition blocked after successful implementation: lane contains 20 inherited committed kitty-specs planning files relative to feat/agent-memory-protocol; pre-review coverage authority tests.architectural._gate_coverage is unavailable in this Go repository. No force or kitty-specs mutation attempted.

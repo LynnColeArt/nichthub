@@ -24,6 +24,9 @@ requirement_refs:
 planning_base_branch: feat/agent-memory-protocol
 merge_target_branch: feat/agent-memory-protocol
 branch_strategy: Planning artifacts for this mission were generated on feat/agent-memory-protocol. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/agent-memory-protocol unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-agent-memory-protocol-01M19TMH
+base_commit: b2c891ac1c53bbad6f82ff2b84981627002c052a
+created_at: '2026-08-31T02:53:01.157480+00:00'
 subtasks:
 - T001
 - T002
