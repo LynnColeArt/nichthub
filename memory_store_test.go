@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"crypto/ed25519"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
@@ -301,9 +303,7 @@ func TestMemoryStreamRejectsSignedPreviousAndGitMergeIndependently(t *testing.T)
 		}
 		badPreviousCommit := writeRawMemoryCommit(t, payload, signature, []string{first.Commit})
 		mustGit(t, "update-ref", ref, badPreviousCommit, first.Commit)
-		if _, err := collectMemories(); err == nil || !strings.Contains(err.Error(), "previous") {
-			t.Fatalf("signed previous error = %v", err)
-		}
+		assertMemoryCollectionRejectedWithoutRefMutation(t, "previous")
 
 		mustGit(t, "update-ref", ref, first.Commit, badPreviousCommit)
 		otherRoot := writeRawMemoryCommit(t, first.Payload, first.Signature, nil)
@@ -314,9 +314,7 @@ func TestMemoryStreamRejectsSignedPreviousAndGitMergeIndependently(t *testing.T)
 		}
 		merge := writeRawMemoryCommit(t, payload, signature, []string{first.Commit, otherRoot})
 		mustGit(t, "update-ref", ref, merge, first.Commit)
-		if _, err := collectMemories(); err == nil || !strings.Contains(err.Error(), "parent") {
-			t.Fatalf("merge parent error = %v", err)
-		}
+		assertMemoryCollectionRejectedWithoutRefMutation(t, "parent")
 	})
 }
 
@@ -340,6 +338,625 @@ func TestMemoryStoreRejectsInvalidSignatureWithoutRefMutation(t *testing.T) {
 			t.Fatalf("failed collection mutated refs:\nbefore=%s\nafter=%s", before, after)
 		}
 	})
+}
+
+func TestMemoryStoreRoundTripsEveryLifecycleOperationWithoutResolvingTargets(t *testing.T) {
+	for _, operation := range []string{memoryOperationSupersede, memoryOperationRetract, memoryOperationChallenge} {
+		t.Run(operation, func(t *testing.T) {
+			withMemoryRepository(t, func() {
+				identity := deterministicMemoryIdentity()
+				envelope := validMemoryEnvelopeFixture(operation)
+				stored, err := appendMemory(envelope, identity)
+				if err != nil {
+					t.Fatal(err)
+				}
+				memories, err := collectMemories()
+				if err != nil {
+					t.Fatal(err)
+				}
+				if len(memories) != 1 || memories[0].ID != stored.ID || memories[0].Envelope.Operation != operation {
+					t.Fatalf("stored %s memories = %#v", operation, memories)
+				}
+				if memories[0].Envelope.Target != envelope.Target || envelope.Target == stored.ID {
+					t.Fatalf("%s target was resolved or changed at storage boundary", operation)
+				}
+			})
+		})
+	}
+}
+
+func TestMemoryStreamRejectsCompleteTreeAndWireCorruptionMatrix(t *testing.T) {
+	type corruptionFixture struct {
+		name string
+		want string
+		make func(t *testing.T, identity *Identity, envelope MemoryEnvelope, payload, signature []byte) string
+	}
+	fixtures := []corruptionFixture{
+		{
+			name: "missing memory json", want: "exactly memory.json and signature",
+			make: func(t *testing.T, _ *Identity, _ MemoryEnvelope, _ []byte, signature []byte) string {
+				signatureBlob := writeMemoryBlob(t, []byte(base64.RawStdEncoding.EncodeToString(signature)))
+				return writeMemoryCommitFromEntries(t, []memoryTreeFixture{{Mode: "100644", Kind: "blob", OID: signatureBlob, Name: "signature"}}, nil)
+			},
+		},
+		{
+			name: "missing signature", want: "exactly memory.json and signature",
+			make: func(t *testing.T, _ *Identity, _ MemoryEnvelope, payload, _ []byte) string {
+				memoryBlob := writeMemoryBlob(t, payload)
+				return writeMemoryCommitFromEntries(t, []memoryTreeFixture{{Mode: "100644", Kind: "blob", OID: memoryBlob, Name: "memory.json"}}, nil)
+			},
+		},
+		{
+			name: "nested path", want: "invalid tree entry",
+			make: func(t *testing.T, _ *Identity, _ MemoryEnvelope, payload, signature []byte) string {
+				memoryBlob, signatureBlob := writeMemoryBlobs(t, payload, signature)
+				subtree := writeMemoryTree(t, []memoryTreeFixture{{Mode: "100644", Kind: "blob", OID: memoryBlob, Name: "memory.json"}}, false)
+				return writeMemoryCommitFromEntries(t, []memoryTreeFixture{
+					{Mode: "040000", Kind: "tree", OID: subtree, Name: "nested"},
+					{Mode: "100644", Kind: "blob", OID: signatureBlob, Name: "signature"},
+				}, nil)
+			},
+		},
+		{
+			name: "wrong mode", want: "invalid tree entry",
+			make: func(t *testing.T, _ *Identity, _ MemoryEnvelope, payload, signature []byte) string {
+				memoryBlob, signatureBlob := writeMemoryBlobs(t, payload, signature)
+				return writeMemoryCommitFromEntries(t, []memoryTreeFixture{
+					{Mode: "100755", Kind: "blob", OID: memoryBlob, Name: "memory.json"},
+					{Mode: "100644", Kind: "blob", OID: signatureBlob, Name: "signature"},
+				}, nil)
+			},
+		},
+		{
+			name: "wrong type", want: "invalid tree entry",
+			make: func(t *testing.T, _ *Identity, _ MemoryEnvelope, payload, signature []byte) string {
+				memoryBlob, signatureBlob := writeMemoryBlobs(t, payload, signature)
+				subtree := writeMemoryTree(t, []memoryTreeFixture{{Mode: "100644", Kind: "blob", OID: memoryBlob, Name: "value"}}, false)
+				return writeMemoryCommitFromEntries(t, []memoryTreeFixture{
+					{Mode: "040000", Kind: "tree", OID: subtree, Name: "memory.json"},
+					{Mode: "100644", Kind: "blob", OID: signatureBlob, Name: "signature"},
+				}, nil)
+			},
+		},
+		{
+			name: "duplicate names", want: "duplicate entry",
+			make: func(t *testing.T, _ *Identity, _ MemoryEnvelope, payload, signature []byte) string {
+				memoryBlob, signatureBlob := writeMemoryBlobs(t, payload, signature)
+				return writeMemoryCommitFromLiteralTree(t, []memoryTreeFixture{
+					{Mode: "100644", Kind: "blob", OID: memoryBlob, Name: "memory.json"},
+					{Mode: "100644", Kind: "blob", OID: signatureBlob, Name: "signature"},
+					{Mode: "100644", Kind: "blob", OID: signatureBlob, Name: "signature"},
+				}, nil)
+			},
+		},
+		{
+			name: "invalid raw base64", want: "invalid signature encoding",
+			make: func(t *testing.T, _ *Identity, _ MemoryEnvelope, payload, _ []byte) string {
+				memoryBlob := writeMemoryBlob(t, payload)
+				invalid := writeMemoryBlob(t, []byte("***"))
+				return writeMemoryCommitFromEntries(t, []memoryTreeFixture{
+					{Mode: "100644", Kind: "blob", OID: memoryBlob, Name: "memory.json"},
+					{Mode: "100644", Kind: "blob", OID: invalid, Name: "signature"},
+				}, nil)
+			},
+		},
+		{
+			name: "noncanonical padded base64", want: "invalid signature encoding",
+			make: func(t *testing.T, _ *Identity, _ MemoryEnvelope, payload, signature []byte) string {
+				memoryBlob := writeMemoryBlob(t, payload)
+				padded := writeMemoryBlob(t, []byte(base64.StdEncoding.EncodeToString(signature)))
+				return writeMemoryCommitFromEntries(t, []memoryTreeFixture{
+					{Mode: "100644", Kind: "blob", OID: memoryBlob, Name: "memory.json"},
+					{Mode: "100644", Kind: "blob", OID: padded, Name: "signature"},
+				}, nil)
+			},
+		},
+		{
+			name: "unknown envelope", want: "invalid memory JSON",
+			make: func(t *testing.T, identity *Identity, _ MemoryEnvelope, _ []byte, _ []byte) string {
+				payload := []byte(`{"protocol":"not-memory","private":"must-not-echo"}`)
+				return writeRawMemoryCommit(t, payload, signMemoryPayload(t, identity, payload), nil)
+			},
+		},
+		{
+			name: "invalid envelope bytes", want: "invalid memory JSON",
+			make: func(t *testing.T, identity *Identity, _ MemoryEnvelope, _ []byte, _ []byte) string {
+				payload := []byte("not-json-memory-envelope")
+				return writeRawMemoryCommit(t, payload, signMemoryPayload(t, identity, payload), nil)
+			},
+		},
+		{
+			name: "actor public key mismatch", want: "does not match publicKey",
+			make: func(t *testing.T, identity *Identity, _ MemoryEnvelope, payload, _ []byte) string {
+				other := testIdentity(t, "Other")
+				payload = bytes.Replace(payload, []byte(identity.Actor), []byte(other.Actor), 1)
+				return writeRawMemoryCommit(t, payload, signMemoryPayload(t, identity, payload), nil)
+			},
+		},
+		{
+			name: "zero sequence", want: "sequence must be positive",
+			make: func(t *testing.T, identity *Identity, _ MemoryEnvelope, payload, _ []byte) string {
+				payload = bytes.Replace(payload, []byte(`"sequence":1`), []byte(`"sequence":0`), 1)
+				return writeRawMemoryCommit(t, payload, signMemoryPayload(t, identity, payload), nil)
+			},
+		},
+	}
+
+	for _, fixture := range fixtures {
+		t.Run(fixture.name, func(t *testing.T) {
+			withMemoryRepository(t, func() {
+				identity := deterministicMemoryIdentity()
+				envelope := validMemoryEnvelopeFixture(memoryOperationRecord)
+				payload, signature, err := encodeAndSignMemory(envelope, identity)
+				if err != nil {
+					t.Fatal(err)
+				}
+				commit := fixture.make(t, identity, envelope, payload, signature)
+				ref, _ := memoryRef(identity.Actor, envelope.Stream)
+				mustGit(t, "update-ref", ref, commit)
+				assertMemoryCollectionRejectedWithoutRefMutation(t, fixture.want)
+			})
+		})
+	}
+}
+
+func TestMemoryStreamRejectsCompleteContinuityMatrix(t *testing.T) {
+	type continuityFixture struct {
+		name string
+		want string
+		make func(t *testing.T, identity *Identity) (string, string)
+	}
+	fixtures := []continuityFixture{
+		{
+			name: "root with previous", want: "previous must be absent",
+			make: func(t *testing.T, identity *Identity) (string, string) {
+				envelope := validMemoryEnvelopeFixture(memoryOperationRecord)
+				envelope.Sequence = 2
+				envelope.Previous = fullMemoryID("4")
+				payload, _ := mustSignMemoryEnvelope(t, envelope, identity)
+				payload = bytes.Replace(payload, []byte(`"sequence":2`), []byte(`"sequence":1`), 1)
+				signature := signMemoryPayload(t, identity, payload)
+				return envelope.Stream, writeRawMemoryCommit(t, payload, signature, nil)
+			},
+		},
+		{
+			name: "gap sequence", want: "sequence 3, want 2",
+			make: func(t *testing.T, identity *Identity) (string, string) {
+				first := writeFirstMemory(t, identity, defaultMemoryStream(identity.Actor))
+				third := nextMemoryEnvelope(t, identity, first.Envelope.Stream, first, "gap")
+				third.Sequence = 3
+				payload, signature := mustSignMemoryEnvelope(t, third, identity)
+				return first.Envelope.Stream, writeRawMemoryCommit(t, payload, signature, []string{first.Commit})
+			},
+		},
+		{
+			name: "duplicate sequence", want: "sequence 1, want 2",
+			make: func(t *testing.T, identity *Identity) (string, string) {
+				first := writeFirstMemory(t, identity, defaultMemoryStream(identity.Actor))
+				duplicate := validMemoryEnvelopeFixture(memoryOperationRecord)
+				payload, signature := mustSignMemoryEnvelope(t, duplicate, identity)
+				return first.Envelope.Stream, writeRawMemoryCommit(t, payload, signature, []string{first.Commit})
+			},
+		},
+		{
+			name: "decreasing sequence", want: "sequence 1, want 3",
+			make: func(t *testing.T, identity *Identity) (string, string) {
+				first := writeFirstMemory(t, identity, defaultMemoryStream(identity.Actor))
+				secondEnvelope := nextMemoryEnvelope(t, identity, first.Envelope.Stream, first, "second")
+				secondPayload, secondSignature := mustSignMemoryEnvelope(t, secondEnvelope, identity)
+				secondCommit := writeRawMemoryCommit(t, secondPayload, secondSignature, []string{first.Commit})
+				decreasing := validMemoryEnvelopeFixture(memoryOperationRecord)
+				payload, signature := mustSignMemoryEnvelope(t, decreasing, identity)
+				return first.Envelope.Stream, writeRawMemoryCommit(t, payload, signature, []string{secondCommit})
+			},
+		},
+		{
+			name: "skipped predecessor", want: "sequence 3, want 2",
+			make: func(t *testing.T, identity *Identity) (string, string) {
+				first := writeFirstMemory(t, identity, defaultMemoryStream(identity.Actor))
+				secondEnvelope := nextMemoryEnvelope(t, identity, first.Envelope.Stream, first, "second")
+				secondPayload, secondSignature := mustSignMemoryEnvelope(t, secondEnvelope, identity)
+				secondCommit := writeRawMemoryCommit(t, secondPayload, secondSignature, []string{first.Commit})
+				second := &StoredMemory{ID: memoryID(secondPayload), Commit: secondCommit, Envelope: secondEnvelope}
+				third := nextMemoryEnvelope(t, identity, first.Envelope.Stream, second, "third")
+				payload, signature := mustSignMemoryEnvelope(t, third, identity)
+				return first.Envelope.Stream, writeRawMemoryCommit(t, payload, signature, []string{first.Commit})
+			},
+		},
+		{
+			name: "cross stream graft", want: "has stream",
+			make: func(t *testing.T, identity *Identity) (string, string) {
+				wantedStream := fullMemoryID("1")
+				otherStream := fullMemoryID("2")
+				other := writeFirstMemory(t, identity, otherStream)
+				return wantedStream, other.Commit
+			},
+		},
+		{
+			name: "wrong ref owner", want: "has owner",
+			make: func(t *testing.T, identity *Identity) (string, string) {
+				first := writeFirstMemory(t, identity, defaultMemoryStream(identity.Actor))
+				return first.Envelope.Stream, first.Commit
+			},
+		},
+	}
+
+	for _, fixture := range fixtures {
+		t.Run(fixture.name, func(t *testing.T) {
+			withMemoryRepository(t, func() {
+				identity := deterministicMemoryIdentity()
+				stream, head := fixture.make(t, identity)
+				owner := identity.Actor
+				if fixture.name == "wrong ref owner" {
+					owner = testIdentity(t, "Wrong owner").Actor
+				}
+				ref, _ := memoryRef(owner, stream)
+				mustGit(t, "update-ref", ref, head)
+				assertMemoryCollectionRejectedWithoutRefMutation(t, fixture.want)
+			})
+		})
+	}
+
+	t.Run("unavailable predecessor", func(t *testing.T) {
+		withMemoryRepository(t, func() {
+			identity := deterministicMemoryIdentity()
+			first := writeFirstMemory(t, identity, defaultMemoryStream(identity.Actor))
+			secondEnvelope := nextMemoryEnvelope(t, identity, first.Envelope.Stream, first, "second")
+			payload, signature := mustSignMemoryEnvelope(t, secondEnvelope, identity)
+			second := writeRawMemoryCommit(t, payload, signature, []string{first.Commit})
+			ref, _ := memoryRef(identity.Actor, first.Envelope.Stream)
+			mustGit(t, "update-ref", ref, second)
+			gitDir := mustGitText(t, "rev-parse", "--absolute-git-dir")
+			objectPath := filepath.Join(gitDir, "objects", first.Commit[:2], first.Commit[2:])
+			if err := os.Remove(objectPath); err != nil {
+				t.Fatal(err)
+			}
+			assertMemoryCollectionRejectedWithoutRefMutation(t, "unavailable")
+		})
+	})
+}
+
+func TestMemoryStoreCollectsMultipleSourcesInStableProtocolOrder(t *testing.T) {
+	withMemoryRepository(t, func() {
+		alice := deterministicMemoryIdentity()
+		bob := testIdentity(t, "Bob")
+		streams := []struct {
+			identity *Identity
+			stream   string
+			count    int
+		}{
+			{bob, fullMemoryID("f"), 2},
+			{alice, fullMemoryID("2"), 1},
+			{alice, fullMemoryID("1"), 2},
+		}
+		type streamHead struct {
+			actor, stream, head string
+		}
+		var heads []streamHead
+		for _, fixture := range streams {
+			var prior *StoredMemory
+			for sequence := 1; sequence <= fixture.count; sequence++ {
+				envelope := memoryEnvelopeForStream(t, fixture.identity, fixture.stream, prior, fmt.Sprintf("record-%d", sequence))
+				stored, err := appendMemory(envelope, fixture.identity)
+				if err != nil {
+					t.Fatal(err)
+				}
+				prior = stored
+			}
+			heads = append(heads, streamHead{fixture.identity.Actor, fixture.stream, prior.Commit})
+		}
+		local, err := collectMemories()
+		if err != nil {
+			t.Fatal(err)
+		}
+		want := memoryIdentitySequence(local)
+		if len(want) != 5 {
+			t.Fatalf("local identity sequence = %v", want)
+		}
+
+		for index := len(heads) - 1; index >= 0; index-- {
+			head := heads[index]
+			accepted, _ := acceptedMemoryRef("origin", head.actor, head.stream)
+			mustGit(t, "update-ref", accepted, head.head)
+			localRef, _ := memoryRef(head.actor, head.stream)
+			mustGit(t, "update-ref", "-d", localRef)
+		}
+		acceptedOnly, err := collectMemories()
+		if err != nil || fmt.Sprint(memoryIdentitySequence(acceptedOnly)) != fmt.Sprint(want) {
+			t.Fatalf("accepted order = %v, want %v, err=%v", memoryIdentitySequence(acceptedOnly), want, err)
+		}
+
+		for index, head := range heads {
+			if index%2 == 0 {
+				localRef, _ := memoryRef(head.actor, head.stream)
+				mustGit(t, "update-ref", localRef, head.head)
+			}
+		}
+		mixed, err := collectMemories()
+		if err != nil || fmt.Sprint(memoryIdentitySequence(mixed)) != fmt.Sprint(want) {
+			t.Fatalf("mixed order = %v, want %v, err=%v", memoryIdentitySequence(mixed), want, err)
+		}
+	})
+}
+
+func TestMemoryStoreNamespaceExplicitGitDirPendingAndNoncanonicalSources(t *testing.T) {
+	t.Run("malformed local namespace", func(t *testing.T) {
+		withMemoryRepository(t, func() {
+			identity := deterministicMemoryIdentity()
+			stored := writeFirstMemory(t, identity, defaultMemoryStream(identity.Actor))
+			badRef := memoryRefPrefix + strings.ToUpper(identity.Actor) + "/" + strings.TrimPrefix(stored.Envelope.Stream, "sha256:")
+			mustGit(t, "update-ref", badRef, stored.Commit)
+			assertMemoryCollectionRejectedWithoutRefMutation(t, "malformed memory ref")
+		})
+	})
+
+	t.Run("malformed accepted namespace", func(t *testing.T) {
+		withMemoryRepository(t, func() {
+			identity := deterministicMemoryIdentity()
+			stored := writeFirstMemory(t, identity, defaultMemoryStream(identity.Actor))
+			badRef := acceptedMemoryRefPrefix + "origin/memory/" + identity.Actor + "/" + strings.ToUpper(strings.TrimPrefix(stored.Envelope.Stream, "sha256:"))
+			mustGit(t, "update-ref", badRef, stored.Commit)
+			assertMemoryCollectionRejectedWithoutRefMutation(t, "malformed accepted memory ref")
+		})
+	})
+
+	t.Run("unrelated accepted refs ignored and explicit git dir reusable", func(t *testing.T) {
+		withMemoryRepository(t, func() {
+			identity := deterministicMemoryIdentity()
+			stored, err := appendMemory(validMemoryEnvelopeFixture(memoryOperationRecord), identity)
+			if err != nil {
+				t.Fatal(err)
+			}
+			mustGit(t, "update-ref", acceptedActorRef("origin", identity.Actor), stored.Commit)
+			mustGit(t, "update-ref", acceptedProposalRef("origin", fullMemoryID("3")), stored.Commit)
+			gitDir := mustGitText(t, "rev-parse", "--absolute-git-dir")
+			ref, _ := memoryRef(identity.Actor, stored.Envelope.Stream)
+			loaded, err := loadMemoryStreamAt(gitDir, memoryStreamSource{Ref: ref, Actor: identity.Actor, Stream: stored.Envelope.Stream, Head: stored.Commit})
+			if err != nil || len(loaded) != 1 || loaded[0].ID != stored.ID {
+				t.Fatalf("explicit gitDir load = %#v, %v", loaded, err)
+			}
+			unreferencedEnvelope := validMemoryEnvelopeFixture(memoryOperationRecord)
+			unreferencedEnvelope.Timestamp = "2026-08-30T13:00:00Z"
+			unreferencedEnvelope.Record.Content = "unreferenced"
+			payload, signature := mustSignMemoryEnvelope(t, unreferencedEnvelope, identity)
+			unreferenced := writeRawMemoryCommit(t, payload, signature, nil)
+			mustGit(t, "update-ref", "refs/nh/quarantine/txn-memory/stream", unreferenced)
+			trulyUnreferencedEnvelope := unreferencedEnvelope
+			trulyUnreferencedEnvelope.Timestamp = "2026-08-30T13:01:00Z"
+			trulyUnreferencedEnvelope.Record.Content = "truly-unreferenced"
+			orphanPayload, orphanSignature := mustSignMemoryEnvelope(t, trulyUnreferencedEnvelope, identity)
+			_ = writeRawMemoryCommit(t, orphanPayload, orphanSignature, nil)
+			memories, err := collectMemories()
+			if err != nil || len(memories) != 1 || memories[0].ID != stored.ID {
+				t.Fatalf("noncanonical source collection = %#v, %v", memories, err)
+			}
+		})
+	})
+
+	t.Run("replication pending accepted head", func(t *testing.T) {
+		withMemoryRepository(t, func() {
+			identity := deterministicMemoryIdentity()
+			stored, err := appendMemory(validMemoryEnvelopeFixture(memoryOperationRecord), identity)
+			if err != nil {
+				t.Fatal(err)
+			}
+			local, _ := memoryRef(identity.Actor, stored.Envelope.Stream)
+			accepted, _ := acceptedMemoryRef("origin", identity.Actor, stored.Envelope.Stream)
+			mustGit(t, "update-ref", accepted, stored.Commit)
+			mustGit(t, "update-ref", "-d", local)
+			gitDir := mustGitText(t, "rev-parse", "--absolute-git-dir")
+			recordMemoryPendingFixture(t, gitDir, stored.Commit)
+			assertMemoryCollectionRejectedWithoutRefMutation(t, "replication acceptance pending")
+		})
+	})
+}
+
+func TestMemoryStoreCorruptionCannotAffectCollaborationOrExposePrivateSentinels(t *testing.T) {
+	withMemoryRepository(t, func() {
+		collaborator := testIdentity(t, "Collaborator")
+		event := newEvent(collaborator, "issue.open", 1, "")
+		event.Title = "Independent collaboration"
+		storedEvent, err := appendEvent(event, collaborator)
+		if err != nil {
+			t.Fatal(err)
+		}
+		beforeEvents, err := collectEvents()
+		if err != nil {
+			t.Fatal(err)
+		}
+		beforeRefs := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh/actors", "refs/nh/proposals")
+
+		memoryIdentity := deterministicMemoryIdentity()
+		if _, exists, err := refValue(actorRef(memoryIdentity.Actor)); err != nil || exists {
+			t.Fatalf("memory actor unexpectedly has collaboration ref: exists=%v err=%v", exists, err)
+		}
+		storedMemory, err := appendMemory(validMemoryEnvelopeFixture(memoryOperationRecord), memoryIdentity)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if memories, err := collectMemories(); err != nil || len(memories) != 1 || memories[0].ID != storedMemory.ID {
+			t.Fatalf("memory actor without collaboration ref = %#v, %v", memories, err)
+		}
+		if _, exists, err := refValue(actorRef(memoryIdentity.Actor)); err != nil || exists {
+			t.Fatalf("memory operations created collaboration actor ref: exists=%v err=%v", exists, err)
+		}
+		secret := "NH_PRIVATE_SENTINEL_84a2d992"
+		t.Setenv("NH_MEMORY_PRIVATE_SENTINEL", secret)
+		gitDir := mustGitText(t, "rev-parse", "--absolute-git-dir")
+		privateFiles := []string{
+			filepath.Join(gitDir, "nh", "identities", "sentinel-keyring.json"),
+			filepath.Join(gitDir, "nh", "memory", "index-v0.json"),
+			"private-working-memory.txt",
+		}
+		for _, name := range privateFiles {
+			if err := os.MkdirAll(filepath.Dir(name), 0o700); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(name, []byte(secret), 0o600); err != nil {
+				t.Fatal(err)
+			}
+		}
+
+		payload := []byte(`{"protocol":"invalid","content":"` + secret + `"}`)
+		badCommit := writeRawMemoryCommit(t, payload, signMemoryPayload(t, memoryIdentity, payload), nil)
+		ref, _ := memoryRef(memoryIdentity.Actor, storedMemory.Envelope.Stream)
+		mustGit(t, "update-ref", ref, badCommit, storedMemory.Commit)
+		allRefsBeforeFailure := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh")
+		_, memoryErr := collectMemories()
+		if memoryErr == nil || strings.Contains(memoryErr.Error(), secret) {
+			t.Fatalf("corrupt memory diagnostic = %v", memoryErr)
+		}
+		if refs := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh"); refs != allRefsBeforeFailure {
+			t.Fatalf("corrupt memory load changed refs:\nbefore=%s\nafter=%s", allRefsBeforeFailure, refs)
+		}
+		afterEvents, err := collectEvents()
+		if err != nil || len(afterEvents) != len(beforeEvents) || afterEvents[0].ID != storedEvent.ID || !bytes.Equal(afterEvents[0].Payload, beforeEvents[0].Payload) {
+			t.Fatalf("corrupt memory affected collaboration: %#v, %v", afterEvents, err)
+		}
+		if refs := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh/actors", "refs/nh/proposals"); refs != beforeRefs {
+			t.Fatalf("corrupt memory changed collaboration refs:\nbefore=%s\nafter=%s", beforeRefs, refs)
+		}
+		mustGit(t, "update-ref", "-d", ref)
+		if memories, err := collectMemories(); err != nil || len(memories) != 0 {
+			t.Fatalf("removed memory ref collection = %#v, %v", memories, err)
+		}
+		if afterRemoval, err := collectEvents(); err != nil || len(afterRemoval) != 1 || afterRemoval[0].ID != storedEvent.ID {
+			t.Fatalf("memory ref removal affected collaboration: %#v, %v", afterRemoval, err)
+		}
+	})
+}
+
+type memoryTreeFixture struct {
+	Mode string
+	Kind string
+	OID  string
+	Name string
+}
+
+func assertMemoryCollectionRejectedWithoutRefMutation(t *testing.T, want string) {
+	t.Helper()
+	before := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh")
+	_, err := collectMemories()
+	if err == nil || !strings.Contains(err.Error(), want) {
+		t.Fatalf("memory collection error = %v, want substring %q", err, want)
+	}
+	if after := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh"); after != before {
+		t.Fatalf("rejected memory changed refs:\nbefore=%s\nafter=%s", before, after)
+	}
+}
+
+func writeFirstMemory(t *testing.T, identity *Identity, stream string) *StoredMemory {
+	t.Helper()
+	envelope := memoryEnvelopeForStream(t, identity, stream, nil, "first")
+	payload, signature := mustSignMemoryEnvelope(t, envelope, identity)
+	commit := writeRawMemoryCommit(t, payload, signature, nil)
+	return &StoredMemory{ID: memoryID(payload), Commit: commit, Envelope: envelope, Payload: payload, Signature: signature}
+}
+
+func memoryEnvelopeForStream(t *testing.T, identity *Identity, stream string, previous *StoredMemory, content string) MemoryEnvelope {
+	t.Helper()
+	envelope := validMemoryEnvelopeFixture(memoryOperationRecord)
+	envelope.Actor = identity.Actor
+	envelope.ActorName = identity.Name
+	envelope.PublicKey = identity.PublicKey
+	envelope.Stream = stream
+	envelope.Record.Content = content
+	if previous != nil {
+		envelope.Sequence = previous.Envelope.Sequence + 1
+		envelope.Previous = previous.ID
+		envelope.Timestamp = fmt.Sprintf("2026-08-30T13:%02d:00Z", envelope.Sequence)
+	}
+	return envelope
+}
+
+func mustSignMemoryEnvelope(t *testing.T, envelope MemoryEnvelope, identity *Identity) ([]byte, []byte) {
+	t.Helper()
+	payload, signature, err := encodeAndSignMemory(envelope, identity)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return payload, signature
+}
+
+func signMemoryPayload(t *testing.T, identity *Identity, payload []byte) []byte {
+	t.Helper()
+	privateKey, err := identity.privateKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return ed25519.Sign(privateKey, payload)
+}
+
+func writeMemoryBlob(t *testing.T, content []byte) string {
+	t.Helper()
+	return mustGitTextFromInput(t, content, "hash-object", "-w", "--stdin")
+}
+
+func writeMemoryBlobs(t *testing.T, payload, signature []byte) (string, string) {
+	t.Helper()
+	return writeMemoryBlob(t, payload), writeMemoryBlob(t, []byte(base64.RawStdEncoding.EncodeToString(signature)))
+}
+
+func writeMemoryTree(t *testing.T, entries []memoryTreeFixture, literal bool) string {
+	t.Helper()
+	if literal {
+		var raw bytes.Buffer
+		for _, entry := range entries {
+			raw.WriteString(entry.Mode + " " + entry.Name)
+			raw.WriteByte(0)
+			oid, err := hex.DecodeString(entry.OID)
+			if err != nil {
+				t.Fatal(err)
+			}
+			raw.Write(oid)
+		}
+		return mustGitTextFromInput(t, raw.Bytes(), "hash-object", "-t", "tree", "--literally", "-w", "--stdin")
+	}
+	var input strings.Builder
+	for _, entry := range entries {
+		fmt.Fprintf(&input, "%s %s %s\t%s\n", entry.Mode, entry.Kind, entry.OID, entry.Name)
+	}
+	return mustGitTextFromInput(t, []byte(input.String()), "mktree")
+}
+
+func writeMemoryCommitFromEntries(t *testing.T, entries []memoryTreeFixture, parents []string) string {
+	t.Helper()
+	tree := writeMemoryTree(t, entries, false)
+	return writeMemoryCommitFromTree(t, tree, parents)
+}
+
+func writeMemoryCommitFromLiteralTree(t *testing.T, entries []memoryTreeFixture, parents []string) string {
+	t.Helper()
+	tree := writeMemoryTree(t, entries, true)
+	return writeMemoryCommitFromTree(t, tree, parents)
+}
+
+func writeMemoryCommitFromTree(t *testing.T, tree string, parents []string) string {
+	t.Helper()
+	args := []string{"commit-tree", tree, "-m", "memory corruption fixture"}
+	for _, parent := range parents {
+		args = append(args, "-p", parent)
+	}
+	return mustGitTextFromInput(t, nil, args...)
+}
+
+func memoryIdentitySequence(memories []StoredMemory) []string {
+	identities := make([]string, len(memories))
+	for index, memory := range memories {
+		identities[index] = fmt.Sprintf("%s/%s/%d/%s", memory.Envelope.Actor, memory.Envelope.Stream, memory.Envelope.Sequence, memory.ID)
+	}
+	return identities
+}
+
+func recordMemoryPendingFixture(t *testing.T, gitDir, commit string) {
+	t.Helper()
+	result := replicationTransactionResult{ID: "txn-memory-pending", Remote: "origin", pendingObjects: []string{commit}}
+	if err := createReplicationPendingAnchor(gitDir, result); err != nil {
+		t.Fatal(err)
+	}
+	if err := recordReplicationTransaction(gitDir, result, "validated"); err != nil {
+		t.Fatal(err)
+	}
 }
 
 func withMemoryRepository(t *testing.T, run func()) {
