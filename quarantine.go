@@ -34,18 +34,23 @@ type replicationRequest struct {
 func (request replicationRequest) key() string { return request.Kind + ":" + request.ID }
 
 type ReplicationOutcome struct {
-	Kind         string                  `json:"kind"`
-	ID           string                  `json:"id"`
-	Status       string                  `json:"status"`
-	Diagnostic   string                  `json:"diagnostic,omitempty"`
-	MissingID    string                  `json:"missingId,omitempty"`
-	Recovery     string                  `json:"recovery,omitempty"`
-	Measurements ReplicationMeasurements `json:"measurements"`
-	request      replicationRequest
-	events       []StoredEvent
-	memories     []StoredMemory
-	dependencies []string
-	acceptedOld  string
+	Kind              string                  `json:"kind"`
+	ID                string                  `json:"id"`
+	Status            string                  `json:"status"`
+	Diagnostic        string                  `json:"diagnostic,omitempty"`
+	DependencyKind    string                  `json:"dependencyKind,omitempty"`
+	MissingID         string                  `json:"missingId,omitempty"`
+	OwnerMemoryID     string                  `json:"ownerMemoryId,omitempty"`
+	OwnerStream       string                  `json:"ownerStream,omitempty"`
+	RequiredRef       string                  `json:"requiredRef,omitempty"`
+	RequiredSelectors []string                `json:"requiredSelectors,omitempty"`
+	Recovery          string                  `json:"recovery,omitempty"`
+	Measurements      ReplicationMeasurements `json:"measurements"`
+	request           replicationRequest
+	events            []StoredEvent
+	memories          []StoredMemory
+	dependencies      []string
+	acceptedOld       string
 }
 
 type replicationTransactionResult struct {
@@ -393,7 +398,7 @@ func runReplicationTransaction(selection ReplicationSelection) (replicationTrans
 			}
 		}
 	}
-	classifyReplicationMemoryDependencies(quarantineDir, mainGitDir, acceptedEvents, outcomes)
+	classifyReplicationMemoryDependencies(selection, quarantineDir, mainGitDir, acceptedEvents, outcomes)
 	projectionEvents := selectedProjectionEvents(acceptedEvents, outcomes)
 	if err := validateActorChains(projectionEvents); err != nil {
 		return result, replicationPhaseError(selection.Remote, "actor-chain projection")
@@ -417,7 +422,7 @@ func runReplicationTransaction(selection ReplicationSelection) (replicationTrans
 		}
 	}
 	propagateReplicationFailures(outcomes)
-	revalidateReplicationMemoryObjectDependencies(quarantineDir, mainGitDir, outcomes)
+	revalidateReplicationMemoryObjectDependencies(selection, quarantineDir, mainGitDir, acceptedEvents, outcomes)
 	propagateReplicationFailures(outcomes)
 
 	keys := make([]string, 0, len(outcomes))
@@ -1308,7 +1313,7 @@ func (resolver replicationMemoryResolver) IsAncestor(ancestor, descendant string
 	return false, firstMissing, nil
 }
 
-func classifyReplicationMemoryDependencies(quarantineGitDir, acceptedGitDir string, acceptedEvents []StoredEvent, outcomes map[string]*ReplicationOutcome) {
+func classifyReplicationMemoryDependencies(selection ReplicationSelection, quarantineGitDir, acceptedGitDir string, acceptedEvents []StoredEvent, outcomes map[string]*ReplicationOutcome) {
 	acceptedMemories, err := collectMemories()
 	if err != nil {
 		for _, outcome := range outcomes {
@@ -1405,13 +1410,21 @@ func classifyReplicationMemoryDependencies(quarantineGitDir, acceptedGitDir stri
 			continue
 		}
 		outcome.Status = replicationDependencyMissing
+		outcome.DependencyKind = missing.Kind
 		outcome.MissingID = missing.MissingID
-		outcome.Recovery = "select the full memory stream supplying " + missing.MissingID
+		outcome.OwnerMemoryID = missing.OwnerID
+		outcome.OwnerStream = missing.Stream
+		outcome.RequiredRef = outcome.request.SourceRef
+		outcome.RequiredSelectors = memoryReplicationRequiredSelectors(selection, acceptedEvents, missing.MissingID)
+		outcome.Recovery = memoryReplicationRecovery(selection, missing.Stream)
 		outcome.Diagnostic = fmt.Sprintf("selection memory %s memory %s missing %s dependency %s: %s; recovery: %s", outcome.ID, missing.OwnerID, missing.Kind, missing.MissingID, missing.Reason, outcome.Recovery)
+		if err := recordReplicationMemoryShallowGap(selection, outcome, missing); err != nil {
+			outcome.Diagnostic += "; durable shallow gap recording failed"
+		}
 	}
 }
 
-func revalidateReplicationMemoryObjectDependencies(quarantineGitDir, acceptedGitDir string, outcomes map[string]*ReplicationOutcome) {
+func revalidateReplicationMemoryObjectDependencies(selection ReplicationSelection, quarantineGitDir, acceptedGitDir string, acceptedEvents []StoredEvent, outcomes map[string]*ReplicationOutcome) {
 	available := make(map[string]bool)
 	for _, outcome := range outcomes {
 		if outcome.Status != replicationPromotable {
@@ -1442,39 +1455,111 @@ func revalidateReplicationMemoryObjectDependencies(quarantineGitDir, acceptedGit
 		if outcome.Status != replicationPromotable || outcome.Kind != replicationMemory {
 			continue
 		}
-		required := make([]string, 0)
+		required := make(map[string]MemoryDependency)
 		for _, stored := range outcome.memories {
 			if stored.Envelope.Record != nil {
 				record := stored.Envelope.Record
-				required = append(required, record.Anchor.Commit)
+				required[record.Anchor.Commit] = MemoryDependency{Kind: "anchor-commit", OwnerID: stored.ID, Stream: stored.Envelope.Stream, MissingID: record.Anchor.Commit, Reason: "anchor-commit-unavailable"}
 				for _, anchored := range record.Anchor.Paths {
 					if anchored.Blob != "absent" {
-						required = append(required, anchored.Blob)
+						required[anchored.Blob] = MemoryDependency{Kind: "anchor-path", OwnerID: stored.ID, Stream: stored.Envelope.Stream, MissingID: anchored.Blob, Reason: "anchor-path-object-unavailable"}
 					}
 				}
 				for _, typed := range record.Evidence {
 					if strings.HasPrefix(typed, "git:") {
-						required = append(required, strings.TrimPrefix(typed, "git:"))
+						id := strings.TrimPrefix(typed, "git:")
+						required[id] = MemoryDependency{Kind: "evidence-git", OwnerID: stored.ID, Stream: stored.Envelope.Stream, MissingID: id, Reason: "object-unavailable"}
 					}
 				}
 			}
 			for _, typed := range stored.Envelope.Evidence {
 				if strings.HasPrefix(typed, "git:") {
-					required = append(required, strings.TrimPrefix(typed, "git:"))
+					id := strings.TrimPrefix(typed, "git:")
+					required[id] = MemoryDependency{Kind: "evidence-git", OwnerID: stored.ID, Stream: stored.Envelope.Stream, MissingID: id, Reason: "object-unavailable"}
 				}
 			}
 		}
-		for _, object := range sortedUniqueStrings(required...) {
+		objects := make([]string, 0, len(required))
+		for object := range required {
+			objects = append(objects, object)
+		}
+		sort.Strings(objects)
+		for _, object := range objects {
 			if isAvailable(object) {
 				continue
 			}
+			missing := required[object]
 			outcome.Status = replicationDependencyMissing
+			outcome.DependencyKind = missing.Kind
 			outcome.MissingID = object
-			outcome.Recovery = "select the exact collaboration or memory ref supplying " + object
+			outcome.OwnerMemoryID = missing.OwnerID
+			outcome.OwnerStream = missing.Stream
+			outcome.RequiredRef = outcome.request.SourceRef
+			outcome.RequiredSelectors = memoryReplicationRequiredSelectors(selection, acceptedEvents, missing.MissingID)
+			outcome.Recovery = memoryReplicationRecovery(selection, missing.Stream)
 			outcome.Diagnostic = fmt.Sprintf("selection memory %s has unavailable exact Git dependency %s; recovery: %s", outcome.ID, object, outcome.Recovery)
+			if err := recordReplicationMemoryShallowGap(selection, outcome, missing); err != nil {
+				outcome.Diagnostic += "; durable shallow gap recording failed"
+			}
 			break
 		}
 	}
+}
+
+func memoryReplicationRequiredSelectors(selection ReplicationSelection, events []StoredEvent, missing string) []string {
+	selected := make(map[string]bool, len(selection.Proposals))
+	for _, proposal := range selection.Proposals {
+		selected[proposal] = true
+	}
+	selectors := make([]string, 0)
+	for _, event := range events {
+		if selected[event.ID] && isProposalKind(event.Event.Kind) && event.Event.Head == missing {
+			selectors = append(selectors, replicationProposal+":"+event.ID)
+		}
+	}
+	return sortedUniqueStrings(selectors...)
+}
+
+func memoryReplicationRecovery(selection ReplicationSelection, stream string) string {
+	shallow, _ := repositoryIsShallow()
+	for _, selected := range selection.Memories {
+		if shallow && !selection.All && selected == stream {
+			return "nh sync " + selection.Remote + " --recover-shallow"
+		} else if !selection.All && selected == stream {
+			return "repair the exact advertised dependency, then nh sync " + selection.Remote
+		}
+	}
+	recovery := "nh sync " + selection.Remote
+	if shallow {
+		recovery += " --recover-shallow"
+	}
+	return "nh replication select " + selection.Remote + " --memory " + stream + " (preserve existing selectors and budgets), then " + recovery
+}
+
+func recordReplicationMemoryShallowGap(selection ReplicationSelection, outcome *ReplicationOutcome, dependency MemoryDependency) error {
+	shallow, err := repositoryIsShallow()
+	if err != nil {
+		return err
+	}
+	if !shallow {
+		return nil
+	}
+	gap := &ShallowDependencyGap{
+		Operation: "memory replication", Kind: memoryShallowDependencyKind(dependency.Kind),
+		MissingID: dependency.MissingID, OwnerKind: replicationMemory, OwnerID: dependency.Stream,
+		OwnerMemoryID: dependency.OwnerID, OwnerStream: dependency.Stream,
+		Remote: selection.Remote, RequiredRef: outcome.request.SourceRef,
+		RequiredSelectors: append([]string(nil), outcome.RequiredSelectors...),
+		Recovery:          outcome.Recovery, Cause: fmt.Errorf("required exact memory dependency %s is unavailable", dependency.MissingID),
+	}
+	if dependency.Kind == "anchor-commit" || dependency.Kind == "anchor-path" || dependency.Kind == "evidence-git" {
+		gap.Objectish = dependency.MissingID
+		gap.ObjectType = "object"
+		if dependency.Kind == "anchor-commit" {
+			gap.ObjectType = "commit"
+		}
+	}
+	return recordShallowDependencyGap(gap)
 }
 
 func removeGeneratedQuarantine(root, quarantine string) error {
