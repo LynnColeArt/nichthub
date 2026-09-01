@@ -20,6 +20,9 @@ exceptions:
   - path: ".kittify/canonical-events.jsonl"
     action: do_not_change
     reason: "Append-only historical project initialization event."
+  - path: "kitty-specs/hubnot-product-rename-01M1ERYJ/status.events.jsonl"
+    action: manual_review
+    reason: "This active mission journal may only receive append-only lifecycle events; existing lines and embedded historical project slugs remain byte-identical."
   - path: "kitty-specs/**/status.events.jsonl"
     action: do_not_change
     reason: "Append-only mission event journals retain their original signed or recorded payloads."
@@ -42,8 +45,11 @@ exceptions:
     action: rename
     reason: "The active Go module path is current product identity, while protocol and CLI namespaces remain unchanged."
   - path: "kitty-specs/hubnot-product-rename-01M1ERYJ/occurrence_map.yaml"
-    action: do_not_change
-    reason: "The classification artifact must name the exact source term it governs."
+    action: manual_review
+    reason: "The governed classification may be refined while its exact source-term declaration remains unchanged."
   - path: "kitty-specs/hubnot-product-rename-01M1ERYJ/tasks/**"
-    action: do_not_change
-    reason: "Implementation prompts must identify exact source strings and search commands while governing their removal from active product surfaces."
+    action: manual_review
+    reason: "Implementation prompts and generated baseline/status evidence may advance while exact source strings remain truthful governed inputs."
+  - path: "kitty-specs/hubnot-product-rename-01M1ERYJ/.kittify/dossiers/**"
+    action: manual_review
+    reason: "Generated active-mission dossier snapshots advance as evidence is recorded; embedded historical values remain unmodified."
