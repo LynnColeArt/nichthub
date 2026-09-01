@@ -1,0 +1,216 @@
+Nichthub pipeline test
+Commit 2aeab982586f18f4f427ac7a15aebda868338b6e
+Backend sandbox
+
+[1/1] Go tests
+Requested pipeline check as run 2952f439f0f1
+Commit: 8276bb097fb8  Definition: d7ece5fdbb23
+Synchronized 2 verified events with origin; promoted 0 selections
+Replication actor db359cab647e223693af1a612e53aa6a711729a68cd588b7e3776d5210716274: promoted
+Replication proposal sha256:efa1aa029c528c169728a665642a28ac40b7c934642a189cae355de56557462b: promoted
+Synchronized 2 verified events with origin; promoted 2 selections
+Replication actor db359cab647e223693af1a612e53aa6a711729a68cd588b7e3776d5210716274: promoted
+Replication proposal sha256:efa1aa029c528c169728a665642a28ac40b7c934642a189cae355de56557462b: promoted
+Synchronized 2 verified events with origin; promoted 2 selections
+Replication actor db359cab647e223693af1a612e53aa6a711729a68cd588b7e3776d5210716274: promoted
+Replication proposal sha256:efa1aa029c528c169728a665642a28ac40b7c934642a189cae355de56557462b: promoted
+Synchronized 2 verified events with origin; promoted 2 selections
+Runner accepted request 2952f439f0f1 from db359cab647e for pipeline check
+Runner recorded passed result 029df0ce34c2 with host backend
+Replication actor db359cab647e223693af1a612e53aa6a711729a68cd588b7e3776d5210716274: promoted
+Replication proposal sha256:efa1aa029c528c169728a665642a28ac40b7c934642a189cae355de56557462b: promoted
+Synchronized 3 verified events with origin; promoted 2 selections
+Recorded passed result b0111d6624bd with sandbox backend (exit 0, 5ms)
+Replication actor 73fdaf3c48224ef2d63a44de4887552cdf5fa23a65b091ba4022220603aa4522: promoted
+Replication actor db359cab647e223693af1a612e53aa6a711729a68cd588b7e3776d5210716274: promoted
+Replication proposal sha256:efa1aa029c528c169728a665642a28ac40b7c934642a189cae355de56557462b: promoted
+Synchronized 4 verified events with origin; promoted 3 selections
+Replication actor 73fdaf3c48224ef2d63a44de4887552cdf5fa23a65b091ba4022220603aa4522: promoted
+Replication actor db359cab647e223693af1a612e53aa6a711729a68cd588b7e3776d5210716274: promoted
+Replication proposal sha256:efa1aa029c528c169728a665642a28ac40b7c934642a189cae355de56557462b: promoted
+Synchronized 4 verified events with origin; promoted 3 selections
+Requested pipeline check as run 7549bd5f9810
+Commit: f30bf9fbf457  Definition: 5c7c77c2854f
+Recorded accept decision fe4853cf42e5 on proposal c76f1dce02aa under policy 3e519b9d4f7c
+Evidence: 2 signed event(s)
+Recorded reject decision d72328ef56fb on proposal f97776481011 under policy 3e519b9d4f7c
+Rotated identity from f77afed87f034378b0b610b053cedc81a0004eb0f31749846e20b607400ea369 to aeb478a266607223f9c99878a4b685487c81a4ffa055d418aaa57f6d0a2a6b63
+Rotated identity from 1371ac5cb9ef041aa638d076072af47c35dd382d116c5bf8bc30ce7920e0c2b1 to 250ca097470643c917f14112adbcae682c3c167c18d33a2d44ba3ba62b8281df
+Rotated identity from 950e1f3f042a9d2a67f145c5894374a091cc95785b48a195b01f6d14b9b26ea2 to 4ce5b4b023725fbba4568ba5e4b2f4562bd072795716efa7a4c77f3d87aab7de
+Rotated identity from 74ad25b9decc68c18f1cfbcec3ce08c67f6c3fe21ea3f6d7a3e69c3b5656177e to 5dcdc67b79657f228f192b097e1ddd70502b1f0d23269de1e7a80d93f641cdfa
+Rotated identity from 3348384d871b82be0cb82f50b74cdaa9fa325bdeb8430be93e752c99f588c625 to bfd57cab9aa36d4c0b849add28cc77cb0158739e3bdad0797cf10adf6b0077c5
+Rotated identity from 5de7815b5a106755d5a8d6c019cba2447acf5192e6f94103c3f50549684a0429 to cf4677bc17d3296b6ff511b6fc2770b75002cd75d2cc2179c62307968f8d4bdb
+Rotated identity from 844fba9181c7ae8133ba9dd00c1b8b8a0c6361736e234044880318dff0fc298e to 805fa25f2c70bf932e4fce57dd3447d0371ecfb4ac15d645e580bcc98d499a54
+Rotated identity from 6b3318ec7c92c4d0fdc68427dea5da3b15aebfabae82105fe012c3c59daafdbe to ed04c8b39e11fbb760146569c44235bee60c946965a94df29d579f2b258054ba
+Accepted identity authorization sha256:26dd5d30b09bb3e042d15e3b2ed161c3d55e820968363b5f3755dd45eb38350e (sha256:cd4caf4e53278c0f709aef6ceb41f98d6f6505e40c3c5798293bbe300d4a2039)
+flag provided but not defined: -content
+Usage of memory handoff:
+  -applies string
+    	applicability mode
+  -at string
+    	exact Git revision
+  -input string
+    	strict JSON input file or -
+  -json
+    	emit JSON
+Saved replication selection for origin
+remote: origin
+saved: true
+compatibility-all: false
+actor: 56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c
+proposal: sha256:3333333333333333333333333333333333333333333333333333333333333333
+memory: sha256:1111111111111111111111111111111111111111111111111111111111111111
+memory: sha256:2222222222222222222222222222222222222222222222222222222222222222
+max-events: 10000
+max-objects: 100000
+max-object-bytes: 67108864
+max-attachment-bytes: 16777216
+max-total-bytes: 1073741824
+--- FAIL: TestMemoryReplicationTransactionReceiptFailuresAreTruthful (0.58s)
+    --- FAIL: TestMemoryReplicationTransactionReceiptFailuresAreTruthful/atomic_ref_transaction (0.05s)
+        memory_replication_test.go:792: git rev-parse HEAD: fatal: ambiguous argument 'HEAD': unknown revision or path not in the working tree.
+            Use '--' to separate paths from revisions, like this:
+            'git <command> [<revision>...] -- [<file>...]'
+--- FAIL: TestMemoryReplicationShallowGapAndRecoveryUseProductionPath (0.06s)
+    memory_replication_test.go:905: git rev-parse HEAD: fatal: ambiguous argument 'HEAD': unknown revision or path not in the working tree.
+        Use '--' to separate paths from revisions, like this:
+        'git <command> [<revision>...] -- [<file>...]'
+--- FAIL: TestMemoryReplicationTypedShallowSupplierRecovery (0.17s)
+    --- FAIL: TestMemoryReplicationTypedShallowSupplierRecovery/lifecycle-target (0.06s)
+        memory_replication_test.go:1023: git rev-parse HEAD: fatal: ambiguous argument 'HEAD': unknown revision or path not in the working tree.
+            Use '--' to separate paths from revisions, like this:
+            'git <command> [<revision>...] -- [<file>...]'
+    --- FAIL: TestMemoryReplicationTypedShallowSupplierRecovery/evidence-event (0.06s)
+        memory_replication_test.go:1023: git rev-parse HEAD: fatal: ambiguous argument 'HEAD': unknown revision or path not in the working tree.
+            Use '--' to separate paths from revisions, like this:
+            'git <command> [<revision>...] -- [<file>...]'
+    --- FAIL: TestMemoryReplicationTypedShallowSupplierRecovery/evidence-memory (0.06s)
+        memory_replication_test.go:1023: git rev-parse HEAD: fatal: ambiguous argument 'HEAD': unknown revision or path not in the working tree.
+            Use '--' to separate paths from revisions, like this:
+            'git <command> [<revision>...] -- [<file>...]'
+Shallow recovery memory sha256:d5c42b67775cd9520bb0089b495230aad66693ef5385fe3ab766a2d5afec2076: promoted
+Shallow recovery proposal sha256:36f5fefb3c90b7b8855262dccc9c60a860d99354c262999b38884fb053432ebf: promoted
+--- FAIL: TestMemoryReplicationShallowWrongTypeIsNotRecoverableGap (0.07s)
+    memory_replication_test.go:1166: git rev-parse HEAD: fatal: ambiguous argument 'HEAD': unknown revision or path not in the working tree.
+        Use '--' to separate paths from revisions, like this:
+        'git <command> [<revision>...] -- [<file>...]'
+Saved replication selection for origin
+remote: origin
+saved: true
+compatibility-all: false
+memory: sha256:8888888888888888888888888888888888888888888888888888888888888888
+memory: sha256:d5c42b67775cd9520bb0089b495230aad66693ef5385fe3ab766a2d5afec2076
+max-events: 10000
+max-objects: 100000
+max-object-bytes: 67108864
+max-attachment-bytes: 16777216
+max-total-bytes: 1073741824
+Created proposal revision sha256:2be3404025f9c2ef1064aca7d99e567ca37612e12b0ae9cb52c862e3ca3af0c8
+Predecessor: sha256:8004d665826903f6e363f51508edcc4f76a8edd5c7485bc1e198f401a9605f80
+Code: d0e582a1977cb8b2259f855703e07e4448abff88..b084f648b5646abef4ab45a9a2166d42e0e7cd65
+Created proposal revision sha256:8fb9176b2a66d35046e5ff7e8bc65b8d883b641d91fe95679fd4a177f3d89309
+Predecessor: sha256:8004d665826903f6e363f51508edcc4f76a8edd5c7485bc1e198f401a9605f80
+Code: d0e582a1977cb8b2259f855703e07e4448abff88..18f800fcca9dc81608a828990c3b994b8e80a7b4
+Synchronized 1 verified events with origin; promoted 0 selections
+Replication actor 9ca61dd853d27a29e05e7f710f7722b13c5786f5448be45d779897277600fda4: promoted
+Replication proposal sha256:c54d1f483532ef5998e681c8c4dd7beaa3557e374e24e98b15e196ab9ffd0d71: promoted
+Synchronized 1 verified events with origin; promoted 2 selections
+Replication actor 9ca61dd853d27a29e05e7f710f7722b13c5786f5448be45d779897277600fda4: promoted
+Replication proposal sha256:c54d1f483532ef5998e681c8c4dd7beaa3557e374e24e98b15e196ab9ffd0d71: promoted
+Synchronized 2 verified events with origin; promoted 2 selections
+Replication actor 9ca61dd853d27a29e05e7f710f7722b13c5786f5448be45d779897277600fda4: promoted
+Replication actor a431f505ee18b84cfe7d048baf3630e7282917ef1833df0eccb95a47172737c8: promoted
+Replication proposal sha256:c54d1f483532ef5998e681c8c4dd7beaa3557e374e24e98b15e196ab9ffd0d71: promoted
+Synchronized 2 verified events with origin; promoted 3 selections
+Saved replication selection for origin
+remote: origin
+saved: true
+compatibility-all: false
+actor: bd9dd18cc0ee4b4cd39de9dcbdfdf3eeab5695d72725089de88cbcc0ff32f477
+proposal: sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+max-events: 7
+max-objects: 11
+max-object-bytes: 13
+max-attachment-bytes: 17
+max-total-bytes: 19
+flag provided but not defined: -upload-pack
+Usage of replication select:
+  -actor value
+    	full actor fingerprint
+  -all
+    	select all advertised Nichthub refs
+  -max-attachment-bytes int
+    	maximum event attachment bytes (default 16777216)
+  -max-events int
+    	maximum actor events (default 10000)
+  -max-object-bytes int
+    	maximum individual object bytes (default 67108864)
+  -max-objects int
+    	maximum reachable objects (default 100000)
+  -max-total-bytes int
+    	maximum total reachable bytes (default 1073741824)
+  -memory value
+    	full memory stream ID
+  -proposal value
+    	full candidate event ID
+Saved replication selection for origin
+remote: origin
+saved: true
+compatibility-all: false
+actor: 0761bb44cf5b572b2d4187cece43baad1dcddb4a0c7a2bed78802ad05e6fe8d5
+actor: 5359f32e6c63f3ea3e21c23388d5298a012ff7aaaea8832fd25aba399059da5f
+actor: beaee4b6a509d1d381380e523308bded8c9a62c506f547f2f54f1c2f193879de
+actor: ee0032e8daf373541a8762702d3d6de5ba3583019fef010637e2c8aa08fc539e
+proposal: sha256:4c3ed87c91e4a888032f73dc27aedb89030315b0253c106e59563d3faad5a099
+proposal: sha256:dde67752c273d7f17c43a1b9be2c2e7c84393c5a83e8acc0ac364c88548f6271
+max-events: 10000
+max-objects: 100000
+max-object-bytes: 67108864
+max-attachment-bytes: 16777216
+max-total-bytes: 1073741824
+Synchronized 2 verified events with origin; promoted 0 selections
+Replication actor 6eadb1b1bd3857f61bcb8943c664fe0f5738f55ca5e3999c878261f6e52c8298: promoted
+Replication proposal sha256:191b744d4dfe8bd06719e07b49e278cce9eb8bb4c11203ffc316d6d8ebd8dafa: promoted
+Replication proposal sha256:8d4815f1ef23e22f26678cff0299c6f80dd80848b247fd81cb7ad6fd0abb11c9: promoted
+Synchronized 6 verified events with origin; promoted 3 selections
+Replication actor 6eadb1b1bd3857f61bcb8943c664fe0f5738f55ca5e3999c878261f6e52c8298: promoted
+Replication proposal sha256:191b744d4dfe8bd06719e07b49e278cce9eb8bb4c11203ffc316d6d8ebd8dafa: promoted
+Replication proposal sha256:50efec64b172fc71978d2ffaa758e9e889c5175c22963fed3957bf053ecea299: promoted
+Replication proposal sha256:60455abe7bab0e4124d7467c8f96302e3d5e960f22aa801a73ae4ccfe081764d: promoted
+Replication proposal sha256:8d4815f1ef23e22f26678cff0299c6f80dd80848b247fd81cb7ad6fd0abb11c9: promoted
+Synchronized 6 verified events with origin; promoted 5 selections
+Recorded approve review 4612bd524ada on proposal 60455abe7bab
+Recorded approve review 9cd0b93bfac6 on proposal 8d4815f1ef23
+Replication actor 6eadb1b1bd3857f61bcb8943c664fe0f5738f55ca5e3999c878261f6e52c8298: promoted
+Replication proposal sha256:191b744d4dfe8bd06719e07b49e278cce9eb8bb4c11203ffc316d6d8ebd8dafa: promoted
+Replication proposal sha256:50efec64b172fc71978d2ffaa758e9e889c5175c22963fed3957bf053ecea299: promoted
+Replication proposal sha256:60455abe7bab0e4124d7467c8f96302e3d5e960f22aa801a73ae4ccfe081764d: promoted
+Replication proposal sha256:8d4815f1ef23e22f26678cff0299c6f80dd80848b247fd81cb7ad6fd0abb11c9: promoted
+Synchronized 8 verified events with origin; promoted 5 selections
+Replication actor 6eadb1b1bd3857f61bcb8943c664fe0f5738f55ca5e3999c878261f6e52c8298: promoted
+Replication actor e4c6d4230f8edfe2e511fbf8c6424e5394c9a6357487f4ba5b5b5cddd8b20b68: promoted
+Replication proposal sha256:191b744d4dfe8bd06719e07b49e278cce9eb8bb4c11203ffc316d6d8ebd8dafa: promoted
+Replication proposal sha256:50efec64b172fc71978d2ffaa758e9e889c5175c22963fed3957bf053ecea299: promoted
+Replication proposal sha256:60455abe7bab0e4124d7467c8f96302e3d5e960f22aa801a73ae4ccfe081764d: promoted
+Replication proposal sha256:8d4815f1ef23e22f26678cff0299c6f80dd80848b247fd81cb7ad6fd0abb11c9: promoted
+Synchronized 8 verified events with origin; promoted 6 selections
+Shallow recovery actor a3c4ea4bcdff1c589f4afb835711378f4b4b111d3bba999e6c5f232124e4ecb1: promoted
+Shallow recovery proposal sha256:3109009f33dbaae0c07a8c6b86f1090d4d7f4731bb452540be85c1d368fca037: failed (promotable): 
+Shallow recovery proposal sha256:3109009f33dbaae0c07a8c6b86f1090d4d7f4731bb452540be85c1d368fca037: promoted
+Shallow recovery actor b55d38c0e7fd868480451329d561f5a20db04fa0d0277007839c9838805c701a: promoted
+Shallow recovery actor 2d68827e144869a692779de6412355b736106804badde4d79a51edb3d737994f: failed (over-budget): selection actor 2d68827e144869a692779de6412355b736106804badde4d79a51edb3d737994f exceeded max-events budget: configured=1 measured=2
+Shallow recovery actor 3a856c73d6c5a57af0af7be5ea583444f62d36d5062338efaa561668b8a304ad: failed (over-budget): selection actor 3a856c73d6c5a57af0af7be5ea583444f62d36d5062338efaa561668b8a304ad exceeded max-objects budget: configured=1 measured=4
+Shallow recovery actor 011a5a6c5faeb3f118ff5483a185c0cddad924203ff6e8255461dce138f73f09: failed (over-budget): selection actor 011a5a6c5faeb3f118ff5483a185c0cddad924203ff6e8255461dce138f73f09 exceeded max-object-bytes budget: configured=1 measured=279
+Shallow recovery actor a80153f306702f31c24f25b2dca6df2aefb202a8810abec77e1b208ce3ab3b9e: failed (over-budget): selection actor a80153f306702f31c24f25b2dca6df2aefb202a8810abec77e1b208ce3ab3b9e exceeded max-total-bytes budget: configured=1 measured=279
+Shallow recovery actor dc300c663cce491e13a5cf9bf9709f698cc3ff60bc55fa67a7ddfa48203e944f: failed (over-budget): selection actor dc300c663cce491e13a5cf9bf9709f698cc3ff60bc55fa67a7ddfa48203e944f exceeded max-attachment-bytes budget: configured=1 measured=32
+Shallow recovery actor 046ebce213b751076b275bb62610eae70641eed5566f29656edb733b1de1023a: failed (promotable): 
+Shallow recovery actor 3e83c865b735e34cb94d0404fe85472e4a37e4bac4f7e93d266bba439f2ce8f2: failed (promotable): 
+Shallow recovery actor d85cea2b6133cb0a56607366bcac597cf950fa72e2b91aad07df65327e3153fc: promoted
+Shallow recovery actor d85cea2b6133cb0a56607366bcac597cf950fa72e2b91aad07df65327e3153fc: promoted
+Shallow recovery actor b07c84dc57c0da27b01732ce1a0593a7489ad327c67bf12993017bb7c3455c73: promoted
+Shallow recovery actor b07c84dc57c0da27b01732ce1a0593a7489ad327c67bf12993017bb7c3455c73: promoted
+FAIL
+FAIL	nichthub	64.769s
+FAIL
+
+Step failed: exit status 1
