@@ -3,7 +3,13 @@
 Hubnot is an experiment in distributing collaboration with a Git repository.
 Git distributes the work; Hubnot distributes the signed intent, discussion,
 policy, and evidence around it. There is no Hubnot service or database: an
-ordinary Git remote transports both code and `refs/nh/*` collaboration facts.
+ordinary Git remote transports both code and `refs/hn/*` collaboration facts.
+
+The active command and protocol namespace is `hn`. This is a deliberate
+pre-user hard reset: there is no `nh` executable, alias, fallback reader,
+migration, or actor-continuity bridge. Existing `.nh/**`, `.git/nh/**`, and
+`refs/nh/*` data may remain as frozen historical evidence, but `hn` ignores it
+and creates fresh identities and facts only in the active namespace.
 
 The current operational alpha supports signed issues, immutable proposal
 candidates and revisions, reviews, CI requests/results/logs, governance
@@ -32,7 +38,7 @@ Go 1.26 or newer and Git 2.x are the baseline requirements. Docker is not
 required.
 
 ```sh
-go build -trimpath -o nh .
+go build -trimpath -o hn .
 go test -count=1 ./...
 ```
 
@@ -60,56 +66,56 @@ executor remains available for controlled debugging.
 ## Start a repository
 
 ```sh
-nh init --name "Alice's device"
-nh identity public
-nh issue open --body "The description" "An issue title"
-nh sync origin
+hn init --name "Alice's device"
+hn identity public
+hn issue open --body "The description" "An issue title"
+hn sync origin
 ```
 
-`nh init` creates a local Ed25519 identity below `.git/nh/`. Private keys and
+`hn init` creates a local Ed25519 identity below `.git/hn/`. Private keys and
 local replication selections are never Git objects and are not cloned. Public
 events are exact-byte signed and stored in one append-only Git history per
 actor:
 
 ```text
-refs/nh/actors/<full-actor-fingerprint>
+refs/hn/actors/<full-actor-fingerprint>
 ```
 
 ## Distinct device actors
 
 Initialize another clone independently, then exchange only the output of
-`nh identity public`. The existing actor authorizes the new public key and the
+`hn identity public`. The existing actor authorizes the new public key and the
 new actor accepts that exact authorization:
 
 ```sh
-nh identity authorize --relationship device \
+hn identity authorize --relationship device \
   --actor <full-new-actor> \
   --public-key <new-public-key>
-nh sync origin
+hn sync origin
 
 # In the independently initialized target clone, after selected sync:
-nh identity accept <full-authorization-event-id>
-nh sync origin
-nh identity list
+hn identity accept <full-authorization-event-id>
+hn sync origin
+hn identity list
 ```
 
 The relationship is descriptive. It does not add the new actor to any policy
-role. `nh identity rotate` performs the same two-sided protocol locally with a
+role. `hn identity rotate` performs the same two-sided protocol locally with a
 `successor` relationship and retryable transaction state; it is planned
 rotation while the predecessor key is available, not lost-key recovery.
 
 ## Inspect and amend policy
 
-Project governance lives in `.nh/policy.json`. Inspection prints complete
+Project governance lives in `.hn/policy.json`. Inspection prints complete
 trust-bearing actor IDs. An amendment is an ordinary candidate, and only the
 exact policy bytes from its signed base govern it:
 
 ```sh
-nh policy show main
-nh policy check --base main --file .nh/policy.json
-nh policy check --base main --head HEAD
+hn policy show main
+hn policy check --base main --file .hn/policy.json
+hn policy check --base main --head HEAD
 
-nh proposal open --base main --head HEAD \
+hn proposal open --base main --head HEAD \
   --body "The base policy governs this amendment." \
   "Amend collaboration policy"
 ```
@@ -124,7 +130,7 @@ Save exact full actor/candidate selections and positive local budgets before
 synchronizing an unfamiliar remote:
 
 ```sh
-nh replication select origin \
+hn replication select origin \
   --actor <full-maintainer-actor> \
   --actor <full-reviewer-actor> \
   --proposal <full-candidate-event-id> \
@@ -133,12 +139,12 @@ nh replication select origin \
   --max-object-bytes 16777216 \
   --max-attachment-bytes 1048576 \
   --max-total-bytes 268435456
-nh replication show origin
-nh sync origin
+hn replication show origin
+hn sync origin
 ```
 
 Each selected ref is fetched into a separate bare quarantine repository,
-measured and verified, then promoted to `refs/nh/remotes/<remote>/*` in one
+measured and verified, then promoted to `refs/hn/remotes/<remote>/*` in one
 atomic ref transaction. Independently valid selections may promote when
 another selected history fails. Standard Git can download a selected pack
 before Hubnot measures it, so these are hard validation, promotion, and
@@ -148,7 +154,7 @@ A trust-sensitive command in a depth-limited clone reports a full missing ID
 and exact recovery action. Recovery is explicit and uses the saved selection:
 
 ```sh
-nh sync origin --recover-shallow
+hn sync origin --recover-shallow
 ```
 
 This never performs a global unshallow and never silently adds a selector.
@@ -156,25 +162,25 @@ This never performs a global unshallow and never silently adds a selector.
 ## Record and recall agent memory
 
 Hubnot can carry deliberate project cognition without a hosted memory
-service. `nh-memory/0` is separate from the collaboration protocol: each actor
-owns append-only memory streams under `refs/nh/memory/*`, while private keys,
+service. `hn-memory/0` is separate from the collaboration protocol: each actor
+owns append-only memory streams under `refs/hn/memory/*`, while private keys,
 replication selections, and the rebuildable lexical index stay below
-`.git/nh/` and are never cloned.
+`.git/hn/` and are never cloned.
 
 ```sh
-nh memory record --kind decision --at HEAD --applies descendants \
+hn memory record --kind decision --at HEAD --applies descendants \
   --topic architecture --evidence git:$(git rev-parse HEAD) \
   --content "Keep memory streams independent from actor event chains."
 
-nh memory handoff --at HEAD --applies descendants --input handoff.json --json
-nh memory supersede sha256:<full-memory-id> \
+hn memory handoff --at HEAD --applies descendants --input handoff.json --json
+hn memory supersede sha256:<full-memory-id> \
   --kind decision --at HEAD --applies descendants \
   --content "Replacement decision with current rationale."
 
-nh replication select origin --memory sha256:<full-stream-id>
-nh sync origin
-nh memory index rebuild
-nh memory recall --at HEAD --topic architecture --json
+hn replication select origin --memory sha256:<full-stream-id>
+hn sync origin
+hn memory index rebuild
+hn memory recall --at HEAD --topic architecture --json
 ```
 
 Default recall is policy-qualified, active, local-only, and bounded to 20
@@ -184,7 +190,7 @@ content digest. Memory content and handoff next actions are untrusted inert
 data—not instructions, truth, policy authority, or permission to act.
 
 Add sorted `memory.trustedActors` and `memory.trustedKinds` to the exact commit's
-`.nh/policy.json` to qualify default recall. Without it, valid signed memory is
+`.hn/policy.json` to qualify default recall. Without it, valid signed memory is
 explicitly inspectable but not trusted by default. Retraction preserves an
 auditable fact; neither retraction nor deleting the private index erases
 replicated Git objects.
@@ -192,24 +198,30 @@ replicated Git objects.
 ## Proposals, CI, decisions, and merge
 
 ```sh
-nh proposal open --base main --head feature \
+hn proposal open --base main --head feature \
   --body "Please review this exact change." "Add the feature"
-nh run request <full-candidate-event-id> test
-nh sync origin
+hn run request <full-candidate-event-id> test
+hn sync origin
 
 # In a selected participant clone:
-nh run execute <full-run-request-event-id>
-nh review <full-candidate-event-id> --approve \
+hn run execute <full-run-request-event-id>
+hn review <full-candidate-event-id> --approve \
   --body "The fetched candidate is correct."
-nh sync origin
+hn sync origin
 
 # In a maintainer clone:
-nh proposal status <full-candidate-event-id>
-nh decide <full-candidate-event-id> --accept
-nh merge <full-candidate-event-id>
-nh sync origin                    # publish collaboration refs
+hn proposal status <full-candidate-event-id>
+hn decide <full-candidate-event-id> --accept
+hn merge <full-candidate-event-id>
+hn sync origin                    # publish collaboration refs
 git push origin main:main         # publish the primary branch separately
 ```
+
+If Git merged the exact proposal head but recording `proposal.merged` failed,
+retry `hn merge <full-candidate-event-id>`. The repair path does not merge
+again: it reloads the current policy and evidence, requires one unique
+first-parent merge commit that directly names the proposal head, and appends
+only the missing signed fact.
 
 Pipeline definitions are repository JSON files. A step can invoke an installed
 tool or an executable tracked in the candidate, without a shell unless the
@@ -217,11 +229,11 @@ command itself is a shell:
 
 ```json
 {
-  "version": "nh.pipeline/0",
+  "version": "hn.pipeline/0",
   "steps": [
     {
       "name": "Tests",
-      "command": "./.nh/actions/test",
+      "command": "./.hn/actions/test",
       "args": ["--all"],
       "timeoutSeconds": 300
     }
@@ -232,11 +244,13 @@ command itself is a shell:
 On Linux, the default executor uses Bubblewrap with separate user, PID,
 network, IPC, UTS, and cgroup namespaces; dropped capabilities; no host home;
 read-only system tools; and a writable generated checkout. It exposes no
-external network interface. The unsafe host backend requires both flags on
-every invocation:
+external network interface. The Bubblewrap executable and sandbox `PATH` are
+resolved from the same fixed canonical system directories, never the invoking
+shell's ambient `PATH`. The unsafe host backend requires both flags on every
+invocation:
 
 ```sh
-nh run execute <full-run-request-event-id> \
+hn run execute <full-run-request-event-id> \
   --backend host \
   --allow-unsafe-host-execution
 ```
@@ -246,31 +260,36 @@ immutable revision. The predecessor and all prior evidence remain unchanged;
 the revision needs its own exact review, CI, and acceptance evidence:
 
 ```sh
-nh proposal revise <full-predecessor-candidate-id> \
+hn proposal revise <full-predecessor-candidate-id> \
   --base <full-resolved-base-commit> \
   --head <full-resolved-head-commit> \
   --body "Resolve the merge conflict"
-nh sync origin
+hn sync origin
 ```
+
+A runner refuses to publish a second result for the same exact request unless
+the operator deliberately passes `--rerun`; the replacement is another signed
+fact from that runner rather than a mutation of earlier bytes.
 
 ## Command surface
 
 ```text
-nh init [--name NAME]
-nh identity show|list|public|authorize|accept|rotate
-nh issue open|comment|list|show
-nh proposal open|revise|list|show|status
-nh policy show [REV]
-nh policy check --base REV <--head REV|--file PATH>
-nh review PROPOSAL <--approve|--request-changes> [--body TEXT]
-nh run request|list|show|execute|logs
-nh runner once|watch --accept-pipeline NAME --accept-actor ACTOR
-nh decide PROPOSAL <--accept|--reject> [--body TEXT]
-nh merge PROPOSAL
-nh memory record|handoff|supersede|retract|challenge|show|recall|index
-nh replication select|show [REMOTE] [--memory STREAM]...
-nh sync [REMOTE] [--recover-shallow]
-nh log
+hn init [--name NAME]
+hn identity show|list|public|authorize|accept|rotate
+hn issue open|comment|list|show
+hn proposal open|revise|list|show|status
+hn policy show [REV]
+hn policy check --base REV <--head REV|--file PATH>
+hn review PROPOSAL <--approve|--request-changes> [--body TEXT]
+hn run request|list|show|logs
+hn run execute REQUEST [--backend sandbox|host] [--allow-unsafe-host-execution] [--rerun]
+hn runner once|watch --accept-pipeline NAME --accept-actor ACTOR
+hn decide PROPOSAL <--accept|--reject> [--body TEXT]
+hn merge PROPOSAL
+hn memory record|handoff|supersede|retract|challenge|show|recall|index
+hn replication select|show [REMOTE] [--memory STREAM]...
+hn sync [REMOTE] [--recover-shallow]
+hn log
 ```
 
 Trust-bearing commands require full actor fingerprints and full

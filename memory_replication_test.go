@@ -81,7 +81,7 @@ func TestMemoryReplicationDiscoveryRequestAndPromotion(t *testing.T) {
 	receiver := filepath.Join(root, "receiver")
 	mustGit(t, "init", "-q", "-b", "main", publisher)
 	mustGit(t, "-C", publisher, "config", "user.name", "Publisher")
-	mustGit(t, "-C", publisher, "config", "user.email", "publisher@nh.invalid")
+	mustGit(t, "-C", publisher, "config", "user.email", "publisher@hn.invalid")
 	mustGit(t, "-C", publisher, "commit", "--allow-empty", "-q", "-m", "base")
 	original, err := os.Getwd()
 	if err != nil {
@@ -207,7 +207,7 @@ func TestMemoryReplicationValidationIsolatedFromValidStream(t *testing.T) {
 	receiver := filepath.Join(root, "receiver")
 	mustGit(t, "init", "-q", "-b", "main", publisher)
 	mustGit(t, "-C", publisher, "config", "user.name", "Publisher")
-	mustGit(t, "-C", publisher, "config", "user.email", "publisher@nh.invalid")
+	mustGit(t, "-C", publisher, "config", "user.email", "publisher@hn.invalid")
 	mustGit(t, "-C", publisher, "commit", "--allow-empty", "-q", "-m", "base")
 	original, err := os.Getwd()
 	if err != nil {
@@ -261,7 +261,7 @@ func TestMemoryReplicationMixedHostileTransactionPreservesCollaborationBytes(t *
 	receiver := filepath.Join(root, "receiver")
 	mustGit(t, "init", "-q", "-b", "main", publisher)
 	mustGit(t, "-C", publisher, "config", "user.name", "Publisher")
-	mustGit(t, "-C", publisher, "config", "user.email", "publisher@nh.invalid")
+	mustGit(t, "-C", publisher, "config", "user.email", "publisher@hn.invalid")
 	mustGit(t, "-C", publisher, "commit", "--allow-empty", "-q", "-m", "base")
 	original, err := os.Getwd()
 	if err != nil {
@@ -520,7 +520,7 @@ func setupMixedMemoryTransactionFixture(t *testing.T) mixedMemoryTransactionFixt
 	publisher, remote, receiver := filepath.Join(root, "publisher"), filepath.Join(root, "project.git"), filepath.Join(root, "receiver")
 	mustGit(t, "init", "-q", "-b", "main", publisher)
 	mustGit(t, "-C", publisher, "config", "user.name", "Publisher")
-	mustGit(t, "-C", publisher, "config", "user.email", "publisher@nh.invalid")
+	mustGit(t, "-C", publisher, "config", "user.email", "publisher@hn.invalid")
 	mustGit(t, "-C", publisher, "commit", "--allow-empty", "-q", "-m", "base")
 	original, err := os.Getwd()
 	if err != nil {
@@ -749,15 +749,15 @@ func TestMemoryReplicationTransactionReceiptFailuresAreTruthful(t *testing.T) {
 			t.Fatal(err)
 		}
 		selection := ReplicationSelection{Version: replicationSelectionVersion, Remote: "origin", Memories: []string{stored.Envelope.Stream}, Budgets: defaultReplicationBudgets()}
-		t.Setenv("NH_INTERNAL_TESTING", "1")
-		t.Setenv("NH_TEST_REPLICATION_INTERRUPT_AFTER", "after-pending-anchor")
+		t.Setenv("HN_INTERNAL_TESTING", "1")
+		t.Setenv("HN_TEST_REPLICATION_INTERRUPT_AFTER", "after-pending-anchor")
 		_, err := runReplicationTransaction(selection)
 		if err == nil || !strings.Contains(err.Error(), "pending anchor") {
 			t.Fatalf("pending anchor interruption = %v", err)
 		}
 		accepted, _ := acceptedMemoryRef("origin", identity.Actor, stored.Envelope.Stream)
 		assertRefAbsent(t, accepted)
-		t.Setenv("NH_TEST_REPLICATION_INTERRUPT_AFTER", "")
+		t.Setenv("HN_TEST_REPLICATION_INTERRUPT_AFTER", "")
 		if _, err := runReplicationTransaction(selection); err != nil {
 			t.Fatalf("pending-anchor retry: %v", err)
 		}
@@ -769,15 +769,15 @@ func TestMemoryReplicationTransactionReceiptFailuresAreTruthful(t *testing.T) {
 			t.Fatal(err)
 		}
 		selection := ReplicationSelection{Version: replicationSelectionVersion, Remote: "origin", Memories: []string{stored.Envelope.Stream}, Budgets: defaultReplicationBudgets()}
-		t.Setenv("NH_INTERNAL_TESTING", "1")
-		t.Setenv("NH_TEST_REPLICATION_INTERRUPT_AFTER", "before-completion-receipt")
+		t.Setenv("HN_INTERNAL_TESTING", "1")
+		t.Setenv("HN_TEST_REPLICATION_INTERRUPT_AFTER", "before-completion-receipt")
 		_, err := runReplicationTransaction(selection)
 		if err == nil || !strings.Contains(err.Error(), "promotion succeeded") {
 			t.Fatalf("completion boundary = %v", err)
 		}
 		accepted, _ := acceptedMemoryRef("origin", identity.Actor, stored.Envelope.Stream)
 		assertRefValue(t, accepted, stored.Commit)
-		t.Setenv("NH_TEST_REPLICATION_INTERRUPT_AFTER", "")
+		t.Setenv("HN_TEST_REPLICATION_INTERRUPT_AFTER", "")
 		if _, err := runReplicationTransaction(selection); err != nil {
 			t.Fatalf("completion-boundary retry: %v", err)
 		}
@@ -823,14 +823,14 @@ func TestMemoryReplicationTransactionDoesNotClearAnotherPendingStream(t *testing
 		t.Fatal("first transaction did not stop after copy")
 	}
 	gitDir := mustGitText(t, "rev-parse", "--absolute-git-dir")
-	anchorsBefore, err := filepath.Glob(filepath.Join(gitDir, "nh", "replication", "anchors", "*.json"))
+	anchorsBefore, err := filepath.Glob(filepath.Join(gitDir, "hn", "replication", "anchors", "*.json"))
 	if err != nil || len(anchorsBefore) != 1 {
 		t.Fatalf("pending anchors before independent transaction = %v, %v", anchorsBefore, err)
 	}
 	if _, err := runReplicationTransaction(secondSelection); err != nil {
 		t.Fatal(err)
 	}
-	anchorsAfter, err := filepath.Glob(filepath.Join(gitDir, "nh", "replication", "anchors", "*.json"))
+	anchorsAfter, err := filepath.Glob(filepath.Join(gitDir, "hn", "replication", "anchors", "*.json"))
 	if err != nil || len(anchorsAfter) != 1 || anchorsAfter[0] != anchorsBefore[0] {
 		t.Fatalf("independent transaction changed pending anchor: before=%v after=%v err=%v", anchorsBefore, anchorsAfter, err)
 	}
@@ -855,7 +855,7 @@ func TestMemoryReplicationShallowGapAndRecoveryUseProductionPath(t *testing.T) {
 	receiver := filepath.Join(root, "receiver")
 	mustGit(t, "init", "-q", "-b", "main", publisher)
 	mustGit(t, "-C", publisher, "config", "user.name", "Publisher")
-	mustGit(t, "-C", publisher, "config", "user.email", "publisher@nh.invalid")
+	mustGit(t, "-C", publisher, "config", "user.email", "publisher@hn.invalid")
 	mustGit(t, "-C", publisher, "commit", "--allow-empty", "-q", "-m", "base")
 	original, err := os.Getwd()
 	if err != nil {
@@ -928,7 +928,7 @@ func TestMemoryReplicationShallowGapAndRecoveryUseProductionPath(t *testing.T) {
 		t.Fatal(err)
 	}
 	if gap.OwnerMemoryID != memory.ID || gap.OwnerStream != memory.Envelope.Stream || gap.MissingID != anchor ||
-		gap.Kind != shallowMemoryAnchor || gap.Remote != "origin" || !strings.Contains(gap.Recovery, "nh sync origin --recover-shallow") ||
+		gap.Kind != shallowMemoryAnchor || gap.Remote != "origin" || !strings.Contains(gap.Recovery, "hn sync origin --recover-shallow") ||
 		gap.RequiredRef != proposalRef(proposal.ID) ||
 		!reflect.DeepEqual(gap.RequiredSelectors, []string{replicationProposal + ":" + proposal.ID}) {
 		t.Fatalf("durable memory gap = %#v", gap)
@@ -962,7 +962,7 @@ func TestMemoryReplicationTypedShallowSupplierRecovery(t *testing.T) {
 			publisher, remote, receiver := filepath.Join(root, "publisher"), filepath.Join(root, "project.git"), filepath.Join(root, "receiver")
 			mustGit(t, "init", "-q", "-b", "main", publisher)
 			mustGit(t, "-C", publisher, "config", "user.name", "Publisher")
-			mustGit(t, "-C", publisher, "config", "user.email", "publisher@nh.invalid")
+			mustGit(t, "-C", publisher, "config", "user.email", "publisher@hn.invalid")
 			mustGit(t, "-C", publisher, "commit", "--allow-empty", "-q", "-m", "base")
 			original, err := os.Getwd()
 			if err != nil {
@@ -1063,7 +1063,7 @@ func TestMemoryReplicationGitEvidenceShallowSupplierRecovery(t *testing.T) {
 	publisher, remote, receiver := filepath.Join(root, "publisher"), filepath.Join(root, "project.git"), filepath.Join(root, "receiver")
 	mustGit(t, "init", "-q", "-b", "main", publisher)
 	mustGit(t, "-C", publisher, "config", "user.name", "Publisher")
-	mustGit(t, "-C", publisher, "config", "user.email", "publisher@nh.invalid")
+	mustGit(t, "-C", publisher, "config", "user.email", "publisher@hn.invalid")
 	mustGit(t, "-C", publisher, "commit", "--allow-empty", "-q", "-m", "base")
 	original, err := os.Getwd()
 	if err != nil {
@@ -1256,9 +1256,9 @@ func TestMemoryReplicationFreshCloneConvergesWithoutPrivateState(t *testing.T) {
 	}
 	gitDir := mustGitText(t, "rev-parse", "--absolute-git-dir")
 	for _, private := range []string{
-		filepath.Join(gitDir, "nh", "identity.json"),
-		filepath.Join(gitDir, "nh", "identities"),
-		filepath.Join(gitDir, "nh", "memory", "index-v0.json"),
+		filepath.Join(gitDir, "hn", "identity.json"),
+		filepath.Join(gitDir, "hn", "identities"),
+		filepath.Join(gitDir, "hn", "memory", "index-v0.json"),
 	} {
 		if _, err := os.Stat(private); !os.IsNotExist(err) {
 			t.Fatalf("fresh-clone sync created private state %s: %v", filepath.Base(private), err)
@@ -1275,7 +1275,7 @@ func TestMemoryReplicationFreshCloneConvergesWithoutPrivateState(t *testing.T) {
 	if err != nil || result.hasFailures() {
 		t.Fatalf("collaboration-only sync = %#v, err=%v", result.Outcomes, err)
 	}
-	if refs := mustGitText(t, "for-each-ref", "--format=%(refname)", "refs/nh/remotes/origin/memory"); refs != "" {
+	if refs := mustGitText(t, "for-each-ref", "--format=%(refname)", "refs/hn/remotes/origin/memory"); refs != "" {
 		t.Fatalf("collaboration-only selection imported memory refs: %s", refs)
 	}
 }
@@ -1311,7 +1311,7 @@ func setupMemoryReplicationFixture(t *testing.T) (publisher, remote, receiver st
 	receiver = filepath.Join(root, "receiver")
 	mustGit(t, "init", "-q", "-b", "main", publisher)
 	mustGit(t, "-C", publisher, "config", "user.name", "Publisher")
-	mustGit(t, "-C", publisher, "config", "user.email", "publisher@nh.invalid")
+	mustGit(t, "-C", publisher, "config", "user.email", "publisher@hn.invalid")
 	mustGit(t, "-C", publisher, "commit", "--allow-empty", "-q", "-m", "base")
 	original, err := os.Getwd()
 	if err != nil {

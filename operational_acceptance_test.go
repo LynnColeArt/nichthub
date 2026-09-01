@@ -58,17 +58,17 @@ func TestOperationalSelfHostingAlphaCrashRecoveryDeniesUnacceptedFacts(t *testin
 		t.Run(attack.name, func(t *testing.T) {
 			fixture := setupShallowRecoveryFixture(t, defaultReplicationBudgets())
 			crashed := runOperationalCommandFailureWithEnv(t, binary, fixture.clone, map[string]string{
-				"NH_INTERNAL_TESTING":                 "1",
-				"NH_TEST_REPLICATION_INTERRUPT_AFTER": "before-completion-receipt",
+				"HN_INTERNAL_TESTING":                 "1",
+				"HN_TEST_REPLICATION_INTERRUPT_AFTER": "before-completion-receipt",
 			}, "sync", "origin", "--recover-shallow")
 			assertOperationalContains(t, crashed, "completion recording failed", "trust operations remain fail-closed")
 			assertRefValue(t, acceptedActorRef("origin", fixture.actor.Actor), fixture.second.Commit)
 
 			gitDir := runOperationalGit(t, fixture.clone, "rev-parse", "--absolute-git-dir")
-			receipt := onlyOperationalStateFile(t, filepath.Join(gitDir, "nh", "replication", "transactions"))
-			anchor := onlyOperationalStateFile(t, filepath.Join(gitDir, "nh", "replication", "anchors"))
+			receipt := onlyOperationalStateFile(t, filepath.Join(gitDir, "hn", "replication", "transactions"))
+			anchor := onlyOperationalStateFile(t, filepath.Join(gitDir, "hn", "replication", "anchors"))
 			for _, directory := range []string{
-				filepath.Join(gitDir, "nh"), filepath.Join(gitDir, "nh", "replication"),
+				filepath.Join(gitDir, "hn"), filepath.Join(gitDir, "hn", "replication"),
 				filepath.Dir(receipt), filepath.Dir(anchor),
 			} {
 				if info, err := os.Lstat(directory); err != nil || !info.IsDir() || info.Mode().Perm() != 0o700 {
@@ -94,7 +94,7 @@ func TestOperationalSelfHostingAlphaCrashRecoveryDeniesUnacceptedFacts(t *testin
 			}
 			attack.mutate(t, receipt)
 
-			beforeRefs := runOperationalGit(t, fixture.clone, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh")
+			beforeRefs := runOperationalGit(t, fixture.clone, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn")
 			beforeHead := runOperationalGit(t, fixture.clone, "rev-parse", "HEAD")
 			blockedCommands := [][]string{{"log"}}
 			if attack.name == "missing receipt" {
@@ -111,7 +111,7 @@ func TestOperationalSelfHostingAlphaCrashRecoveryDeniesUnacceptedFacts(t *testin
 			for _, args := range blockedCommands {
 				blocked := runOperationalCommandFailure(t, binary, fixture.clone, args...)
 				assertOperationalContains(t, blocked, "replication acceptance pending", "state=invalid")
-				if refs := runOperationalGit(t, fixture.clone, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh"); refs != beforeRefs {
+				if refs := runOperationalGit(t, fixture.clone, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn"); refs != beforeRefs {
 					t.Fatalf("blocked %q changed refs:\nbefore=%s\nafter=%s", strings.Join(args, " "), beforeRefs, refs)
 				}
 				if head := runOperationalGit(t, fixture.clone, "rev-parse", "HEAD"); head != beforeHead {
@@ -134,13 +134,13 @@ func TestOperationalSelfHostingAlphaPendingAnchorPrecedesObjectCopy(t *testing.T
 	binary := buildOperationalBinary(t)
 	fixture := setupShallowRecoveryFixture(t, defaultReplicationBudgets())
 	failure := runOperationalCommandFailureWithEnv(t, binary, fixture.clone, map[string]string{
-		"NH_INTERNAL_TESTING":                 "1",
-		"NH_TEST_REPLICATION_INTERRUPT_AFTER": "after-pending-anchor",
+		"HN_INTERNAL_TESTING":                 "1",
+		"HN_TEST_REPLICATION_INTERRUPT_AFTER": "after-pending-anchor",
 	}, "sync", "origin", "--recover-shallow")
 	assertOperationalContains(t, failure, "interrupted after pending anchor before object copy")
 	gitDir := runOperationalGit(t, fixture.clone, "rev-parse", "--absolute-git-dir")
-	anchor := onlyOperationalStateFile(t, filepath.Join(gitDir, "nh", "replication", "anchors"))
-	if entries, err := os.ReadDir(filepath.Join(gitDir, "nh", "replication", "transactions")); !errors.Is(err, os.ErrNotExist) && (err != nil || len(entries) != 0) {
+	anchor := onlyOperationalStateFile(t, filepath.Join(gitDir, "hn", "replication", "anchors"))
+	if entries, err := os.ReadDir(filepath.Join(gitDir, "hn", "replication", "transactions")); !errors.Is(err, os.ErrNotExist) && (err != nil || len(entries) != 0) {
 		t.Fatalf("receipt became durable before the injected pre-copy boundary: entries=%v err=%v", entries, err)
 	}
 	if _, err := os.Stat(anchor); err != nil {
@@ -158,9 +158,9 @@ func TestOperationalSelfHostingAlphaTopLevelRoutes(t *testing.T) {
 	binary := buildOperationalBinary(t)
 	help := runOperationalCommand(t, binary, "", "help")
 	for _, contract := range []string{
-		"nh identity show|list|public|authorize|accept|rotate",
-		"nh replication select|show",
-		"nh sync [REMOTE] [--recover-shallow]",
+		"hn identity show|list|public|authorize|accept|rotate",
+		"hn replication select|show",
+		"hn sync [REMOTE] [--recover-shallow]",
 		"full actor fingerprints and event IDs",
 	} {
 		if !strings.Contains(help, contract) {
@@ -189,7 +189,7 @@ func TestOperationalSelfHostingAlpha(t *testing.T) {
 	authorIdentity := readOperationalIdentity(t, binary, author)
 	baselinePolicyDigest := writeOperationalPolicy(t, author, authorIdentity.Actor, authorIdentity.Actor, true, "", false)
 	writeOperationalPipeline(t, author)
-	runOperationalGit(t, author, "add", ".nh")
+	runOperationalGit(t, author, "add", ".hn")
 	runOperationalGit(t, author, "commit", "-q", "-m", "baseline policy")
 	baseline := runOperationalGit(t, author, "rev-parse", "HEAD")
 	runOperationalGit(t, "", "init", "--bare", "-q", remote)
@@ -204,7 +204,7 @@ func TestOperationalSelfHostingAlpha(t *testing.T) {
 	if authorIdentity.Actor == reviewerIdentity.Actor || authorIdentity.PublicKey == reviewerIdentity.PublicKey {
 		t.Fatal("independently initialized clones reused actor or public-key material")
 	}
-	if _, err := os.Stat(filepath.Join(reviewer, ".git", "nh", "identity.json")); !errors.Is(err, os.ErrNotExist) {
+	if _, err := os.Stat(filepath.Join(reviewer, ".git", "hn", "identity.json")); !errors.Is(err, os.ErrNotExist) {
 		t.Fatalf("reviewer unexpectedly received a legacy copied identity: %v", err)
 	}
 
@@ -228,14 +228,14 @@ func TestOperationalSelfHostingAlpha(t *testing.T) {
 
 	runOperationalGit(t, author, "switch", "-q", "-c", "policy-amendment")
 	amendedPolicyDigest := writeOperationalPolicy(t, author, authorIdentity.Actor, reviewerIdentity.Actor, false, reviewerIdentity.Actor, true)
-	draftCheck := runOperationalCommand(t, binary, author, "policy", "check", "--base", baseline, "--file", filepath.Join(author, ".nh", "policy.json"))
+	draftCheck := runOperationalCommand(t, binary, author, "policy", "check", "--base", baseline, "--file", filepath.Join(author, ".hn", "policy.json"))
 	assertOperationalContains(t, draftCheck,
 		"Base policy digest: "+baselinePolicyDigest,
 		"Proposed policy digest: "+amendedPolicyDigest,
 		"The base policy governs this amendment candidate.",
 		"trusted reviewers added: "+reviewerIdentity.Actor,
 	)
-	runOperationalGit(t, author, "add", ".nh/policy.json")
+	runOperationalGit(t, author, "add", ".hn/policy.json")
 	runOperationalGit(t, author, "commit", "-q", "-m", "amend collaboration policy")
 	amendmentHead := runOperationalGit(t, author, "rev-parse", "HEAD")
 	runOperationalGit(t, author, "switch", "-q", "main")
@@ -325,14 +325,14 @@ func TestOperationalSelfHostingAlpha(t *testing.T) {
 		t.Fatalf("merge fact exact binding mismatch: %#v", laterMerge)
 	}
 	interruptedRotation := runOperationalCommandFailureWithEnv(t, binary, author, map[string]string{
-		"NH_INTERNAL_TESTING":              "1",
-		"NH_TEST_ROTATION_INTERRUPT_AFTER": "before-active-switch",
+		"HN_INTERNAL_TESTING":              "1",
+		"HN_TEST_ROTATION_INTERRUPT_AFTER": "before-active-switch",
 	}, "identity", "rotate", "--name", "Rotated device")
 	assertOperationalContains(t, interruptedRotation, "injected rotation interruption after before-active-switch")
 	if active := readOperationalIdentity(t, binary, author); active.Actor != authorIdentity.Actor {
 		t.Fatalf("interrupted rotation switched active signer from %s to %s", authorIdentity.Actor, active.Actor)
 	}
-	actorsAfterInterruption := strings.Fields(runOperationalGit(t, author, "for-each-ref", "--format=%(refname:strip=3)", "refs/nh/actors"))
+	actorsAfterInterruption := strings.Fields(runOperationalGit(t, author, "for-each-ref", "--format=%(refname:strip=3)", "refs/hn/actors"))
 	if len(actorsAfterInterruption) != 2 {
 		t.Fatalf("interrupted rotation did not durably retain exactly two actor chains: %v", actorsAfterInterruption)
 	}
@@ -354,10 +354,10 @@ func TestOperationalSelfHostingAlpha(t *testing.T) {
 	configureOperationalGit(t, verifier, "Verifier")
 	selectOperationalReplication(t, binary, verifier, []string{authorIdentity.Actor, reviewerIdentity.Actor, successorActor}, []string{amendment.ID, later.ID})
 	runOperationalCommand(t, binary, verifier, "sync", "origin")
-	if _, err := os.Stat(filepath.Join(verifier, ".git", "nh", "identities")); !errors.Is(err, os.ErrNotExist) {
+	if _, err := os.Stat(filepath.Join(verifier, ".git", "hn", "identities")); !errors.Is(err, os.ErrNotExist) {
 		t.Fatalf("identity-free verifier has private identity records: %v", err)
 	}
-	if refs := runOperationalGit(t, verifier, "for-each-ref", "--format=%(refname)", "refs/nh/actors"); refs != "" {
+	if refs := runOperationalGit(t, verifier, "for-each-ref", "--format=%(refname)", "refs/hn/actors"); refs != "" {
 		t.Fatalf("identity-free sync published a local actor ref: %s", refs)
 	}
 	verifyLog := runOperationalCommand(t, binary, verifier, "log")
@@ -388,7 +388,7 @@ func TestOperationalSelfHostingAlphaIdentityAmbiguityRemote(t *testing.T) {
 	runOperationalCommand(t, binary, firstRepo, "init", "--name", "First signer")
 	first := readOperationalIdentity(t, binary, firstRepo)
 	writeOperationalPolicy(t, firstRepo, first.Actor, first.Actor, true, "", false)
-	runOperationalGit(t, firstRepo, "add", ".nh/policy.json")
+	runOperationalGit(t, firstRepo, "add", ".hn/policy.json")
 	runOperationalGit(t, firstRepo, "commit", "-q", "-m", "identity-cycle policy")
 	runOperationalGit(t, "", "init", "--bare", "-q", remote)
 	runOperationalGit(t, firstRepo, "remote", "add", "origin", remote)
@@ -455,7 +455,7 @@ func TestOperationalSelfHostingAlphaHostileSelectedReplication(t *testing.T) {
 	runOperationalCommand(t, binary, goodRepo, "init", "--name", "Good actor")
 	goodIdentity := readOperationalIdentity(t, binary, goodRepo)
 	writeOperationalPolicy(t, goodRepo, goodIdentity.Actor, goodIdentity.Actor, true, "", false)
-	runOperationalGit(t, goodRepo, "add", ".nh/policy.json")
+	runOperationalGit(t, goodRepo, "add", ".hn/policy.json")
 	runOperationalGit(t, goodRepo, "commit", "-q", "-m", "replication base")
 	runOperationalGit(t, "", "init", "--bare", "-q", remote)
 	runOperationalGit(t, goodRepo, "remote", "add", "origin", remote)
@@ -507,11 +507,11 @@ func TestOperationalSelfHostingAlphaHostileSelectedReplication(t *testing.T) {
 		"Replication actor "+mismatchedActor+": failed (structurally-invalid)",
 		"independently valid selections were promoted",
 	)
-	assertOperationalRef(t, receiver, "refs/nh/remotes/origin/actors/"+goodIdentity.Actor, true)
+	assertOperationalRef(t, receiver, "refs/hn/remotes/origin/actors/"+goodIdentity.Actor, true)
 	for _, actor := range []string{largeIdentity.Actor, invalidActor, mismatchedActor, unselectedIdentity.Actor} {
-		assertOperationalRef(t, receiver, "refs/nh/remotes/origin/actors/"+actor, false)
+		assertOperationalRef(t, receiver, "refs/hn/remotes/origin/actors/"+actor, false)
 	}
-	selectionDirectory := filepath.Join(receiver, ".git", "nh", "replication", "selections")
+	selectionDirectory := filepath.Join(receiver, ".git", "hn", "replication", "selections")
 	selectionFiles, err := os.ReadDir(selectionDirectory)
 	if err != nil || len(selectionFiles) != 1 || selectionFiles[0].IsDir() {
 		t.Fatalf("saved selection is not exactly one local private file: files=%v err=%v", selectionFiles, err)
@@ -519,7 +519,7 @@ func TestOperationalSelfHostingAlphaHostileSelectedReplication(t *testing.T) {
 	if status := runOperationalGit(t, receiver, "status", "--porcelain", "--untracked-files=all"); status != "" {
 		t.Fatalf("local replication selection appeared in tracked/untracked worktree state: %s", status)
 	}
-	if refs := runOperationalGit(t, remote, "for-each-ref", "--format=%(refname)", "refs/nh/replication"); refs != "" {
+	if refs := runOperationalGit(t, remote, "for-each-ref", "--format=%(refname)", "refs/hn/replication"); refs != "" {
 		t.Fatalf("local replication selection was published to the remote: %s", refs)
 	}
 	if log := runOperationalCommand(t, binary, receiver, "log"); !strings.Contains(log, operationalShortID(goodEvent.ID)) {
@@ -537,7 +537,7 @@ func TestOperationalSelfHostingAlphaHostileSelectedReplication(t *testing.T) {
 	runOperationalCommand(t, binary, goodRepo, "proposal", "open", "--base", "main", "--head", head, "dependency guidance")
 	proposal := latestOperationalEvent(t, goodRepo, operationalActorRef(goodIdentity.Actor))
 	runOperationalGit(t, goodRepo, "push", "-q", "origin", operationalActorRef(goodIdentity.Actor)+":"+operationalActorRef(goodIdentity.Actor))
-	proposalRef := "refs/nh/proposals/" + strings.TrimPrefix(proposal.ID, "sha256:")
+	proposalRef := "refs/hn/proposals/" + strings.TrimPrefix(proposal.ID, "sha256:")
 	runOperationalGit(t, goodRepo, "push", "-q", "origin", proposalRef+":"+proposalRef)
 
 	runOperationalGit(t, "", "clone", "-q", remote, dependencyReceiver)
@@ -545,16 +545,16 @@ func TestOperationalSelfHostingAlphaHostileSelectedReplication(t *testing.T) {
 	selectOperationalReplication(t, binary, dependencyReceiver, nil, []string{proposal.ID})
 	missingFailure := runOperationalCommandFailure(t, binary, dependencyReceiver, "sync", "origin")
 	assertOperationalContains(t, missingFailure, proposal.ID, "select the full actor history that contains candidate "+proposal.ID)
-	assertOperationalRef(t, dependencyReceiver, "refs/nh/remotes/origin/proposals/"+strings.TrimPrefix(proposal.ID, "sha256:"), false)
+	assertOperationalRef(t, dependencyReceiver, "refs/hn/remotes/origin/proposals/"+strings.TrimPrefix(proposal.ID, "sha256:"), false)
 }
 
 func TestOperationalSelfHostingAlphaShallowRecoveryCLI(t *testing.T) {
 	binary := buildOperationalBinary(t)
 	fixture := setupShallowRecoveryFixture(t, defaultReplicationBudgets())
-	beforeRefs := runOperationalGit(t, fixture.clone, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh/remotes")
+	beforeRefs := runOperationalGit(t, fixture.clone, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn/remotes")
 	blocked := runOperationalCommandFailure(t, binary, fixture.clone, "log")
-	assertOperationalContains(t, blocked, fixture.first.ID, "nh sync origin --recover-shallow")
-	if after := runOperationalGit(t, fixture.clone, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh/remotes"); after != beforeRefs {
+	assertOperationalContains(t, blocked, fixture.first.ID, "hn sync origin --recover-shallow")
+	if after := runOperationalGit(t, fixture.clone, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn/remotes"); after != beforeRefs {
 		t.Fatalf("blocked shallow command changed accepted refs:\nbefore=%s\nafter=%s", beforeRefs, after)
 	}
 	runOperationalCommand(t, binary, fixture.clone, "sync", "origin", "--recover-shallow")
@@ -563,18 +563,18 @@ func TestOperationalSelfHostingAlphaShallowRecoveryCLI(t *testing.T) {
 	if state := runOperationalGit(t, fixture.clone, "rev-parse", "--is-shallow-repository"); state != "true" {
 		t.Fatalf("bounded recovery globally unshallowed repository: %s", state)
 	}
-	assertOperationalRef(t, fixture.clone, "refs/nh/remotes/origin/actors/"+fixture.unselected.Actor, false)
+	assertOperationalRef(t, fixture.clone, "refs/hn/remotes/origin/actors/"+fixture.unselected.Actor, false)
 
-	unselectedAcceptedRef := "refs/nh/remotes/origin/actors/" + fixture.unselected.Actor
+	unselectedAcceptedRef := "refs/hn/remotes/origin/actors/" + fixture.unselected.Actor
 	runOperationalGit(t, fixture.clone, "fetch", "-q", "--depth", "1", "origin",
 		operationalActorRef(fixture.unselected.Actor)+":"+unselectedAcceptedRef)
 	unselectedHead := runOperationalGit(t, fixture.clone, "rev-parse", unselectedAcceptedRef)
 	unselectedBlocked := runOperationalCommandFailure(t, binary, fixture.clone, "log")
 	assertOperationalContains(t, unselectedBlocked, fixture.unselectedFirst.ID,
-		"nh replication select origin --actor "+fixture.unselected.Actor)
+		"hn replication select origin --actor "+fixture.unselected.Actor)
 	recoveryBlocked := runOperationalCommandFailure(t, binary, fixture.clone, "sync", "origin", "--recover-shallow")
 	assertOperationalContains(t, recoveryBlocked, fixture.unselected.Actor, "is not in the saved exact selection",
-		"nh replication select origin --actor "+fixture.unselected.Actor)
+		"hn replication select origin --actor "+fixture.unselected.Actor)
 	selection := runOperationalCommand(t, binary, fixture.clone, "replication", "show", "origin")
 	assertOperationalContains(t, selection, "actor: "+fixture.actor.Actor)
 	if strings.Contains(selection, fixture.unselected.Actor) {
@@ -647,7 +647,7 @@ func TestOperationalSelfHostingAlphaAcceptanceStateRejectsHostileFilesystem(t *t
 				t.Fatal(err)
 			}
 		}},
-		{name: "unsafe nh parent mode", mutate: func(t *testing.T, _, transactions, _ string) {
+		{name: "unsafe hn parent mode", mutate: func(t *testing.T, _, transactions, _ string) {
 			if err := os.Chmod(filepath.Dir(filepath.Dir(transactions)), 0o755); err != nil {
 				t.Fatal(err)
 			}
@@ -752,8 +752,8 @@ func TestOperationalSelfHostingAlphaAcceptanceStateRejectsHostileFilesystem(t *t
 			repository := filepath.Dir(gitDir)
 			pending := strings.Repeat("1", 40)
 			recordOperationalTransactionFixture(t, gitDir, "txn-hostile", "validated", []string{pending}, nil)
-			transactions := filepath.Join(gitDir, "nh", "replication", "transactions")
-			anchors := filepath.Join(gitDir, "nh", "replication", "anchors")
+			transactions := filepath.Join(gitDir, "hn", "replication", "transactions")
+			anchors := filepath.Join(gitDir, "hn", "replication", "anchors")
 			receipt := filepath.Join(transactions, "txn-hostile.json")
 			test.mutate(t, receipt, transactions, anchors)
 			blocked := runOperationalCommandFailure(t, binary, repository, "log")
@@ -791,7 +791,7 @@ func TestOperationalSelfHostingAlphaAcceptanceLedgerUnion(t *testing.T) {
 		t.Fatal("deleting one pending receipt was interpreted as acceptance")
 	}
 	recordOperationalTransactionFixture(t, gitDir, "txn-union-a", "validated", []string{firstOnly, shared}, nil)
-	if err := os.Remove(filepath.Join(gitDir, "nh", "replication", "anchors", "txn-union-b.json")); err != nil {
+	if err := os.Remove(filepath.Join(gitDir, "hn", "replication", "anchors", "txn-union-b.json")); err != nil {
 		t.Fatal(err)
 	}
 	if _, _, err = loadReplicationAcceptanceState(gitDir); err == nil {
@@ -829,7 +829,7 @@ func initOperationalRepository(t *testing.T, repository, name string) {
 func configureOperationalGit(t *testing.T, repository, name string) {
 	t.Helper()
 	runOperationalGit(t, repository, "config", "user.name", name)
-	runOperationalGit(t, repository, "config", "user.email", strings.ToLower(name)+"@nh.invalid")
+	runOperationalGit(t, repository, "config", "user.email", strings.ToLower(name)+"@hn.invalid")
 	runOperationalGit(t, repository, "config", "credential.helper", "")
 }
 
@@ -856,7 +856,7 @@ func writeOperationalPolicy(t *testing.T, repository, maintainer, reviewer strin
 		}
 	}
 	policy := map[string]any{
-		"version":     "nh.policy/0",
+		"version":     "hn.policy/0",
 		"maintainers": []string{maintainer},
 		"proposals": map[string]any{
 			"requiredApprovals":   1,
@@ -871,7 +871,7 @@ func writeOperationalPolicy(t *testing.T, repository, maintainer, reviewer strin
 		t.Fatal(err)
 	}
 	encoded = append(encoded, '\n')
-	directory := filepath.Join(repository, ".nh")
+	directory := filepath.Join(repository, ".hn")
 	if err := os.MkdirAll(directory, 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -884,7 +884,7 @@ func writeOperationalPolicy(t *testing.T, repository, maintainer, reviewer strin
 func writeOperationalPipeline(t *testing.T, repository string) {
 	t.Helper()
 	pipeline := map[string]any{
-		"version": "nh.pipeline/0",
+		"version": "hn.pipeline/0",
 		"steps": []any{map[string]any{
 			"name": "operational-proof", "command": "sh",
 			"args": []string{"-c", "printf 'operational-ok\\n'"}, "timeoutSeconds": 5,
@@ -894,7 +894,7 @@ func writeOperationalPipeline(t *testing.T, repository string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	directory := filepath.Join(repository, ".nh", "pipelines")
+	directory := filepath.Join(repository, ".hn", "pipelines")
 	if err := os.MkdirAll(directory, 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -957,7 +957,7 @@ func assertOperationalBudgetRejections(t *testing.T, binary, root, remote, actor
 				"Replication actor "+actor+": failed (over-budget)",
 				"exceeded "+dimension+" budget",
 			)
-			assertOperationalRef(t, repository, "refs/nh/remotes/origin/actors/"+actor, false)
+			assertOperationalRef(t, repository, "refs/hn/remotes/origin/actors/"+actor, false)
 		})
 	}
 }
@@ -974,7 +974,7 @@ func latestOperationalEvent(t *testing.T, repository, ref string) operationalEve
 	return event
 }
 
-func operationalActorRef(actor string) string { return "refs/nh/actors/" + actor }
+func operationalActorRef(actor string) string { return "refs/hn/actors/" + actor }
 
 func operationalDigest(payload []byte) string {
 	digest := sha256.Sum256(payload)
@@ -1072,7 +1072,7 @@ func setupOperationalLedgerRepository(t *testing.T) string {
 	repository := filepath.Join(t.TempDir(), "repo")
 	mustGit(t, "init", "-q", "-b", "main", repository)
 	mustGit(t, "-C", repository, "config", "user.name", "Ledger Fixture")
-	mustGit(t, "-C", repository, "config", "user.email", "ledger@nh.invalid")
+	mustGit(t, "-C", repository, "config", "user.email", "ledger@hn.invalid")
 	mustGit(t, "-C", repository, "commit", "--allow-empty", "-q", "-m", "base")
 	withTestDirectory(t, repository)
 	actor := testIdentity(t, "Ledger Actor")
@@ -1091,10 +1091,10 @@ func setupOperationalLedgerRepository(t *testing.T) string {
 func writeOperationalTransactionFixture(t *testing.T, gitDir, id string, contents []byte) {
 	t.Helper()
 	directory := replicationTransactionsPath(gitDir)
-	if err := ensurePrivateDirectory(filepath.Join(gitDir, "nh")); err != nil {
+	if err := ensurePrivateDirectory(filepath.Join(gitDir, "hn")); err != nil {
 		t.Fatal(err)
 	}
-	if err := ensurePrivateDirectory(filepath.Join(gitDir, "nh", "replication")); err != nil {
+	if err := ensurePrivateDirectory(filepath.Join(gitDir, "hn", "replication")); err != nil {
 		t.Fatal(err)
 	}
 	if err := ensurePrivateDirectory(directory); err != nil {
@@ -1120,8 +1120,8 @@ func onlyOperationalStateFile(t *testing.T, directory string) string {
 func recordOperationalTransactionFixture(t *testing.T, gitDir, id, state string, pending, accepted []string) {
 	t.Helper()
 	for _, directory := range []string{
-		filepath.Join(gitDir, "nh"),
-		filepath.Join(gitDir, "nh", "replication"),
+		filepath.Join(gitDir, "hn"),
+		filepath.Join(gitDir, "hn", "replication"),
 		replicationTransactionsPath(gitDir),
 	} {
 		if err := ensurePrivateDirectory(directory); err != nil {
@@ -1147,7 +1147,7 @@ func operationalTestEnvironment(home string) []string {
 }
 
 func operationalTestEnvironmentWith(home string, overrides map[string]string) []string {
-	blocked := []string{"HOME=", "GIT_CONFIG_GLOBAL=", "GIT_ASKPASS=", "SSH_ASKPASS=", "GH_TOKEN=", "GITHUB_TOKEN=", "NH_", "SPEC_KITTY_"}
+	blocked := []string{"HOME=", "GIT_CONFIG_GLOBAL=", "GIT_ASKPASS=", "SSH_ASKPASS=", "GH_TOKEN=", "GITHUB_TOKEN=", "HN_", "SPEC_KITTY_"}
 	keys := make([]string, 0, len(overrides))
 	for key := range overrides {
 		keys = append(keys, key)
@@ -1185,11 +1185,11 @@ func buildOperationalBinary(t *testing.T) string {
 	if err != nil {
 		t.Fatal(err)
 	}
-	binary := filepath.Join(t.TempDir(), "nh")
+	binary := filepath.Join(t.TempDir(), "hn")
 	build := exec.Command("go", "build", "-o", binary, ".")
 	build.Dir = source
 	if output, err := build.CombinedOutput(); err != nil {
-		t.Fatalf("build nh: %v\n%s", err, output)
+		t.Fatalf("build hn: %v\n%s", err, output)
 	}
 	return binary
 }
@@ -1204,10 +1204,10 @@ func runOperationalCommand(t *testing.T, binary, directory string, args ...strin
 	command.Stdin = strings.NewReader("")
 	output, err := command.CombinedOutput()
 	if ctx.Err() != nil {
-		t.Fatalf("nh %s timed out: %v\n%s", strings.Join(args, " "), ctx.Err(), output)
+		t.Fatalf("hn %s timed out: %v\n%s", strings.Join(args, " "), ctx.Err(), output)
 	}
 	if err != nil {
-		t.Fatalf("nh %s: %v\n%s", strings.Join(args, " "), err, output)
+		t.Fatalf("hn %s: %v\n%s", strings.Join(args, " "), err, output)
 	}
 	return string(output)
 }
@@ -1226,10 +1226,10 @@ func runOperationalCommandFailureWithEnv(t *testing.T, binary, directory string,
 	command.Stdin = strings.NewReader("")
 	output, err := command.CombinedOutput()
 	if ctx.Err() != nil {
-		t.Fatalf("nh %s timed out: %v\n%s", strings.Join(args, " "), ctx.Err(), output)
+		t.Fatalf("hn %s timed out: %v\n%s", strings.Join(args, " "), ctx.Err(), output)
 	}
 	if err == nil {
-		t.Fatalf("nh %s unexpectedly succeeded:\n%s", strings.Join(args, " "), output)
+		t.Fatalf("hn %s unexpectedly succeeded:\n%s", strings.Join(args, " "), output)
 	}
 	return string(output)
 }

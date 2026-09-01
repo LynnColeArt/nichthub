@@ -1,0 +1,61 @@
+# Breaking short-namespace cutover for Hubnot. The declared exact target also
+# covers its deliberate derived forms: NH_ -> HN_, NH-### -> HN-###,
+# nh/0 -> hn/0, nh-memory -> hn-memory, and .nh/refs/nh -> .hn/refs/hn.
+target:
+  term: nh
+  replacement: hn
+  operation: rename
+
+categories:
+  code_symbols:         { action: rename }
+  import_paths:         { action: manual_review }
+  filesystem_paths:     { action: manual_review }
+  serialized_keys:      { action: rename }
+  cli_commands:         { action: rename }
+  user_facing_strings:  { action: rename_if_user_visible }
+  tests_fixtures:       { action: rename }
+  logs_telemetry:       { action: rename }
+
+exceptions:
+  - path: ".nh/**"
+    action: do_not_change
+    reason: "Frozen policy and pipeline inputs for the final legacy-governed transition; the new runtime never reads this tree."
+  - path: ".kittify/canonical-events.jsonl"
+    action: do_not_change
+    reason: "Append-only project initialization history must remain byte-identical."
+  - path: "kitty-ops/**"
+    action: do_not_change
+    reason: "Operation journals describe completed historical invocations and are not active product documentation."
+  - path: "kitty-specs/proposal-revision-conflict-recovery-01M1774Q/**"
+    action: do_not_change
+    reason: "Completed mission provenance retains the command, protocol, directive, and path names in force when it ran."
+  - path: "kitty-specs/hubnot-product-rename-01M1ERYJ/**"
+    action: do_not_change
+    reason: "Completed product-rename mission provenance records the earlier decision to preserve nh; rewriting it would falsify history."
+  - path: "kitty-specs/hn-hard-cutover-01M1EY1B/status.events.jsonl"
+    action: manual_review
+    reason: "The current mission journal may only append lifecycle facts; already recorded bytes remain unchanged."
+  - path: "kitty-specs/hn-hard-cutover-01M1EY1B/occurrence_map.yaml"
+    action: manual_review
+    reason: "The map must retain the old token in its target and historical exception descriptions so it can govern the cutover."
+  - path: "kitty-specs/hn-hard-cutover-01M1EY1B/**"
+    action: manual_review
+    reason: "Current mission artifacts must discuss both namespace values precisely and may receive generated status evidence."
+  - path: "docs/self-hosting-alpha.md"
+    action: do_not_change
+    reason: "Historical transcript and exact ref ledger for the pre-cutover alpha."
+  - path: "docs/host-compatibility.md"
+    action: manual_review
+    reason: "Preserve dated historical evidence blocks while adding a current hn compatibility record and updating active guidance."
+  - path: ".kittify/charter/**"
+    action: manual_review
+    reason: "Rename active CLI prose and directive IDs while preserving external DIRECTIVE_* references and source provenance."
+  - path: ".gitignore"
+    action: manual_review
+    reason: "Ignore only the new generated hn binary; product/module names and unrelated patterns remain unchanged."
+  - path: "go.mod"
+    action: do_not_change
+    reason: "The Go module is hubnot; it is product identity, not the short protocol namespace."
+  - path: "go.sum"
+    action: do_not_change
+    reason: "Dependency checksums, if ever present, are unrelated to the namespace token."

@@ -125,7 +125,7 @@ func TestPolicyEvidenceDecisionAndMerge(t *testing.T) {
 	runner := testIdentity(t, "Runner")
 	mustGit(t, "init", "-q", "-b", "main")
 	mustGit(t, "config", "user.name", "Test")
-	mustGit(t, "config", "user.email", "test@nh.invalid")
+	mustGit(t, "config", "user.email", "test@hn.invalid")
 	writeTestPolicy(t, root, PolicyDocument{
 		Version:     policyVersion,
 		Maintainers: []string{alice.Actor},
@@ -139,14 +139,14 @@ func TestPolicyEvidenceDecisionAndMerge(t *testing.T) {
 			"test": {RequiredResults: 1, TrustedRunners: []string{runner.Actor}},
 		},
 	})
-	if err := os.MkdirAll(filepath.Join(root, ".nh", "pipelines"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(root, ".hn", "pipelines"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	pipeline := []byte("{\"version\":\"nh.pipeline/0\",\"steps\":[{\"name\":\"Test\",\"command\":\"true\"}]}\n")
-	if err := os.WriteFile(filepath.Join(root, ".nh", "pipelines", "test.json"), pipeline, 0o644); err != nil {
+	pipeline := []byte("{\"version\":\"hn.pipeline/0\",\"steps\":[{\"name\":\"Test\",\"command\":\"true\"}]}\n")
+	if err := os.WriteFile(filepath.Join(root, ".hn", "pipelines", "test.json"), pipeline, 0o644); err != nil {
 		t.Fatal(err)
 	}
-	mustGit(t, "add", ".nh")
+	mustGit(t, "add", ".hn")
 	mustGit(t, "commit", "-q", "-m", "base policy")
 	base := mustGitText(t, "rev-parse", "HEAD")
 
@@ -162,7 +162,7 @@ func TestPolicyEvidenceDecisionAndMerge(t *testing.T) {
 		},
 		Pipelines: map[string]PipelinePolicy{},
 	})
-	mustGit(t, "add", ".nh/policy.json")
+	mustGit(t, "add", ".hn/policy.json")
 	mustGit(t, "commit", "-q", "-m", "proposed policy change")
 	head := mustGitText(t, "rev-parse", "HEAD")
 
@@ -222,7 +222,7 @@ func TestPolicyEvidenceDecisionAndMerge(t *testing.T) {
 	resultEvent.Log = eventID(log)
 	resultEvent.Backend = "sandbox"
 	resultEvent.Platform = "test/test"
-	resultEvent.Runner = "nh/test"
+	resultEvent.Runner = "hn/test"
 	if _, err := appendEventWithAttachments(resultEvent, runner, map[string][]byte{"log.txt": log}); err != nil {
 		t.Fatal(err)
 	}
@@ -301,10 +301,10 @@ func writeTestPolicy(t *testing.T, root string, policy PolicyDocument) {
 		t.Fatal(err)
 	}
 	encoded = append(encoded, '\n')
-	if err := os.MkdirAll(filepath.Join(root, ".nh"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(root, ".hn"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(root, ".nh", "policy.json"), encoded, 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(root, ".hn", "policy.json"), encoded, 0o644); err != nil {
 		t.Fatal(err)
 	}
 }

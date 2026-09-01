@@ -232,7 +232,7 @@ func TestProposalRevisionGovernanceRelationshipsAndLaterMergeFact(t *testing.T) 
 	alice := testIdentity(t, "Alice")
 	mustGit(t, "init", "-q", "-b", "main")
 	mustGit(t, "config", "user.name", "Test")
-	mustGit(t, "config", "user.email", "test@nh.invalid")
+	mustGit(t, "config", "user.email", "test@hn.invalid")
 	writeTestPolicy(t, root, PolicyDocument{
 		Version:     policyVersion,
 		Maintainers: []string{alice.Actor},
@@ -243,7 +243,7 @@ func TestProposalRevisionGovernanceRelationshipsAndLaterMergeFact(t *testing.T) 
 		},
 		Pipelines: map[string]PipelinePolicy{},
 	})
-	mustGit(t, "add", ".nh/policy.json")
+	mustGit(t, "add", ".hn/policy.json")
 	mustGit(t, "commit", "-q", "-m", "base policy")
 	base := mustGitText(t, "rev-parse", "HEAD")
 	mustGit(t, "commit", "--allow-empty", "-q", "-m", "proposal head")

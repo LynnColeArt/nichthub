@@ -74,7 +74,7 @@ func createIdentity(name string) (*Identity, string, error) {
 func loadIdentity() (*Identity, error) {
 	identity, err := loadActiveIdentity()
 	if errors.Is(err, errNoIdentity) {
-		return nil, fmt.Errorf("no identity; run 'nh init'")
+		return nil, fmt.Errorf("no identity; run 'hn init'")
 	}
 	return identity, err
 }

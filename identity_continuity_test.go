@@ -95,11 +95,11 @@ func TestIdentityFieldsPreserveExistingPayloadBytesAndID(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []byte(`{"protocol":"nh/0","kind":"issue.open","actor":"actor","actorName":"Alice","publicKey":"key","sequence":1,"timestamp":"2026-08-30T00:00:00Z","title":"Stable"}`)
+	want := []byte(`{"protocol":"hn/0","kind":"issue.open","actor":"actor","actorName":"Alice","publicKey":"key","sequence":1,"timestamp":"2026-08-30T00:00:00Z","title":"Stable"}`)
 	if !bytes.Equal(got, want) {
 		t.Fatalf("legacy payload changed:\n got %s\nwant %s", got, want)
 	}
-	if gotID := eventID(got); gotID != "sha256:cc324cc49ad14cb8f75e4ff6f112396d966af50546937770d5adb7b8e979f091" {
+	if gotID := eventID(got); gotID != "sha256:017faf5d4cd870f251691ae66833ec1b85a90de9bf002e7777084e635702412d" {
 		t.Fatalf("legacy event ID = %s", gotID)
 	}
 }
@@ -134,7 +134,7 @@ func TestIdentityFieldsPreserveEveryExistingEventKindID(t *testing.T) {
 	cases[request.Kind] = request
 	result := request
 	result.Kind, result.Outcome, result.ExitCode, result.DurationMS = "run.result", "passed", 2, 3
-	result.Log, result.Backend, result.Platform, result.Runner = fullA, "sandbox", "test/test", "nh/test"
+	result.Log, result.Backend, result.Platform, result.Runner = fullA, "sandbox", "test/test", "hn/test"
 	cases[result.Kind] = result
 	decision := base
 	decision.Kind, decision.Subject, decision.Body, decision.Verdict, decision.Policy = "proposal.decision", fullA, "Body", "accept", fullB
@@ -146,15 +146,15 @@ func TestIdentityFieldsPreserveEveryExistingEventKindID(t *testing.T) {
 	cases[merged.Kind] = merged
 
 	wantIDs := map[string]string{
-		"issue.open":        "sha256:86d61551b5233d9bf0ae98eb506abb53a3406d7622c7c66b1a34c2f244812873",
-		"issue.comment":     "sha256:47d4e38ecb1b55d5bd81a72de95dc6ab6c7040115991a196b65d6aa71c032ace",
-		"proposal.open":     "sha256:52eb04da80dcc2cb36389f47b516fcdc1d2e948fd5de7c992990a3d03d931e88",
-		"proposal.revise":   "sha256:a884e31c401c361ca39236ef9c2c759b3b7d1c582ef4c3d4da71671fe016f424",
-		"review.submit":     "sha256:6bc412d82f000130dd59acdd40358fd852fa1714bef5291762c3995eba31850f",
-		"run.request":       "sha256:13f9262d57acb402cb46682d925d7904ef58bf7d77a8a942d4168b00d3c2df6a",
-		"run.result":        "sha256:7f3acaeb8e611fe6d8f0e1c9b8514885d6874f5141278e822274ba11f5fe1b17",
-		"proposal.decision": "sha256:3e6d8f2c4ba428fc04a5cca304a316a20876f91b9ca52138bd7e35e881c4fcec",
-		"proposal.merged":   "sha256:a92000b45474fadd1cb39a5f18821ef34d7c1bac76ed1713083f2d39c86dc7f8",
+		"issue.open":        "sha256:d976a3f3c6930d342ee42a2e254a0ab20ff47ae2ac3baa0a0d40fd9ed203554a",
+		"issue.comment":     "sha256:400db40f30cabebdc8a09a81c5da4657fc5a2d7e1c613c27361e4a13b6b51715",
+		"proposal.open":     "sha256:7fa1c9fa208653fad960fee5f325753ada2106e9d16d3a09b9723600aa572cd6",
+		"proposal.revise":   "sha256:24edfc3ed0393e76608721e81a88d5dd8c1f54a38af04ef71a6673259de32611",
+		"review.submit":     "sha256:87d65394a62ee0d8ee1de8b6d010014c0fc48fce6cfc41cabd517ea91778e71e",
+		"run.request":       "sha256:8e1f77e01bf41530d363fa5f7197857e32a5f78042f306c161e644722e5a8159",
+		"run.result":        "sha256:b9d287d1950b0e9ecfc771cdba97d2686ac2f343d64bec0ee48d270565da4256",
+		"proposal.decision": "sha256:e61f5034ccb7ad5eab3b7bd0f3af02e14f82303438ffa66f57c41f3cbff3b76e",
+		"proposal.merged":   "sha256:a7584d7f568283a468cf867dad71ed0096fac6fccfbaa6638af8580422f19283",
 	}
 	for kind, event := range cases {
 		payload, err := json.Marshal(event)
@@ -910,13 +910,13 @@ func TestIdentityContinuityDoesNotGrantPolicyAuthority(t *testing.T) {
 		},
 	}
 	writeTestPolicy(t, root, policy)
-	if err := os.MkdirAll(filepath.Join(root, ".nh", "pipelines"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(root, ".hn", "pipelines"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(root, ".nh", "pipelines", "test.json"), []byte("{\"version\":\"nh.pipeline/0\",\"steps\":[{\"name\":\"test\",\"command\":\"true\"}]}\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(root, ".hn", "pipelines", "test.json"), []byte("{\"version\":\"hn.pipeline/0\",\"steps\":[{\"name\":\"test\",\"command\":\"true\"}]}\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	mustGit(t, "add", ".nh")
+	mustGit(t, "add", ".hn")
 	mustGit(t, "commit", "-q", "-m", "policy")
 	base := mustGitText(t, "rev-parse", "HEAD")
 	_, policyBytesBefore, policyDigestBefore, err := loadPolicy(base)
@@ -988,7 +988,7 @@ func TestIdentityContinuityDoesNotGrantPolicyAuthority(t *testing.T) {
 	resultEvent.Log = eventID(log)
 	resultEvent.Backend = "sandbox"
 	resultEvent.Platform = "test/test"
-	resultEvent.Runner = "nh/test"
+	resultEvent.Runner = "hn/test"
 	if _, err := appendEventWithAttachments(resultEvent, bob, map[string][]byte{"log.txt": log}); err != nil {
 		t.Fatal(err)
 	}

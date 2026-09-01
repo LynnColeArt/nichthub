@@ -1,0 +1,17 @@
+{
+  "change_mode": "bulk_edit",
+  "created_at": "2026-09-01T16:50:00.593166+00:00",
+  "flattened": false,
+  "friendly_name": "hn hard cutover",
+  "mission_id": "01M1EY1B8GYQ4JNP14JK6F7YN0",
+  "mission_number": null,
+  "mission_slug": "hn-hard-cutover-01M1EY1B",
+  "mission_type": "software-dev",
+  "purpose_context": "This mission advances hn hard cutover on feat/hn-hard-cutover so stakeholders can track the work from mission creation onward.",
+  "purpose_tldr": "hn hard cutover",
+  "slug": "hn-hard-cutover-01M1EY1B",
+  "target_branch": "feat/hn-hard-cutover",
+  "topology": "single_branch",
+  "vcs": "git",
+  "vcs_locked_at": "2026-09-01T17:08:58.790896+00:00"
+}

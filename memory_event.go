@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	memoryProtocolVersion = "nh-memory/0"
+	memoryProtocolVersion = "hn-memory/0"
 
 	memoryOperationRecord    = "record"
 	memoryOperationSupersede = "supersede"
@@ -51,7 +51,7 @@ const (
 	maxMemoryActorNameBytes      = 256
 )
 
-// MemoryEnvelope is the immutable, signed nh-memory/0 wire object. Field order
+// MemoryEnvelope is the immutable, signed hn-memory/0 wire object. Field order
 // is part of its canonical encoding; do not reorder fields without a protocol
 // version change.
 type MemoryEnvelope struct {
@@ -110,7 +110,7 @@ func memoryID(payload []byte) string {
 }
 
 func defaultMemoryStream(actor string) string {
-	return memoryID([]byte("nh-memory-stream-v0\x00" + actor + "\x00default"))
+	return memoryID([]byte("hn-memory-stream-v0\x00" + actor + "\x00default"))
 }
 
 func validMemoryID(id string) bool {

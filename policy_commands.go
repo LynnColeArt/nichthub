@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-const policyCheckUsage = "usage: nh policy check --base REV <--head REV|--file PATH>"
+const policyCheckUsage = "usage: hn policy check --base REV <--head REV|--file PATH>"
 
 type policySource struct {
 	Policy PolicyDocument
@@ -33,7 +33,7 @@ type policyAmendmentInspection struct {
 
 func cmdPolicy(args []string) error {
 	if len(args) == 0 {
-		return usageError("usage: nh policy <show|check>")
+		return usageError("usage: hn policy <show|check>")
 	}
 	switch args[0] {
 	case "show":
@@ -47,7 +47,7 @@ func cmdPolicy(args []string) error {
 
 func cmdPolicyShow(args []string) error {
 	if len(args) > 1 {
-		return usageError("usage: nh policy show [REV]")
+		return usageError("usage: hn policy show [REV]")
 	}
 	revision := "HEAD"
 	if len(args) == 1 {
@@ -162,7 +162,7 @@ func policyAmendmentDiagnostic(baseRevision, headRevision string) (string, error
 	if err := guardBasePolicy("base policy", baseCommit, "", ""); err != nil {
 		return "", err
 	}
-	changedPath, err := gitText("diff", "--name-only", baseCommit, headCommit, "--", ".nh/policy.json")
+	changedPath, err := gitText("diff", "--name-only", baseCommit, headCommit, "--", ".hn/policy.json")
 	if err != nil {
 		return "", fmt.Errorf("compare policy paths: %w", err)
 	}

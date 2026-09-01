@@ -21,11 +21,11 @@ inspectable; they do not independently prove those claims.
 
 ## Pipeline format
 
-Pipelines live at `.nh/pipelines/<name>.json` in the proposed commit:
+Pipelines live at `.hn/pipelines/<name>.json` in the proposed commit:
 
 ```json
 {
-  "version": "nh.pipeline/0",
+  "version": "hn.pipeline/0",
   "steps": [
     {
       "name": "Unit tests",
@@ -40,7 +40,7 @@ Pipelines live at `.nh/pipelines/<name>.json` in the proposed commit:
 
 `command` is executed directly, without a shell. A repository-defined custom
 action is an executable tracked in the commit, for example
-`./.nh/actions/test`. Shell behavior is only present if that executable itself
+`./.hn/actions/test`. Shell behavior is only present if that executable itself
 is a shell script.
 
 Unknown JSON fields are rejected. Pipelines are limited to 64 steps, each step
@@ -62,10 +62,16 @@ the exact pipeline bytes.
 Before execution, a runner repeats every check. A pipeline changed in another
 commit cannot satisfy the request.
 
+One actor produces at most one current result for an exact request by default.
+`hn run execute <full-request-id> --rerun` deliberately executes again and
+publishes a replacement signed result; it does not rewrite the prior event.
+
 ## Reference sandbox executor
 
 The default Linux backend uses Bubblewrap. It:
 
+- resolves the `bwrap` executable only from the same fixed canonical system
+  directories exposed through the sandbox `PATH`, ignoring ambient `PATH`;
 - extracts the requested commit into a generated temporary directory;
 - rejects unsafe archive paths and unsupported archive entry types;
 - creates separate user, PID, network, IPC, UTS, and cgroup namespaces;
@@ -73,7 +79,7 @@ The default Linux backend uses Bubblewrap. It:
 - mounts system tool directories read-only;
 - exposes the generated checkout as the only writable project workspace;
 - exposes `PATH`, an isolated temporary `HOME` and `TMPDIR`, `CI=true`, and the
-  exact `NH_COMMIT`;
+  exact `HN_COMMIT`;
 - provides no external network interface;
 - stops after the first failed or timed-out step;
 - caps the signed combined stdout/stderr log at 1 MiB;
@@ -97,7 +103,7 @@ normal filesystem and network access and requires both:
 
 ## Runner discovery
 
-`nh runner once` and `nh runner watch` synchronize NH refs and discover signed
+`hn runner once` and `hn runner watch` synchronize HN refs and discover signed
 requests. They require a local acceptance policy with two exact matches:
 
 ```text

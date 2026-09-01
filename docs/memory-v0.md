@@ -1,7 +1,7 @@
 # Agent Memory Protocol v0
 
 Hubnot memory is deliberate, signed project cognition carried by Git. It is
-a separate additive protocol, `nh-memory/0`; memory is not an `nh/0`
+a separate additive protocol, `hn-memory/0`; memory is not an `hn/0`
 collaboration event and does not alter existing event IDs or actor histories.
 The implementation is repository-local and experimental.
 
@@ -23,8 +23,8 @@ IDs are full `sha256:` IDs.
 An actor owns each append-only stream:
 
 ```text
-refs/nh/memory/<full-actor>/<64-hex-stream-digest>
-refs/nh/remotes/<remote>/memory/<full-actor>/<64-hex-stream-digest>
+refs/hn/memory/<full-actor>/<64-hex-stream-digest>
+refs/hn/remotes/<remote>/memory/<full-actor>/<64-hex-stream-digest>
 ```
 
 The ref owner, payload actor, public-key fingerprint, and stream must agree.
@@ -81,7 +81,7 @@ Keep these judgments separate:
 
 ## Policy qualification
 
-The optional `memory` section of `.nh/policy.json` is evaluated from the exact
+The optional `memory` section of `.hn/policy.json` is evaluated from the exact
 query commit:
 
 ```json
@@ -108,19 +108,19 @@ does not upgrade it.
 ## Record, correct, and hand off
 
 ```sh
-nh memory record --kind decision --at HEAD --applies descendants \
+hn memory record --kind decision --at HEAD --applies descendants \
   --topic architecture --evidence git:$(git rev-parse HEAD) \
   --content "Keep memory streams separate from collaboration actor chains."
 
-nh memory supersede sha256:<full-memory-id> \
+hn memory supersede sha256:<full-memory-id> \
   --kind decision --at HEAD --applies descendants \
   --content "Replacement decision with current rationale."
 
-nh memory retract sha256:<full-memory-id> --reason incorrect
-nh memory challenge sha256:<another-actor-memory-id> \
+hn memory retract sha256:<full-memory-id> --reason incorrect
+hn memory challenge sha256:<another-actor-memory-id> \
   --reason evidence-mismatch --evidence git:$(git rev-parse HEAD)
 
-nh memory handoff --at HEAD --applies descendants --input handoff.json --json
+hn memory handoff --at HEAD --applies descendants --input handoff.json --json
 ```
 
 Machine record and handoff requests are strict version-0 JSON. For handoff
@@ -134,9 +134,9 @@ history, environment, clipboard, credentials, or unrelated working-tree files.
 ## Bounded recall
 
 ```sh
-nh memory recall --at HEAD --topic architecture --query "stream isolation" --json
-nh memory recall --at HEAD --include-untrusted --lifecycle all --json
-nh memory show sha256:<full-memory-id> --json
+hn memory recall --at HEAD --topic architecture --query "stream isolation" --json
+hn memory recall --at HEAD --include-untrusted --lifecycle all --json
+hn memory show sha256:<full-memory-id> --json
 ```
 
 Recall filters exact commit, subject, path, topic, kind, actor, lifecycle,
@@ -159,11 +159,11 @@ event append, or ref update.
 ## Disposable local index
 
 ```sh
-nh memory index rebuild
-nh memory index verify
+hn memory index rebuild
+hn memory index verify
 ```
 
-The private JSON index is `.git/nh/memory/index-v0.json`. Its source
+The private JSON index is `.git/hn/memory/index-v0.json`. Its source
 fingerprint binds the exact policy digest plus sorted `(ref, head)` pairs.
 Directories are owner-only and the file is mode `0600`; symlinks, unknown
 fields, malformed records, incompatible versions, and stale sources fail
@@ -173,12 +173,12 @@ at any time and rebuild from verified local and accepted refs.
 ## Select and synchronize
 
 ```sh
-nh replication select origin \
+hn replication select origin \
   --memory sha256:<full-stream-id> \
   --max-events 10000 \
   --max-objects 30000 \
   --max-total-bytes 134217728
-nh sync origin
+hn sync origin
 ```
 
 Selection authorizes transport, not trust. Exact streams enter a separate bare
@@ -187,11 +187,11 @@ refs. Actor, proposal, and memory selectors have independent outcomes. An
 explicit actor-only selection imports no memory. `--all` discovers all three
 namespaces but remains mutually exclusive with exact selectors.
 
-`nh sync` also publishes local memory refs with explicit Git refspecs; it does
+`hn sync` also publishes local memory refs with explicit Git refspecs; it does
 not publish the primary branch. In a fresh clone, save exact stream selectors,
 sync, then rebuild. The clone receives neither another actor's private key nor
 the publisher's index and cannot author as that actor. Exact selected shallow
-recovery is available through `nh sync origin --recover-shallow`; it never
+recovery is available through `hn sync origin --recover-shallow`; it never
 globally unshallows or silently adds a selector.
 
 ## Limits

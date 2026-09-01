@@ -175,7 +175,7 @@ type parsedMemoryRecordCommand struct {
 
 func cmdMemory(args []string) error {
 	if len(args) == 0 {
-		return usageError("usage: nh memory <record|handoff|supersede|retract|challenge|show|recall|index>")
+		return usageError("usage: hn memory <record|handoff|supersede|retract|challenge|show|recall|index>")
 	}
 	switch args[0] {
 	case "record":
@@ -184,7 +184,7 @@ func cmdMemory(args []string) error {
 		return cmdMemoryHandoff(args[1:])
 	case "supersede":
 		if len(args) < 2 || !validMemoryID(args[1]) {
-			return usageError("usage: nh memory supersede MEMORY [record fields]")
+			return usageError("usage: hn memory supersede MEMORY [record fields]")
 		}
 		return cmdMemoryRecord(memoryOperationSupersede, args[1], args[2:])
 	case "retract":
@@ -253,7 +253,7 @@ func parseMemoryHandoffInputArgs(args []string) (input, at, applies string, err 
 		return "", "", "", err
 	}
 	if flags.NArg() != 0 || *inputFlag == "" {
-		return "", "", "", usageError("usage: nh memory handoff --at REV --applies MODE --input FILE|- --json")
+		return "", "", "", usageError("usage: hn memory handoff --at REV --applies MODE --input FILE|- --json")
 	}
 	if !*jsonOutput {
 		return "", "", "", fmt.Errorf("--input requires --json")
@@ -501,7 +501,7 @@ func parseMemoryRecordArgs(operation string, args []string) (parsedMemoryRecordC
 		*content = flags.Arg(0)
 	}
 	if *at == "" || *applies == "" || *kind == "" || *content == "" {
-		return parsedMemoryRecordCommand{}, usageError("usage: nh memory record --kind KIND --at REV --applies MODE --content TEXT")
+		return parsedMemoryRecordCommand{}, usageError("usage: hn memory record --kind KIND --at REV --applies MODE --content TEXT")
 	}
 	commit, err := resolveCommit(*at)
 	if err != nil {
@@ -698,7 +698,7 @@ func printMemoryCommandResult(stored *StoredMemory, jsonOutput bool) error {
 
 func cmdMemoryLifecycle(operation string, args []string) error {
 	if len(args) < 1 || !validMemoryID(args[0]) {
-		return usageError("usage: nh memory " + operation + " MEMORY --reason REASON [--evidence TYPED-ID]")
+		return usageError("usage: hn memory " + operation + " MEMORY --reason REASON [--evidence TYPED-ID]")
 	}
 	targetID := args[0]
 	flags := quietFlags("memory " + operation)
@@ -711,7 +711,7 @@ func cmdMemoryLifecycle(operation string, args []string) error {
 		return err
 	}
 	if flags.NArg() != 0 || *reason == "" || (operation == memoryOperationRetract && len(evidence) != 0) {
-		return usageError("usage: nh memory " + operation + " MEMORY --reason REASON [--evidence TYPED-ID]")
+		return usageError("usage: hn memory " + operation + " MEMORY --reason REASON [--evidence TYPED-ID]")
 	}
 	target, err := resolveMemoryForCommand(targetID, false)
 	if err != nil {
@@ -779,7 +779,7 @@ func resolveMemoryForCommand(query string, allowShort bool) (*StoredMemory, erro
 
 func cmdMemoryShow(args []string) error {
 	if len(args) == 0 || strings.HasPrefix(args[0], "-") {
-		return usageError("usage: nh memory show MEMORY [--json]")
+		return usageError("usage: hn memory show MEMORY [--json]")
 	}
 	query := args[0]
 	flags := quietFlags("memory show")
@@ -788,7 +788,7 @@ func cmdMemoryShow(args []string) error {
 		return err
 	}
 	if flags.NArg() != 0 {
-		return usageError("usage: nh memory show MEMORY [--json]")
+		return usageError("usage: hn memory show MEMORY [--json]")
 	}
 	stored, err := resolveMemoryForCommand(query, true)
 	if err != nil {
@@ -877,7 +877,7 @@ func parseMemoryRecallArgs(args []string) (RecallRequestV0, bool, string, error)
 		return RecallRequestV0{}, false, "", err
 	}
 	if flags.NArg() != 0 {
-		return RecallRequestV0{}, false, "", usageError("usage: nh memory recall [filters] [bounds] [--json]")
+		return RecallRequestV0{}, false, "", usageError("usage: hn memory recall [filters] [bounds] [--json]")
 	}
 	if *input != "" {
 		ambiguous := false
@@ -1050,13 +1050,13 @@ func memoryProjectionContextAt(commit, subject, path string) (MemoryProjectionCo
 		return MemoryProjectionContext{}, err
 	}
 	context := MemoryProjectionContext{AtCommit: resolved, Subject: subject, Path: path, Events: events}
-	_, exists, err := exactTreeEntry(resolved, ".nh/policy.json")
+	_, exists, err := exactTreeEntry(resolved, ".hn/policy.json")
 	if err != nil {
 		return MemoryProjectionContext{}, fmt.Errorf("inspect memory policy at commit %s", resolved)
 	}
 	if !exists {
 		context.PolicyCommit = resolved
-		context.PolicyDigest = memoryID([]byte("nh-memory-policy-missing-v0"))
+		context.PolicyDigest = memoryID([]byte("hn-memory-policy-missing-v0"))
 		return context, nil
 	}
 	return LoadMemoryProjectionPolicy(resolved, context)
@@ -1069,7 +1069,7 @@ func memoryRecallQueryDigest(request RecallRequestV0, sourceFingerprint, policyD
 		Request           RecallRequestV0 `json:"request"`
 		SourceFingerprint string          `json:"sourceFingerprint"`
 		PolicyDigest      string          `json:"policyDigest"`
-	}{"nh-memory-recall-query-v0", request, sourceFingerprint, policyDigest}
+	}{"hn-memory-recall-query-v0", request, sourceFingerprint, policyDigest}
 	encoded, err := json.Marshal(material)
 	if err != nil {
 		return "", err
@@ -1157,7 +1157,7 @@ func encodeMemoryRecallCursor(cursor memoryRecallCursorV0) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	digest := sha256.Sum256(append([]byte("nh-memory-recall-cursor-v0\x00"), payload...))
+	digest := sha256.Sum256(append([]byte("hn-memory-recall-cursor-v0\x00"), payload...))
 	return base64.RawURLEncoding.EncodeToString(payload) + "." + hex.EncodeToString(digest[:]), nil
 }
 
@@ -1170,7 +1170,7 @@ func decodeMemoryRecallCursor(encoded, queryDigest string) (memoryRecallCursorV0
 	if err != nil || len(payload) > 1024 {
 		return memoryRecallCursorV0{}, fmt.Errorf("malformed recall cursor")
 	}
-	digest := sha256.Sum256(append([]byte("nh-memory-recall-cursor-v0\x00"), payload...))
+	digest := sha256.Sum256(append([]byte("hn-memory-recall-cursor-v0\x00"), payload...))
 	if hex.EncodeToString(digest[:]) != checksum {
 		return memoryRecallCursorV0{}, fmt.Errorf("invalid recall cursor checksum")
 	}
@@ -1198,7 +1198,7 @@ func decodeStrictCursorJSON(payload []byte, destination any) error {
 
 func cmdMemoryIndex(args []string) error {
 	if len(args) != 1 || (args[0] != "rebuild" && args[0] != "verify") {
-		return usageError("usage: nh memory index rebuild|verify")
+		return usageError("usage: hn memory index rebuild|verify")
 	}
 	head, err := resolveCommit("HEAD")
 	if err != nil {

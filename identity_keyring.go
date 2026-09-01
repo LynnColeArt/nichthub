@@ -67,7 +67,7 @@ func identityKeyringPaths() (identityKeyringLayout, error) {
 	if err != nil {
 		return identityKeyringLayout{}, err
 	}
-	root := filepath.Join(gitDir, "nh")
+	root := filepath.Join(gitDir, "hn")
 	return identityKeyringLayout{
 		root:       root,
 		legacy:     filepath.Join(root, "identity.json"),
@@ -193,7 +193,7 @@ func writePrivateFileAtomicWithReplacement(path string, contents []byte, replace
 		return err
 	}
 
-	temporary, err := os.CreateTemp(directory, ".nh-private-*")
+	temporary, err := os.CreateTemp(directory, ".hn-private-*")
 	if err != nil {
 		return err
 	}
@@ -654,7 +654,7 @@ func runIdentityStorageHook(step string) error {
 	if identityStorageHook != nil {
 		return identityStorageHook(step)
 	}
-	if os.Getenv("NH_INTERNAL_TESTING") == "1" && os.Getenv("NH_TEST_ROTATION_INTERRUPT_AFTER") == step {
+	if os.Getenv("HN_INTERNAL_TESTING") == "1" && os.Getenv("HN_TEST_ROTATION_INTERRUPT_AFTER") == step {
 		return fmt.Errorf("injected rotation interruption after %s", step)
 	}
 	return nil

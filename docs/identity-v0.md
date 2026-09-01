@@ -6,11 +6,16 @@ Identity has two deliberately separate surfaces:
 | --- | --- |
 | Actor public keys and fingerprints | Private signing keys |
 | `identity.authorize` and `identity.accept` events | Active-actor pointer |
-| Actor refs under `refs/nh/actors/*` | Rotation journals and replication selections |
-| Deterministic continuity projection | Files below the repository's `.git/nh/` |
+| Actor refs under `refs/hn/actors/*` | Rotation journals and replication selections |
+| Deterministic continuity projection | Files below the repository's `.git/hn/` |
 
 Only the left column is stored as Git objects or transported. Never copy
-`.git/nh`, an identity record, or a private key to establish a second device.
+`.git/hn`, an identity record, or a private key to establish a second device.
+
+The `hn` namespace begins a new trust root. It does not inspect `.git/nh/**`,
+reuse a legacy actor fingerprint, or infer continuity from `refs/nh/*`.
+Operators initialize fresh actors; coexistence of both namespaces in one Git
+repository is historical coexistence, not protocol compatibility.
 
 ## Actor invariant
 
@@ -20,8 +25,8 @@ Different devices initialize distinct actors. A person, device group, or key
 lineage is a projection over signed relationships among those actors—not a
 shared actor key and not a policy principal created by inference.
 
-`nh identity public` emits only display name, full actor fingerprint, and
-raw-base64 public key. `nh identity show` emits the active name, actor, and
+`hn identity public` emits only display name, full actor fingerprint, and
+raw-base64 public key. `hn identity show` emits the active name, actor, and
 actor ref; it never emits key material.
 
 ## Mutual relationship facts
@@ -29,7 +34,7 @@ actor ref; it never emits key material.
 The authorizing actor publishes:
 
 ```sh
-nh identity authorize \
+hn identity authorize \
   --relationship device \
   --actor <full-64-hex-target-actor> \
   --public-key <raw-base64-target-public-key>
@@ -38,7 +43,7 @@ nh identity authorize \
 The target actor independently publishes:
 
 ```sh
-nh identity accept <full-sha256-authorization-event-id>
+hn identity accept <full-sha256-authorization-event-id>
 ```
 
 `authorize` rejects shortened/malformed actors, unsupported relationship
@@ -57,44 +62,44 @@ In each clone, initialize independently:
 
 ```sh
 # Existing device
-nh init --name "Existing device"
-nh identity public
+hn init --name "Existing device"
+hn identity public
 
 # New device, in a separate clone
-nh init --name "Review device"
-nh identity public
+hn init --name "Review device"
+hn identity public
 ```
 
 Exchange only the printed public fields. On the existing device, authorize the
 new actor and publish collaboration refs:
 
 ```sh
-nh identity authorize --relationship device \
+hn identity authorize --relationship device \
   --actor <full-new-device-actor> \
   --public-key <new-device-public-key>
-nh sync origin
+hn sync origin
 ```
 
 Save an exact selection in the new clone, synchronize the authorizing actor,
 and accept the full authorization event ID:
 
 ```sh
-nh replication select origin \
+hn replication select origin \
   --actor <full-existing-device-actor> \
   --max-events 10000 \
   --max-objects 100000 \
   --max-object-bytes 16777216 \
   --max-attachment-bytes 1048576 \
   --max-total-bytes 268435456
-nh sync origin
-nh identity accept <full-sha256-authorization-event-id>
-nh sync origin
+hn sync origin
+hn identity accept <full-sha256-authorization-event-id>
+hn sync origin
 ```
 
 Then add both full actor selectors in each clone, synchronize, and inspect:
 
 ```sh
-nh replication select origin \
+hn replication select origin \
   --actor <full-existing-device-actor> \
   --actor <full-new-device-actor> \
   --max-events 10000 \
@@ -102,13 +107,13 @@ nh replication select origin \
   --max-object-bytes 16777216 \
   --max-attachment-bytes 1048576 \
   --max-total-bytes 268435456
-nh sync origin
-nh identity list
+hn sync origin
+hn identity list
 ```
 
 The relationship can now be reconstructed from public facts in an
 identity-free clone. To give the new actor a reviewer, runner, maintainer, or
-decision role, amend `.nh/policy.json` through the ordinary base-governed
+decision role, amend `.hn/policy.json` through the ordinary base-governed
 candidate workflow.
 
 ## Deterministic projection
@@ -136,7 +141,7 @@ IDs, never arrival order.
 Current local state is rooted below the repository's private Git directory:
 
 ```text
-.git/nh/
+.git/hn/
 ├── active
 ├── identities/
 │   └── <full-actor-fingerprint>.json
@@ -153,7 +158,7 @@ with mode `0600`. Unknown fields, trailing JSON, oversized state, wrong actor
 paths, mismatched key pairs, symlinks, and unsafe modes fail closed.
 
 Writes use a mode-`0600` temporary file, file sync, atomic rename, and directory
-sync. Legacy `.git/nh/identity.json` migration recomputes and preserves the
+sync. Legacy `.git/hn/identity.json` migration recomputes and preserves the
 same actor/public/private key bytes, writes the actor record durably, and then
 creates the active pointer. Retrying does not generate a replacement actor.
 The legacy source may remain on disk; once `active` exists, ordinary loading
@@ -162,10 +167,10 @@ uses the keyring record it names.
 ## Planned rotation
 
 ```sh
-nh identity rotate --name "Rotated device"
-nh identity show
-nh identity list
-nh sync origin
+hn identity rotate --name "Rotated device"
+hn identity show
+hn identity list
+hn sync origin
 ```
 
 Rotation creates a distinct target actor and a `successor` authorization from

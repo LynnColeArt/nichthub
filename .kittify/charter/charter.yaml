@@ -57,7 +57,7 @@ governance:
   enforcement: {}
 directives:
   directives:
-  - id: NH-001
+  - id: HN-001
     title: Repository-Native Protocol Boundary
     description: >-
       Collaboration state belongs in signed, content-addressed repository data
@@ -66,7 +66,7 @@ directives:
       deliberately changes that product boundary.
     severity: error
     references: []
-  - id: NH-002
+  - id: HN-002
     title: Evidence Integrity
     description: >-
       Reviews, decisions, CI results, merges, and revisions must bind the exact
@@ -75,7 +75,7 @@ directives:
     severity: error
     references:
     - DIRECTIVE_010
-  - id: NH-003
+  - id: HN-003
     title: Hostile Input and Least Authority
     description: >-
       Treat fetched events, Git objects, pipeline definitions, logs, refs, and
@@ -85,7 +85,7 @@ directives:
     severity: error
     references:
     - DIRECTIVE_001
-  - id: NH-004
+  - id: HN-004
     title: Immutable Conflict Recovery
     description: >-
       Conflict recovery creates a new signed proposal revision or successor that
@@ -96,7 +96,7 @@ directives:
     references:
     - DIRECTIVE_003
     - DIRECTIVE_010
-  - id: NH-005
+  - id: HN-005
     title: Protocol and Documentation Move Together
     description: >-
       Any change to wire format, refs, trust semantics, policy evaluation,

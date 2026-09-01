@@ -72,7 +72,7 @@ func TestMemoryIndexSourceFingerprintIsCanonicalAndSensitive(t *testing.T) {
 		t.Fatal("duplicate source accepted")
 	}
 	bad := a
-	bad.Ref = "refs/nh/quarantine/memory"
+	bad.Ref = "refs/hn/quarantine/memory"
 	if _, err := memoryIndexSourceFingerprint([]memoryIndexSource{bad}, policy); err == nil {
 		t.Fatal("noncanonical source accepted")
 	}
@@ -88,7 +88,7 @@ func TestMemoryIndexPrivatePathUsesResolvedGitDirectory(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := filepath.Join(gitDir, "nh", "memory", "index-v0.json")
+	want := filepath.Join(gitDir, "hn", "memory", "index-v0.json")
 	if got != want || strings.Contains(got, filepath.Join(root, ".git")) {
 		t.Fatalf("path = %q, want %q", got, want)
 	}
@@ -121,7 +121,7 @@ func TestMemoryIndexPrivatePathSupportsLinkedWorktrees(t *testing.T) {
 	}()
 	mustGit(t, "init", "-q", "-b", "main")
 	mustGit(t, "config", "user.name", "Test")
-	mustGit(t, "config", "user.email", "test@nh.invalid")
+	mustGit(t, "config", "user.email", "test@hn.invalid")
 	mustGit(t, "commit", "--allow-empty", "-q", "-m", "base")
 	mustGit(t, "worktree", "add", "-q", "-b", "linked", linked)
 	resolvedBytes, err := gitOutput("-C", linked, "rev-parse", "--absolute-git-dir")
@@ -133,7 +133,7 @@ func TestMemoryIndexPrivatePathSupportsLinkedWorktrees(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if path != filepath.Join(resolved, "nh", "memory", "index-v0.json") || strings.HasPrefix(path, filepath.Join(linked, ".git")) {
+	if path != filepath.Join(resolved, "hn", "memory", "index-v0.json") || strings.HasPrefix(path, filepath.Join(linked, ".git")) {
 		t.Fatalf("linked-worktree index path = %q, resolved Git dir = %q", path, resolved)
 	}
 }
@@ -231,7 +231,7 @@ func TestMemoryIndexRebuildDeduplicatesVerifiedSourcesAndWritesPrivately(t *test
 	if err != nil || info.Mode().Perm() != 0o600 {
 		t.Fatalf("index mode = %v, err=%v", info, err)
 	}
-	for _, directory := range []string{filepath.Join(gitDir, "nh"), filepath.Join(gitDir, "nh", "memory")} {
+	for _, directory := range []string{filepath.Join(gitDir, "hn"), filepath.Join(gitDir, "hn", "memory")} {
 		info, err := os.Stat(directory)
 		if err != nil || info.Mode().Perm() != 0o700 {
 			t.Fatalf("directory %s mode = %v, err=%v", directory, info, err)
@@ -280,7 +280,7 @@ func TestMemoryIndexProductionRebuildUsesOnlyVerifiedMemoryRefs(t *testing.T) {
 		if err != nil || verified.SourceFingerprint != index.SourceFingerprint {
 			t.Fatalf("production verify = %#v, %v", verified, err)
 		}
-		if refs := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh/memory", "refs/nh/remotes", "refs/nh/actors"); !strings.Contains(refs, stored.Commit) {
+		if refs := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn/memory", "refs/hn/remotes", "refs/hn/actors"); !strings.Contains(refs, stored.Commit) {
 			t.Fatalf("canonical refs changed during index operations: %s", refs)
 		}
 	})
@@ -325,7 +325,7 @@ func TestMemoryIndexPersistenceFailuresLeaveNoPartialOrStaleTemporaryCache(t *te
 		t.Fatal(err)
 	}
 	for _, entry := range entries {
-		if strings.HasPrefix(entry.Name(), ".nh-private-") {
+		if strings.HasPrefix(entry.Name(), ".hn-private-") {
 			t.Fatalf("stale atomic-write temporary survived: %s", entry.Name())
 		}
 	}
@@ -398,20 +398,20 @@ func TestMemoryIndexExcludesAmbientSecretsAndKeepsHostileContentInert(t *testing
 	if err := os.Mkdir(gitDir, 0o700); err != nil {
 		t.Fatal(err)
 	}
-	environmentSecret := "NH_INDEX_ENV_SECRET_6a12f"
-	keyringSecret := "NH_INDEX_PRIVATE_KEY_81bb7"
-	transcriptSecret := "NH_INDEX_TRANSCRIPT_2fc99"
-	t.Setenv("NH_INDEX_SENTINEL", environmentSecret)
+	environmentSecret := "HN_INDEX_ENV_SECRET_6a12f"
+	keyringSecret := "HN_INDEX_PRIVATE_KEY_81bb7"
+	transcriptSecret := "HN_INDEX_TRANSCRIPT_2fc99"
+	t.Setenv("HN_INDEX_SENTINEL", environmentSecret)
 	if err := os.WriteFile(filepath.Join(root, "agent-transcript.txt"), []byte(transcriptSecret), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.MkdirAll(filepath.Join(gitDir, "nh", "identities"), 0o700); err != nil {
+	if err := os.MkdirAll(filepath.Join(gitDir, "hn", "identities"), 0o700); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Chmod(filepath.Join(gitDir, "nh"), 0o700); err != nil {
+	if err := os.Chmod(filepath.Join(gitDir, "hn"), 0o700); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(gitDir, "nh", "identities", "private.json"), []byte(keyringSecret), 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(gitDir, "hn", "identities", "private.json"), []byte(keyringSecret), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	target := filepath.Join(root, "executed-by-hostile-memory")

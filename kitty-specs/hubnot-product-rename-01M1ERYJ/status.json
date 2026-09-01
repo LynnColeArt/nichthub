@@ -1,0 +1,111 @@
+{
+  "event_count": 21,
+  "last_event_id": "01M1EWXNS6F1DC8FTM2K4C59EW",
+  "materialized_at": "2026-09-01T16:30:31.718663+00:00",
+  "mission_number": "1",
+  "mission_slug": "hubnot-product-rename-01M1ERYJ",
+  "mission_type": "software-dev",
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 3,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "merge",
+      "agent": "codex-review",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 0,
+      "lane": "done",
+      "last_event_id": "01M1EWXHZHFKS4KRGJ3QBM0XZF",
+      "last_transition_at": "2026-09-01T16:30:27.825208+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for review: module, artifact hygiene, runtime labels, and test sentinels renamed to Hubnot; frozen nh compatibility namespaces preserved; focused and full gates pass.",
+        "Review passed: exact seven-file semantic rename; .gitignore manual review confirms only /nichthub became /hubnot while /nh remains; no compatibility or frozen-history diffs; focused tests, gofmt/diff-check, vet, build, CLI/module/ignore assertions, and full uncached suite all pass."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "reference": "Review passed: exact seven-file semantic rename; .gitignore manual review confirms only /nichthub became /hubnot while /nh remains; no compatibility or frozen-history diffs; focused tests, gofmt/diff-check, vet, build, CLI/module/ignore assertions, and full uncached suite all pass.",
+        "reviewer": "lynncoleart",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 2156508,
+      "shell_pid_created_at": "1788012444.72",
+      "subtasks": {
+        "T001": "done",
+        "T002": "done",
+        "T003": "done",
+        "T004": "done"
+      }
+    },
+    "WP02": {
+      "actor": "merge",
+      "agent": "codex-review",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 0,
+      "lane": "done",
+      "last_event_id": "01M1EWXKZCWKW5A7SJ4SY1SPXN",
+      "last_transition_at": "2026-09-01T16:30:29.868325+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for review: Hubnot documentation, active metadata, current URLs, and runner example updated with nh compatibility and historical records preserved",
+        "Review passed: active documentation and metadata consistently use Hubnot; current URLs use LynnColeArt/hubnot; protocol runner example matches nh/<version>; frozen nh namespaces, project UUID/node/build identity, journals, signed history, and completed mission evidence remain unchanged; owned diff is narrow and whitespace-clean."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "reference": "Review passed: active documentation and metadata consistently use Hubnot; current URLs use LynnColeArt/hubnot; protocol runner example matches nh/<version>; frozen nh namespaces, project UUID/node/build identity, journals, signed history, and completed mission evidence remain unchanged; owned diff is narrow and whitespace-clean.",
+        "reviewer": "lynncoleart",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 2156508,
+      "shell_pid_created_at": "1788012444.72",
+      "subtasks": {
+        "T005": "done",
+        "T006": "done",
+        "T007": "done",
+        "T008": "done"
+      }
+    },
+    "WP03": {
+      "actor": "merge",
+      "agent": "codex-review",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 0,
+      "lane": "done",
+      "last_event_id": "01M1EWXNS6F1DC8FTM2K4C59EW",
+      "last_transition_at": "2026-09-01T16:30:31.718663+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for review: occurrence classification, immutable-history proof, full release gates, governed public landing, and credential-free clone all pass",
+        "Review passed: exact candidate/proposal/public tree identity; complete historical occurrence classification; immutable journal blobs and 43-to-49 signed-event inclusion; append-only actor refs; governed IDs; compatibility-focused gates; credential-free public clone/build/help/operational scenarios; all requirement mappings and WP anti-pattern checks pass."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "reference": "Review passed: exact candidate/proposal/public tree identity; complete historical occurrence classification; immutable journal blobs and 43-to-49 signed-event inclusion; append-only actor refs; governed IDs; compatibility-focused gates; credential-free public clone/build/help/operational scenarios; all requirement mappings and WP anti-pattern checks pass.",
+        "reviewer": "lynncoleart",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 2156508,
+      "shell_pid_created_at": "1788012444.72",
+      "subtasks": {
+        "T009": "done",
+        "T010": "done",
+        "T011": "done",
+        "T012": "done"
+      }
+    }
+  }
+}

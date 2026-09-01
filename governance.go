@@ -7,9 +7,12 @@ import (
 
 func cmdDecide(args []string) error {
 	if len(args) < 1 {
-		return usageError("usage: nh decide PROPOSAL <--accept|--reject> [--body TEXT]")
+		return usageError("usage: hn decide PROPOSAL <--accept|--reject> [--body TEXT]")
 	}
 	query := args[0]
+	if err := requireFullEventID(query); err != nil {
+		return err
+	}
 	flags := quietFlags("decide")
 	accept := flags.Bool("accept", false, "accept the proposal")
 	reject := flags.Bool("reject", false, "reject the proposal")
@@ -60,7 +63,7 @@ func cmdDecide(args []string) error {
 		return fmt.Errorf("identity %s is not a maintainer under policy %s", shortID(identity.Actor), shortID(evaluation.PolicyDigest))
 	}
 	if *accept && !evaluation.Ready {
-		return fmt.Errorf("proposal is not ready; run 'nh proposal status %s' for missing evidence", shortID(proposal.ID))
+		return fmt.Errorf("proposal is not ready; run 'hn proposal status %s' for missing evidence", proposal.ID)
 	}
 	if *accept {
 		currentEvents, err := collectEvents()
@@ -82,7 +85,7 @@ func cmdDecide(args []string) error {
 			return err
 		}
 		if !currentEvaluation.Ready {
-			return fmt.Errorf("proposal is not ready; run 'nh proposal status %s' for missing evidence", shortID(proposal.ID))
+			return fmt.Errorf("proposal is not ready; run 'hn proposal status %s' for missing evidence", proposal.ID)
 		}
 		evaluation = currentEvaluation
 	}
@@ -112,7 +115,10 @@ func cmdDecide(args []string) error {
 
 func cmdMerge(args []string) error {
 	if len(args) != 1 {
-		return usageError("usage: nh merge PROPOSAL")
+		return usageError("usage: hn merge PROPOSAL")
+	}
+	if err := requireFullEventID(args[0]); err != nil {
+		return err
 	}
 	if err := prepareShallowVerification(shallowVerificationScope{Operation: "proposal merge", Subject: args[0]}); err != nil {
 		return err
@@ -186,39 +192,109 @@ func cmdMerge(args []string) error {
 		}, fmt.Errorf("exact proposal containment requires unavailable parent %s", missing))
 	}
 	if contained {
-		return fmt.Errorf("proposal head is already contained in branch %s", branch)
+		currentEvents, err := collectEvents()
+		if err != nil {
+			return err
+		}
+		currentProposal, err := resolveFullEvent(currentEvents, proposal.ID)
+		if err != nil {
+			return err
+		}
+		if err := guardProposalEvaluationDependencies("proposal merge repair", currentProposal, currentEvents); err != nil {
+			return err
+		}
+		currentEvaluation, err := evaluateProposal(currentProposal, currentEvents)
+		if err != nil {
+			return err
+		}
+		if err := requireLineageTerminalEligibility("repair merge event for", currentProposal.ID, currentEvaluation.Lineage); err != nil {
+			return err
+		}
+		if currentEvaluation.Merged {
+			return fmt.Errorf("proposal %s is already recorded as merged", currentProposal.ID)
+		}
+		if currentEvaluation.Rejected || !currentEvaluation.Accepted {
+			return fmt.Errorf("cannot repair merge event: current accepting decisions no longer satisfy proposal policy")
+		}
+		if !currentEvaluation.Ready {
+			return fmt.Errorf("cannot repair merge event: current approval and CI evidence no longer satisfies proposal policy")
+		}
+		if !actorListed(identity.Actor, currentEvaluation.Policy.Maintainers) {
+			return fmt.Errorf("identity %s is not a maintainer under proposal policy", shortID(identity.Actor))
+		}
+		mergeCommit, err := findProposalMergeCommit(currentProposal, current)
+		if err != nil {
+			return err
+		}
+		stored, err := appendProposalMergeEvent(identity, currentProposal, currentEvaluation, mergeCommit)
+		if err != nil {
+			return fmt.Errorf("merge event repair at %s failed: %w", shortOID(mergeCommit), err)
+		}
+		fmt.Printf("Recorded missing merge event %s for proposal %s at %s with %d acceptance decision(s)\n", shortID(stored.ID), shortID(currentProposal.ID), shortOID(mergeCommit), len(stored.Event.Evidence))
+		return nil
 	}
-	message := fmt.Sprintf("Merge NH proposal %s: %s", shortID(proposal.ID), oneLine(evaluation.DisplayTitle))
+	message := fmt.Sprintf("Merge HN proposal %s: %s", shortID(proposal.ID), oneLine(evaluation.DisplayTitle))
 	if _, err := gitOutput("merge", "--no-ff", "-m", message, proposal.Event.Head); err != nil {
 		if _, abortErr := gitOutput("merge", "--abort"); abortErr != nil {
 			return fmt.Errorf("merge failed and automatic abort also failed: %v; abort error: %v", err, abortErr)
 		}
-		return fmt.Errorf("merge failed and was aborted for proposal %s; recover with 'nh proposal revise %s --base REV --head REV': %w", proposal.ID, proposal.ID, err)
+		return fmt.Errorf("merge failed and was aborted for proposal %s; recover with 'hn proposal revise %s --base REV --head REV': %w", proposal.ID, proposal.ID, err)
 	}
 	mergeCommit, err := resolveCommit("HEAD")
 	if err != nil {
 		return fmt.Errorf("code merged but resulting commit could not be resolved: %w", err)
 	}
+	stored, err := appendProposalMergeEvent(identity, proposal, evaluation, mergeCommit)
+	if err != nil {
+		return fmt.Errorf("code merged at %s but recording failed: %w", shortOID(mergeCommit), err)
+	}
+	fmt.Printf("Merged proposal %s into %s at %s\n", shortID(proposal.ID), branch, shortOID(mergeCommit))
+	fmt.Printf("Recorded merge event %s with %d acceptance decision(s)\n", shortID(stored.ID), len(stored.Event.Evidence))
+	return nil
+}
+
+func appendProposalMergeEvent(identity *Identity, proposal *StoredEvent, evaluation *ProposalEvaluation, mergeCommit string) (*StoredEvent, error) {
 	event, err := nextEvent(identity, "proposal.merged")
 	if err != nil {
-		return fmt.Errorf("code merged at %s but merge event creation failed: %w", shortOID(mergeCommit), err)
+		return nil, err
 	}
 	event.Subject = proposal.ID
 	event.Policy = evaluation.PolicyDigest
 	event.Head = proposal.Event.Head
 	event.Commit = mergeCommit
 	event.Evidence = sortedDecisionIDs(evaluation.AcceptDecisions)
-	stored, err := appendEvent(event, identity)
+	return appendEvent(event, identity)
+}
+
+func findProposalMergeCommit(proposal *StoredEvent, current string) (string, error) {
+	commits, err := gitText("rev-list", "--first-parent", "--merges", current, "^"+proposal.Event.Base)
 	if err != nil {
-		return fmt.Errorf("code merged at %s but recording failed: %w", shortOID(mergeCommit), err)
+		return "", fmt.Errorf("inspect contained proposal merge commits: %w", err)
 	}
-	fmt.Printf("Merged proposal %s into %s at %s\n", shortID(proposal.ID), branch, shortOID(mergeCommit))
-	fmt.Printf("Recorded merge event %s with %d acceptance decision(s)\n", shortID(stored.ID), len(event.Evidence))
-	return nil
+	match := ""
+	for _, commit := range strings.Fields(commits) {
+		parents, err := gitText("show", "-s", "--format=%P", commit)
+		if err != nil {
+			return "", fmt.Errorf("inspect merge commit %s: %w", shortOID(commit), err)
+		}
+		for _, parent := range strings.Fields(parents) {
+			if parent != proposal.Event.Head {
+				continue
+			}
+			if match != "" && match != commit {
+				return "", fmt.Errorf("cannot repair merge event: proposal head appears in multiple target-branch merge commits")
+			}
+			match = commit
+		}
+	}
+	if match == "" {
+		return "", fmt.Errorf("cannot repair merge event: no target-branch merge commit directly names proposal head %s", shortOID(proposal.Event.Head))
+	}
+	return match, nil
 }
 
 func requireLineageTerminalEligibility(operation, proposalID string, state proposalLineageState) error {
-	statusCommand := fmt.Sprintf("nh proposal status %s", proposalID)
+	statusCommand := fmt.Sprintf("hn proposal status %s", proposalID)
 	if state.MergeConflict {
 		return fmt.Errorf("cannot %s proposal %s: lineage has competing merges at %s; run '%s'", operation, proposalID, strings.Join(state.MergedCandidateIDs, ", "), statusCommand)
 	}

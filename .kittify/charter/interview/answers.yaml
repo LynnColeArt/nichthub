@@ -8,7 +8,7 @@ answers:
     policy decisions, and CI attestations whose history is signed, portable,
     and independently verifiable.
   languages_frameworks: >-
-    Use Go 1.26 and the standard library for the native nh CLI. Keep Git as the
+    Use Go 1.26 and the standard library for the native hn CLI. Keep Git as the
     content store and transport rather than introducing a service database or
     mandatory hosted component.
   testing_requirements: >-

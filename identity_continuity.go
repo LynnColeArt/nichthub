@@ -347,7 +347,7 @@ func successorCycleIDs(outgoing map[string][]string, targets map[string]string) 
 
 func cmdIdentityShow(args []string) error {
 	if len(args) != 0 {
-		return usageError("usage: nh identity show")
+		return usageError("usage: hn identity show")
 	}
 	identity, err := loadIdentity()
 	if err != nil {
@@ -361,7 +361,7 @@ func cmdIdentityShow(args []string) error {
 
 func cmdIdentityPublic(args []string) error {
 	if len(args) != 0 {
-		return usageError("usage: nh identity public")
+		return usageError("usage: hn identity public")
 	}
 	identity, err := loadIdentity()
 	if err != nil {
@@ -375,7 +375,7 @@ func cmdIdentityPublic(args []string) error {
 
 func cmdIdentityList(args []string) error {
 	if len(args) != 0 {
-		return usageError("usage: nh identity list")
+		return usageError("usage: hn identity list")
 	}
 	records, err := listIdentityRecords()
 	if err != nil {
@@ -429,7 +429,7 @@ func cmdIdentityAuthorize(args []string) error {
 		return err
 	}
 	if flags.NArg() != 0 {
-		return usageError("usage: nh identity authorize --relationship device|successor --actor ACTOR --public-key KEY")
+		return usageError("usage: hn identity authorize --relationship device|successor --actor ACTOR --public-key KEY")
 	}
 	identity, err := loadIdentity()
 	if err != nil {
@@ -452,7 +452,7 @@ func cmdIdentityAuthorize(args []string) error {
 
 func cmdIdentityAccept(args []string) error {
 	if len(args) != 1 || !validEventID(args[0]) {
-		return usageError("usage: nh identity accept FULL_AUTHORIZATION_EVENT_ID")
+		return usageError("usage: hn identity accept FULL_AUTHORIZATION_EVENT_ID")
 	}
 	identity, err := loadIdentity()
 	if err != nil {
@@ -504,7 +504,7 @@ func cmdIdentityRotate(args []string) error {
 		return err
 	}
 	if flags.NArg() != 0 {
-		return usageError("usage: nh identity rotate [--name NAME]")
+		return usageError("usage: hn identity rotate [--name NAME]")
 	}
 	state, predecessor, target, completed, err := prepareIdentityRotation(*name)
 	if err != nil {

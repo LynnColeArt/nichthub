@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	memoryRefPrefix         = "refs/nh/memory/"
-	acceptedMemoryRefPrefix = "refs/nh/remotes/"
+	memoryRefPrefix         = "refs/hn/memory/"
+	acceptedMemoryRefPrefix = "refs/hn/remotes/"
 	maxMemoryPayloadBytes   = 512 * 1024
 )
 
@@ -152,11 +152,11 @@ func appendMemoryAtHead(envelope MemoryEnvelope, identity *Identity, expectedHea
 		return nil, fmt.Errorf("write memory tree: %w", err)
 	}
 
-	commitArgs := []string{"commit-tree", strings.TrimSpace(string(tree)), "-m", "nh memory " + id}
+	commitArgs := []string{"commit-tree", strings.TrimSpace(string(tree)), "-m", "hn memory " + id}
 	if expectedHead != "" {
 		commitArgs = append(commitArgs, "-p", expectedHead)
 	}
-	email := shortID(identity.Actor) + "@nh.invalid"
+	email := shortID(identity.Actor) + "@hn.invalid"
 	env := []string{
 		"GIT_AUTHOR_NAME=" + identity.Name,
 		"GIT_AUTHOR_EMAIL=" + email,
@@ -170,7 +170,7 @@ func appendMemoryAtHead(envelope MemoryEnvelope, identity *Identity, expectedHea
 		return nil, fmt.Errorf("write memory commit: %w", err)
 	}
 	commitID := strings.TrimSpace(string(commit))
-	if _, err := gitOutput("update-ref", "-m", "nh: append memory", ref, commitID, expectedHead); err != nil {
+	if _, err := gitOutput("update-ref", "-m", "hn: append memory", ref, commitID, expectedHead); err != nil {
 		return nil, fmt.Errorf("append memory stream %s: compare-and-swap failed; reload and retry with a newly signed envelope", safeDiagnostic(ref))
 	}
 	return &StoredMemory{ID: id, Commit: commitID, Envelope: envelope, Payload: payload, Signature: signature}, nil
@@ -364,7 +364,7 @@ func validateMemoryStreamSource(source memoryStreamSource) error {
 }
 
 func collectMemories() ([]StoredMemory, error) {
-	text, err := gitText("for-each-ref", "--format=%(refname) %(objectname)", "refs/nh/memory", "refs/nh/remotes")
+	text, err := gitText("for-each-ref", "--format=%(refname) %(objectname)", "refs/hn/memory", "refs/hn/remotes")
 	if err != nil {
 		return nil, err
 	}
