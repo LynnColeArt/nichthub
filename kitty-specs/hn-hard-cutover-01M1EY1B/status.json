@@ -1,12 +1,12 @@
 {
-  "event_count": 15,
-  "last_event_id": "01M1F10BAESR203ABRPS7DX3BZ",
-  "materialized_at": "2026-09-01T17:41:53.613945+00:00",
+  "event_count": 16,
+  "last_event_id": "01M1F1H4Z7FZ28Y82Q67XZ3NQW",
+  "materialized_at": "2026-09-01T17:51:04.167492+00:00",
   "mission_number": "",
   "mission_slug": "hn-hard-cutover-01M1EY1B",
   "mission_type": "software-dev",
   "summary": {
-    "approved": 1,
+    "approved": 0,
     "blocked": 0,
     "canceled": 0,
     "claimed": 0,
@@ -14,7 +14,7 @@
     "for_review": 0,
     "in_progress": 1,
     "in_review": 0,
-    "planned": 1
+    "planned": 2
   },
   "work_packages": {
     "WP01": {
@@ -22,10 +22,10 @@
       "agent": "codex",
       "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
-      "force_count": 1,
-      "lane": "approved",
-      "last_event_id": "01M1F0Z571TC10N09H8442G9VQ",
-      "last_transition_at": "2026-09-01T17:41:14.593804+00:00",
+      "force_count": 2,
+      "lane": "planned",
+      "last_event_id": "01M1F1H4Z7FZ28Y82Q67XZ3NQW",
+      "last_transition_at": "2026-09-01T17:51:04.167492+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "Ready for review. Test-first red captured exact legacy wire/ref/path/CLI values before implementation. Focused namespace/security suite: PASS; collaboration/store/proposal/governance/lineage: PASS; identity/keyring/rotation: PASS; policy/CI/runner/backend/merge: PASS; memory/replication/quarantine/shallow: PASS. Full go test -count=1 ./...: PASS (74.366s final run; earlier aggregate pass 68.610s). go vet ./...: PASS. go build -o hn .: PASS; git check-ignore confirms /hn, generated binary removed after verification. gofmt -l . empty; git diff --check clean. Production legacy scan empty across refs/nh, .git/nh, .nh/, old wire IDs, NH_ variables, usage and recovery commands. Test-only legacy matches are confined to namespace_cutover_test.go hostile isolation cases covering old private state, refs/config, environment, wire rejection, and mixed remote advertisements. go.mod remains module hubnot with no require block; .nh/, go.mod, go.sum, mission/history/docs untouched. No out-of-map edits; all changes are root *.go and .gitignore as owned.",
