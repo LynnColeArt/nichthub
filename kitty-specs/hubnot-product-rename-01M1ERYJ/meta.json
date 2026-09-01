@@ -11,5 +11,7 @@
   "purpose_tldr": "hubnot product rename",
   "slug": "hubnot-product-rename-01M1ERYJ",
   "target_branch": "feat/hubnot-product-rename",
-  "topology": "single_branch"
+  "topology": "single_branch",
+  "vcs": "git",
+  "vcs_locked_at": "2026-09-01T15:45:20.855194+00:00"
 }
