@@ -17,6 +17,9 @@ requirement_refs:
 planning_base_branch: feat/hubnot-product-rename
 merge_target_branch: feat/hubnot-product-rename
 branch_strategy: Planning artifacts for this mission were generated on feat/hubnot-product-rename. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/hubnot-product-rename unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-hubnot-product-rename-01M1ERYJ
+base_commit: f59e94461eee61766c8e7de7bd9c53c6d7439b98
+created_at: '2026-09-01T15:46:24.219126+00:00'
 subtasks:
 - T005
 - T006
