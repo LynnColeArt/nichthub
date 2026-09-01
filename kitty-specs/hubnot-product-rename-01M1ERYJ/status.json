@@ -27,6 +27,9 @@
       "last_event_id": "01M1ETHPKTNNS8Q64DSBM9M5EW",
       "last_transition_at": "2026-09-01T15:49:02.202270+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for review: module, artifact hygiene, runtime labels, and test sentinels renamed to Hubnot; frozen nh compatibility namespaces preserved; focused and full gates pass."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 2156508,

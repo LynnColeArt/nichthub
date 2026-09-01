@@ -38,6 +38,9 @@ exceptions:
   - path: ".gitignore"
     action: manual_review
     reason: "Replace the obsolete generated binary basename without changing protocol paths."
+  - path: "go.mod"
+    action: rename
+    reason: "The active Go module path is current product identity, while protocol and CLI namespaces remain unchanged."
   - path: "kitty-specs/hubnot-product-rename-01M1ERYJ/occurrence_map.yaml"
     action: do_not_change
     reason: "The classification artifact must name the exact source term it governs."
