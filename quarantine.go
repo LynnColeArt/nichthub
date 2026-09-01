@@ -34,17 +34,23 @@ type replicationRequest struct {
 func (request replicationRequest) key() string { return request.Kind + ":" + request.ID }
 
 type ReplicationOutcome struct {
-	Kind         string                  `json:"kind"`
-	ID           string                  `json:"id"`
-	Status       string                  `json:"status"`
-	Diagnostic   string                  `json:"diagnostic,omitempty"`
-	MissingID    string                  `json:"missingId,omitempty"`
-	Recovery     string                  `json:"recovery,omitempty"`
-	Measurements ReplicationMeasurements `json:"measurements"`
-	request      replicationRequest
-	events       []StoredEvent
-	dependencies []string
-	acceptedOld  string
+	Kind              string                  `json:"kind"`
+	ID                string                  `json:"id"`
+	Status            string                  `json:"status"`
+	Diagnostic        string                  `json:"diagnostic,omitempty"`
+	DependencyKind    string                  `json:"dependencyKind,omitempty"`
+	MissingID         string                  `json:"missingId,omitempty"`
+	OwnerMemoryID     string                  `json:"ownerMemoryId,omitempty"`
+	OwnerStream       string                  `json:"ownerStream,omitempty"`
+	RequiredRef       string                  `json:"requiredRef,omitempty"`
+	RequiredSelectors []string                `json:"requiredSelectors,omitempty"`
+	Recovery          string                  `json:"recovery,omitempty"`
+	Measurements      ReplicationMeasurements `json:"measurements"`
+	request           replicationRequest
+	events            []StoredEvent
+	memories          []StoredMemory
+	dependencies      []string
+	acceptedOld       string
 }
 
 type replicationTransactionResult struct {
@@ -286,6 +292,27 @@ func runReplicationTransaction(selection ReplicationSelection) (replicationTrans
 				continue
 			}
 			outcome.events = events
+		} else if request.Kind == replicationMemory {
+			actor, stream, ok := parseMemoryRef(request.SourceRef)
+			if !ok || stream != request.ID {
+				outcome.Status = replicationStructuralInvalid
+				outcome.Diagnostic = fmt.Sprintf("selection memory %s has an invalid owner-bound source ref", request.ID)
+				outcomes[request.key()] = outcome
+				continue
+			}
+			memories, err := loadMemoryStreamAt(quarantineDir, memoryStreamSource{
+				Ref: request.SourceRef, Actor: actor, Stream: stream, Head: request.OID,
+			})
+			if err != nil {
+				outcome.Status = replicationStructuralInvalid
+				outcome.Diagnostic = redactReplicationDiagnostic(
+					fmt.Sprintf("selection memory %s is structurally invalid: %v", request.ID, err),
+					quarantineDir, mainGitDir, remoteURL,
+				)
+				outcomes[request.key()] = outcome
+				continue
+			}
+			outcome.memories = memories
 		}
 		outcome.Status = replicationPromotable
 		outcomes[request.key()] = outcome
@@ -371,6 +398,7 @@ func runReplicationTransaction(selection ReplicationSelection) (replicationTrans
 			}
 		}
 	}
+	classifyReplicationMemoryDependencies(selection, quarantineDir, mainGitDir, acceptedEvents, outcomes)
 	projectionEvents := selectedProjectionEvents(acceptedEvents, outcomes)
 	if err := validateActorChains(projectionEvents); err != nil {
 		return result, replicationPhaseError(selection.Remote, "actor-chain projection")
@@ -394,6 +422,8 @@ func runReplicationTransaction(selection ReplicationSelection) (replicationTrans
 		}
 	}
 	propagateReplicationFailures(outcomes)
+	revalidateReplicationMemoryObjectDependencies(selection, quarantineDir, mainGitDir, acceptedEvents, outcomes)
+	propagateReplicationFailures(outcomes)
 
 	keys := make([]string, 0, len(outcomes))
 	for key := range outcomes {
@@ -408,6 +438,16 @@ func runReplicationTransaction(selection ReplicationSelection) (replicationTrans
 			ref := acceptedActorRef(selection.Remote, outcome.ID)
 			if outcome.Kind == replicationProposal {
 				ref = acceptedProposalRef(selection.Remote, outcome.ID)
+			} else if outcome.Kind == replicationMemory {
+				actor, _, ok := parseMemoryRef(outcome.request.SourceRef)
+				if !ok {
+					return result, replicationPhaseError(selection.Remote, "memory promotion preparation")
+				}
+				var err error
+				ref, err = acceptedMemoryRef(selection.Remote, actor, outcome.ID)
+				if err != nil {
+					return result, replicationPhaseError(selection.Remote, "memory promotion preparation")
+				}
 			}
 			promotions = append(promotions, replicationPromotion{Ref: ref, NewOID: outcome.request.OID, OldOID: outcome.acceptedOld})
 			roots = append(roots, outcome.request.OID)
@@ -545,11 +585,12 @@ func reachableObjectIDsAt(gitDir string, roots []string) ([]string, error) {
 }
 
 func resolveReplicationRequests(selection ReplicationSelection, remoteURL string) ([]replicationRequest, []ReplicationOutcome, error) {
-	advertisedText, err := gitText("ls-remote", "--refs", "--", remoteURL, "refs/nh/actors/*", "refs/nh/proposals/*")
+	advertisedText, err := gitText("ls-remote", "--refs", "--", remoteURL, "refs/nh/actors/*", "refs/nh/proposals/*", "refs/nh/memory/*/*")
 	if err != nil {
 		return nil, nil, replicationPhaseError(selection.Remote, "advertisement")
 	}
 	advertised := make(map[string]string)
+	memoryRefs := make(map[string][]string)
 	fields := strings.Fields(advertisedText)
 	if len(fields)%2 != 0 {
 		return nil, nil, replicationPhaseError(selection.Remote, "advertisement validation")
@@ -560,14 +601,19 @@ func resolveReplicationRequests(selection ReplicationSelection, remoteURL string
 			return nil, nil, replicationPhaseError(selection.Remote, "advertisement validation")
 		}
 		advertised[ref] = oid
+		if _, stream, ok := parseMemoryRef(ref); ok {
+			memoryRefs[stream] = append(memoryRefs[stream], ref)
+		}
 	}
 	wanted := make([]replicationRequest, 0)
+	outcomes := make([]ReplicationOutcome, 0)
 	if selection.All {
 		refs := make([]string, 0, len(advertised))
 		for ref := range advertised {
 			refs = append(refs, ref)
 		}
 		sort.Strings(refs)
+		reportedAmbiguousMemory := make(map[string]bool)
 		for _, ref := range refs {
 			switch {
 			case strings.HasPrefix(ref, "refs/nh/actors/"):
@@ -580,6 +626,16 @@ func resolveReplicationRequests(selection ReplicationSelection, remoteURL string
 				if validEventID(id) {
 					wanted = append(wanted, newReplicationRequest(replicationProposal, id, ref, advertised[ref]))
 				}
+			case strings.HasPrefix(ref, memoryRefPrefix):
+				_, stream, ok := parseMemoryRef(ref)
+				if ok && len(memoryRefs[stream]) == 1 {
+					wanted = append(wanted, newReplicationRequest(replicationMemory, stream, ref, advertised[ref]))
+				} else if ok && !reportedAmbiguousMemory[stream] {
+					reportedAmbiguousMemory[stream] = true
+					request := newReplicationRequest(replicationMemory, stream, "", "")
+					outcomes = append(outcomes, failedReplicationOutcome(request, replicationStructuralInvalid,
+						fmt.Sprintf("advertised memory %s has ambiguous owners on remote %s", stream, selection.Remote)))
+				}
 			}
 		}
 	} else {
@@ -591,9 +647,22 @@ func resolveReplicationRequests(selection ReplicationSelection, remoteURL string
 			ref := proposalRef(proposal)
 			wanted = append(wanted, newReplicationRequest(replicationProposal, proposal, ref, advertised[ref]))
 		}
+		for _, stream := range selection.Memories {
+			refs := memoryRefs[stream]
+			if len(refs) == 1 {
+				wanted = append(wanted, newReplicationRequest(replicationMemory, stream, refs[0], advertised[refs[0]]))
+				continue
+			}
+			request := newReplicationRequest(replicationMemory, stream, "", "")
+			if len(refs) > 1 {
+				outcomes = append(outcomes, failedReplicationOutcome(request, replicationStructuralInvalid,
+					fmt.Sprintf("selected memory %s has ambiguous owners on remote %s", stream, selection.Remote)))
+				continue
+			}
+			wanted = append(wanted, request)
+		}
 	}
 	requests := make([]replicationRequest, 0, len(wanted))
-	outcomes := make([]ReplicationOutcome, 0)
 	for _, request := range wanted {
 		if request.OID == "" {
 			outcome := failedReplicationOutcome(request, replicationDependencyMissing,
@@ -612,6 +681,13 @@ func newReplicationRequest(kind, id, sourceRef, oid string) replicationRequest {
 	destination := "refs/nh/quarantine/actors/" + id
 	if kind == replicationProposal {
 		destination = "refs/nh/quarantine/proposals/" + strings.TrimPrefix(id, "sha256:")
+	} else if kind == replicationMemory {
+		actor, stream, ok := parseMemoryRef(sourceRef)
+		if ok && stream == id {
+			destination = "refs/nh/quarantine/memory/" + actor + "/" + strings.TrimPrefix(stream, "sha256:")
+		} else {
+			destination = "refs/nh/quarantine/memory/unresolved/" + strings.TrimPrefix(id, "sha256:")
+		}
 	}
 	return replicationRequest{Kind: kind, ID: id, SourceRef: sourceRef, QuarantineRef: destination, OID: oid}
 }
@@ -619,6 +695,17 @@ func newReplicationRequest(kind, id, sourceRef, oid string) replicationRequest {
 func acceptedRefForRequest(remote string, request replicationRequest) string {
 	if request.Kind == replicationProposal {
 		return acceptedProposalRef(remote, request.ID)
+	}
+	if request.Kind == replicationMemory {
+		actor, stream, ok := parseMemoryRef(request.SourceRef)
+		if !ok || stream != request.ID {
+			return ""
+		}
+		ref, err := acceptedMemoryRef(remote, actor, stream)
+		if err != nil {
+			return ""
+		}
+		return ref
 	}
 	return acceptedActorRef(remote, request.ID)
 }
@@ -661,10 +748,10 @@ func measureQuarantinedSelectionUnderBudgets(quarantineGitDir, mainGitDir, kind,
 		return ReplicationMeasurements{}, fmt.Errorf("selected root %s is not a commit", root)
 	}
 	measurements := ReplicationMeasurements{}
-	if kind == replicationActor {
+	if kind == replicationActor || kind == replicationMemory {
 		count, err := gitTextAt(quarantineGitDir, "rev-list", "--count", root)
 		if err != nil {
-			return measurements, fmt.Errorf("count selected actor events: %w", err)
+			return measurements, fmt.Errorf("count selected %s events: %w", kind, err)
 		}
 		measurements.Events, err = strconv.ParseInt(count, 10, 64)
 		if err != nil || measurements.Events < 1 {
@@ -1122,6 +1209,422 @@ func selectedProjectionEvents(accepted []StoredEvent, outcomes map[string]*Repli
 	return mapStoredEvents(byID)
 }
 
+type replicationMemoryResolver struct {
+	quarantineGitDir string
+	acceptedGitDir   string
+}
+
+func (resolver replicationMemoryResolver) Probe(object string) (gitObjectProbe, error) {
+	probe, err := probeExactGitObjectAt(resolver.quarantineGitDir, object)
+	if err != nil || probe.Exists {
+		return probe, err
+	}
+	if validFullGitObjectID(object) {
+		unaccepted, err := replicationObjectIsUnaccepted(resolver.acceptedGitDir, object)
+		if err != nil || unaccepted {
+			return gitObjectProbe{}, err
+		}
+	}
+	return probeExactGitObjectAt(resolver.acceptedGitDir, object)
+}
+
+func (resolver replicationMemoryResolver) objectDirectory(object string) (string, bool, error) {
+	for _, directory := range []string{resolver.quarantineGitDir, resolver.acceptedGitDir} {
+		probe, err := probeExactGitObjectAt(directory, object)
+		if err != nil {
+			return "", false, err
+		}
+		if probe.Exists {
+			if directory == resolver.acceptedGitDir && validFullGitObjectID(object) {
+				unaccepted, err := replicationObjectIsUnaccepted(directory, object)
+				if err != nil {
+					return "", false, err
+				}
+				if unaccepted {
+					continue
+				}
+			}
+			return directory, true, nil
+		}
+	}
+	return "", false, nil
+}
+
+func (resolver replicationMemoryResolver) TreeEntry(commit, path string) (string, bool, error) {
+	directory, exists, err := resolver.objectDirectory(commit)
+	if err != nil || !exists {
+		return "", false, err
+	}
+	output, err := gitTextAt(directory, "ls-tree", commit, "--", path)
+	if err != nil {
+		return "", false, err
+	}
+	if output == "" {
+		return "", false, nil
+	}
+	fields := strings.Fields(output)
+	if len(fields) < 3 || fields[1] != "blob" || !validFullGitObjectID(fields[2]) {
+		return "", false, fmt.Errorf("invalid Git tree entry for memory anchor")
+	}
+	return fields[2], true, nil
+}
+
+func (resolver replicationMemoryResolver) IsAncestor(ancestor, descendant string) (bool, string, error) {
+	pending := []string{descendant}
+	seen := make(map[string]bool)
+	firstMissing := ""
+	for len(pending) > 0 {
+		commit := pending[0]
+		pending = pending[1:]
+		if seen[commit] {
+			continue
+		}
+		seen[commit] = true
+		if commit == ancestor {
+			return true, "", nil
+		}
+		directory, exists, err := resolver.objectDirectory(commit)
+		if err != nil {
+			return false, "", err
+		}
+		if !exists {
+			if firstMissing == "" {
+				firstMissing = commit
+			}
+			continue
+		}
+		contents, err := gitTextAt(directory, "cat-file", "commit", commit)
+		if err != nil {
+			return false, "", err
+		}
+		for _, line := range strings.Split(contents, "\n") {
+			if line == "" {
+				break
+			}
+			if strings.HasPrefix(line, "parent ") {
+				parent := strings.TrimPrefix(line, "parent ")
+				if !validFullGitObjectID(parent) {
+					return false, "", fmt.Errorf("malformed memory anchor ancestry")
+				}
+				pending = append(pending, parent)
+			}
+		}
+	}
+	return false, firstMissing, nil
+}
+
+func classifyReplicationMemoryDependencies(selection ReplicationSelection, quarantineGitDir, acceptedGitDir string, acceptedEvents []StoredEvent, outcomes map[string]*ReplicationOutcome) {
+	acceptedMemories, err := collectMemories()
+	if err != nil {
+		for _, outcome := range outcomes {
+			if outcome.Status == replicationPromotable && outcome.Kind == replicationMemory {
+				outcome.Status = replicationRelationshipBad
+				outcome.Diagnostic = fmt.Sprintf("selection memory %s cannot inspect accepted memory projection", outcome.ID)
+			}
+		}
+		return
+	}
+	memories := append([]StoredMemory(nil), acceptedMemories...)
+	ownerByMemory := make(map[string]string)
+	ownerByEvent := make(map[string]string)
+	for key, outcome := range outcomes {
+		if outcome.Status != replicationPromotable || outcome.Kind != replicationActor {
+			continue
+		}
+		for _, stored := range outcome.events {
+			ownerByEvent[stored.ID] = key
+		}
+	}
+	for key, outcome := range outcomes {
+		if outcome.Status != replicationPromotable || outcome.Kind != replicationMemory {
+			continue
+		}
+		for _, stored := range outcome.memories {
+			memories = append(memories, stored)
+			ownerByMemory[stored.ID] = key
+		}
+	}
+	for key, outcome := range outcomes {
+		if outcome.Status != replicationPromotable || outcome.Kind != replicationMemory {
+			continue
+		}
+		for _, stored := range outcome.memories {
+			if targetOwner := ownerByMemory[stored.Envelope.Target]; targetOwner != "" && targetOwner != key {
+				outcome.dependencies = append(outcome.dependencies, targetOwner)
+			}
+			evidence := append([]string(nil), stored.Envelope.Evidence...)
+			if stored.Envelope.Record != nil {
+				evidence = append(evidence, stored.Envelope.Record.Evidence...)
+			}
+			for _, typed := range evidence {
+				kind, id, ok := strings.Cut(typed, ":")
+				if !ok {
+					continue
+				}
+				dependencyOwner := ""
+				switch kind {
+				case "memory":
+					dependencyOwner = ownerByMemory[id]
+				case "event":
+					dependencyOwner = ownerByEvent[id]
+				}
+				if dependencyOwner != "" && dependencyOwner != key {
+					outcome.dependencies = append(outcome.dependencies, dependencyOwner)
+				}
+			}
+		}
+		outcome.dependencies = sortedUniqueStrings(outcome.dependencies...)
+	}
+	events := selectedProjectionEvents(acceptedEvents, outcomes)
+	projection := ProjectMemories(memories, MemoryProjectionContext{
+		Events: events,
+		Resolver: replicationMemoryResolver{
+			quarantineGitDir: quarantineGitDir,
+			acceptedGitDir:   acceptedGitDir,
+		},
+	})
+	for _, diagnostic := range projection.Diagnostics {
+		key := ownerByMemory[diagnostic.MemoryID]
+		outcome := outcomes[key]
+		if outcome == nil || outcome.Status != replicationPromotable {
+			continue
+		}
+		outcome.Status = replicationRelationshipBad
+		outcome.Diagnostic = fmt.Sprintf("selection memory %s memory %s (%s) has invalid relationship %s", outcome.ID, diagnostic.MemoryID, diagnostic.Operation, diagnostic.Code)
+	}
+	for _, row := range projection.Rows {
+		key := ownerByMemory[row.ID]
+		outcome := outcomes[key]
+		if outcome == nil || outcome.Status != replicationPromotable {
+			continue
+		}
+		if row.Applicability == memoryApplicabilityAnchorInvalid || row.Evidence == memoryEvidenceInvalid {
+			outcome.Status = replicationRelationshipBad
+			outcome.Diagnostic = fmt.Sprintf("selection memory %s memory %s has invalid anchor or evidence relationship", outcome.ID, row.ID)
+		}
+	}
+	for _, missing := range projection.MissingDependencies {
+		key := ownerByMemory[missing.OwnerID]
+		outcome := outcomes[key]
+		if outcome == nil || outcome.Status != replicationPromotable {
+			continue
+		}
+		outcome.Status = replicationDependencyMissing
+		outcome.DependencyKind = missing.Kind
+		outcome.MissingID = missing.MissingID
+		outcome.OwnerMemoryID = missing.OwnerID
+		outcome.OwnerStream = missing.Stream
+		outcome.RequiredSelectors, outcome.RequiredRef = memoryReplicationRequiredSupplier(selection, acceptedGitDir, acceptedEvents, missing)
+		outcome.Recovery = memoryReplicationRecovery(selection, missing, outcome.RequiredSelectors)
+		outcome.Diagnostic = fmt.Sprintf("selection memory %s memory %s missing %s dependency %s: %s; recovery: %s", outcome.ID, missing.OwnerID, missing.Kind, missing.MissingID, missing.Reason, outcome.Recovery)
+		if err := recordReplicationMemoryShallowGap(selection, outcome, missing); err != nil {
+			outcome.Diagnostic += "; durable shallow gap recording failed"
+		}
+	}
+}
+
+func revalidateReplicationMemoryObjectDependencies(selection ReplicationSelection, quarantineGitDir, acceptedGitDir string, acceptedEvents []StoredEvent, outcomes map[string]*ReplicationOutcome) {
+	available := make(map[string]bool)
+	for _, outcome := range outcomes {
+		if outcome.Status != replicationPromotable {
+			continue
+		}
+		objects, err := reachableObjectIDsAt(quarantineGitDir, []string{outcome.request.OID})
+		if err != nil {
+			continue
+		}
+		for _, object := range objects {
+			available[object] = true
+		}
+	}
+	isAvailable := func(object string) bool {
+		if available[object] {
+			return true
+		}
+		if validFullGitObjectID(object) {
+			unaccepted, err := replicationObjectIsUnaccepted(acceptedGitDir, object)
+			if err != nil || unaccepted {
+				return false
+			}
+		}
+		probe, err := probeExactGitObjectAt(acceptedGitDir, object)
+		return err == nil && probe.Exists
+	}
+	for _, outcome := range outcomes {
+		if outcome.Status != replicationPromotable || outcome.Kind != replicationMemory {
+			continue
+		}
+		required := make(map[string]MemoryDependency)
+		for _, stored := range outcome.memories {
+			if stored.Envelope.Record != nil {
+				record := stored.Envelope.Record
+				required[record.Anchor.Commit] = MemoryDependency{Kind: "anchor-commit", OwnerID: stored.ID, Stream: stored.Envelope.Stream, MissingID: record.Anchor.Commit, Reason: "anchor-commit-unavailable"}
+				for _, anchored := range record.Anchor.Paths {
+					if anchored.Blob != "absent" {
+						required[anchored.Blob] = MemoryDependency{Kind: "anchor-path", OwnerID: stored.ID, Stream: stored.Envelope.Stream, MissingID: anchored.Blob, Reason: "anchor-path-object-unavailable"}
+					}
+				}
+				for _, typed := range record.Evidence {
+					if strings.HasPrefix(typed, "git:") {
+						id := strings.TrimPrefix(typed, "git:")
+						required[id] = MemoryDependency{Kind: "evidence-git", OwnerID: stored.ID, Stream: stored.Envelope.Stream, MissingID: id, Reason: "object-unavailable"}
+					}
+				}
+			}
+			for _, typed := range stored.Envelope.Evidence {
+				if strings.HasPrefix(typed, "git:") {
+					id := strings.TrimPrefix(typed, "git:")
+					required[id] = MemoryDependency{Kind: "evidence-git", OwnerID: stored.ID, Stream: stored.Envelope.Stream, MissingID: id, Reason: "object-unavailable"}
+				}
+			}
+		}
+		objects := make([]string, 0, len(required))
+		for object := range required {
+			objects = append(objects, object)
+		}
+		sort.Strings(objects)
+		for _, object := range objects {
+			if isAvailable(object) {
+				continue
+			}
+			missing := required[object]
+			outcome.Status = replicationDependencyMissing
+			outcome.DependencyKind = missing.Kind
+			outcome.MissingID = object
+			outcome.OwnerMemoryID = missing.OwnerID
+			outcome.OwnerStream = missing.Stream
+			outcome.RequiredSelectors, outcome.RequiredRef = memoryReplicationRequiredSupplier(selection, acceptedGitDir, acceptedEvents, missing)
+			outcome.Recovery = memoryReplicationRecovery(selection, missing, outcome.RequiredSelectors)
+			outcome.Diagnostic = fmt.Sprintf("selection memory %s has unavailable exact Git dependency %s; recovery: %s", outcome.ID, object, outcome.Recovery)
+			if err := recordReplicationMemoryShallowGap(selection, outcome, missing); err != nil {
+				outcome.Diagnostic += "; durable shallow gap recording failed"
+			}
+			break
+		}
+	}
+}
+
+func memoryReplicationRequiredSupplier(selection ReplicationSelection, gitDir string, events []StoredEvent, dependency MemoryDependency) ([]string, string) {
+	for _, event := range events {
+		if isProposalKind(event.Event.Kind) && event.Event.Head == dependency.MissingID {
+			return []string{replicationProposal + ":" + event.ID}, proposalRef(event.ID)
+		}
+	}
+	remoteURL, err := gitText("remote", "get-url", selection.Remote)
+	if err != nil {
+		return nil, ""
+	}
+	advertised, err := gitText("ls-remote", "--refs", "--", remoteURL, "refs/nh/actors/*", "refs/nh/memory/*/*")
+	if err != nil {
+		return nil, ""
+	}
+	fields := strings.Fields(advertised)
+	if len(fields)%2 != 0 {
+		return nil, ""
+	}
+	for index := 0; index < len(fields); index += 2 {
+		head, ref := fields[index], fields[index+1]
+		probe, err := probeExactGitObjectAt(gitDir, head)
+		if err != nil || !probe.Exists || probe.Type != "commit" {
+			continue
+		}
+		switch dependency.Kind {
+		case "evidence-event":
+			actor := strings.TrimPrefix(ref, "refs/nh/actors/")
+			if !validActorFingerprint(actor) || ref != actorRef(actor) {
+				continue
+			}
+			events, err := loadActorEventsAt(gitDir, head)
+			if err != nil {
+				continue
+			}
+			for _, event := range events {
+				if event.ID == dependency.MissingID {
+					return []string{replicationActor + ":" + actor}, ref
+				}
+			}
+		case "lifecycle-target", "evidence-memory":
+			actor, stream, ok := parseMemoryRef(ref)
+			if !ok {
+				continue
+			}
+			memories, err := loadMemoryStreamAt(gitDir, memoryStreamSource{Ref: ref, Actor: actor, Stream: stream, Head: head})
+			if err != nil {
+				continue
+			}
+			for _, memory := range memories {
+				if memory.ID == dependency.MissingID {
+					return []string{replicationMemory + ":" + stream}, ref
+				}
+			}
+		}
+	}
+	return nil, ""
+}
+
+func memoryReplicationRecovery(selection ReplicationSelection, dependency MemoryDependency, required []string) string {
+	shallow, _ := repositoryIsShallow()
+	missing := make([]string, 0)
+	for _, selector := range required {
+		kind, id, ok := strings.Cut(selector, ":")
+		if !ok {
+			continue
+		}
+		selected := selection.All
+		switch kind {
+		case replicationActor:
+			selected = selected || stringInSlice(id, selection.Actors)
+		case replicationProposal:
+			selected = selected || stringInSlice(id, selection.Proposals)
+		case replicationMemory:
+			selected = selected || stringInSlice(id, selection.Memories)
+		}
+		if !selected {
+			missing = append(missing, "--"+kind+" "+id)
+		}
+	}
+	if len(required) == 0 {
+		return "supplier for exact " + dependency.Kind + " dependency " + dependency.MissingID + " is not derivable from signed facts; select its exact supplier, then retry"
+	}
+	if len(missing) != 0 {
+		sync := "nh sync " + selection.Remote
+		if shallow {
+			sync += " --recover-shallow"
+		}
+		return "nh replication select " + selection.Remote + " " + strings.Join(missing, " ") + " (preserve existing selectors and budgets), then " + sync
+	}
+	if shallow {
+		return "nh sync " + selection.Remote + " --recover-shallow"
+	}
+	return "repair the exact advertised dependency, then nh sync " + selection.Remote
+}
+
+func recordReplicationMemoryShallowGap(selection ReplicationSelection, outcome *ReplicationOutcome, dependency MemoryDependency) error {
+	shallow, err := repositoryIsShallow()
+	if err != nil {
+		return err
+	}
+	if !shallow {
+		return nil
+	}
+	gap := &ShallowDependencyGap{
+		Operation: "memory replication", Kind: memoryShallowDependencyKind(dependency.Kind),
+		MissingID: dependency.MissingID, OwnerKind: replicationMemory, OwnerID: dependency.Stream,
+		OwnerMemoryID: dependency.OwnerID, OwnerStream: dependency.Stream,
+		Remote: selection.Remote, RequiredRef: outcome.RequiredRef,
+		RequiredSelectors: append([]string(nil), outcome.RequiredSelectors...),
+		Recovery:          outcome.Recovery, Cause: fmt.Errorf("required exact memory dependency %s is unavailable", dependency.MissingID),
+	}
+	if dependency.Kind == "anchor-commit" || dependency.Kind == "anchor-path" || dependency.Kind == "evidence-git" {
+		gap.Objectish = dependency.MissingID
+		gap.ObjectType = "object"
+		if dependency.Kind == "anchor-commit" {
+			gap.ObjectType = "commit"
+		}
+	}
+	return recordShallowDependencyGap(gap)
+}
+
 func removeGeneratedQuarantine(root, quarantine string) error {
 	resolvedRoot, err := filepath.Abs(root)
 	if err != nil {
@@ -1157,7 +1660,8 @@ func promoteReplicationRefs(promotions []replicationPromotion) error {
 	for _, promotion := range promotions {
 		_, _, actorDestination := parseAcceptedActorRef(promotion.Ref)
 		_, _, proposalDestination := parseAcceptedProposalRef(promotion.Ref)
-		if (!actorDestination && !proposalDestination) || !validGitOID(promotion.NewOID) {
+		_, _, _, memoryDestination := parseAcceptedMemoryRef(promotion.Ref)
+		if (!actorDestination && !proposalDestination && !memoryDestination) || !validGitOID(promotion.NewOID) {
 			return fmt.Errorf("invalid replication promotion")
 		}
 		if promotion.OldOID == "" {

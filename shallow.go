@@ -25,6 +25,11 @@ const (
 	shallowDecision           ShallowDependencyKind = "decision"
 	shallowSelectedFact       ShallowDependencyKind = "selected event fact"
 	shallowMergeAncestor      ShallowDependencyKind = "merge ancestor"
+	shallowMemoryPredecessor  ShallowDependencyKind = "memory stream predecessor"
+	shallowMemoryLifecycle    ShallowDependencyKind = "memory lifecycle target"
+	shallowMemoryAnchor       ShallowDependencyKind = "memory anchor"
+	shallowMemoryEvidence     ShallowDependencyKind = "memory evidence"
+	shallowMemoryStream       ShallowDependencyKind = "supplying memory stream"
 )
 
 // ShallowDependencyGap is an immutable dependency that cannot be proven from
@@ -32,17 +37,20 @@ const (
 // Cause is retained for errors.Is/errors.As without exposing Git paths or
 // credentials in the stable operator diagnostic.
 type ShallowDependencyGap struct {
-	Operation   string                `json:"operation"`
-	Kind        ShallowDependencyKind `json:"kind"`
-	MissingID   string                `json:"missingID"`
-	Objectish   string                `json:"objectish,omitempty"`
-	ObjectType  string                `json:"objectType,omitempty"`
-	OwnerKind   string                `json:"ownerKind,omitempty"`
-	OwnerID     string                `json:"ownerID,omitempty"`
-	Remote      string                `json:"remote,omitempty"`
-	RequiredRef string                `json:"requiredRef,omitempty"`
-	Recovery    string                `json:"recovery"`
-	Cause       error                 `json:"-"`
+	Operation         string                `json:"operation"`
+	Kind              ShallowDependencyKind `json:"kind"`
+	MissingID         string                `json:"missingID"`
+	Objectish         string                `json:"objectish,omitempty"`
+	ObjectType        string                `json:"objectType,omitempty"`
+	OwnerKind         string                `json:"ownerKind,omitempty"`
+	OwnerID           string                `json:"ownerID,omitempty"`
+	OwnerMemoryID     string                `json:"ownerMemoryID,omitempty"`
+	OwnerStream       string                `json:"ownerStream,omitempty"`
+	Remote            string                `json:"remote,omitempty"`
+	RequiredRef       string                `json:"requiredRef,omitempty"`
+	RequiredSelectors []string              `json:"requiredSelectors,omitempty"`
+	Recovery          string                `json:"recovery"`
+	Cause             error                 `json:"-"`
 }
 
 func (gap *ShallowDependencyGap) Error() string {
@@ -54,6 +62,12 @@ func (gap *ShallowDependencyGap) Error() string {
 	}
 	if gap.OwnerKind != "" && gap.OwnerID != "" {
 		parts = append(parts, "owner="+safeDiagnostic(gap.OwnerKind)+":"+safeDiagnostic(gap.OwnerID))
+	}
+	if gap.OwnerMemoryID != "" {
+		parts = append(parts, "memory="+safeDiagnostic(gap.OwnerMemoryID))
+	}
+	if gap.OwnerStream != "" {
+		parts = append(parts, "stream="+safeDiagnostic(gap.OwnerStream))
 	}
 	if gap.Remote != "" {
 		parts = append(parts, "remote="+safeDiagnostic(gap.Remote))
@@ -70,15 +84,17 @@ func (gap *ShallowDependencyGap) Error() string {
 func (gap *ShallowDependencyGap) Unwrap() error { return gap.Cause }
 
 type exactDependency struct {
-	Operation   string
-	Kind        ShallowDependencyKind
-	MissingID   string
-	Objectish   string
-	ObjectType  string
-	OwnerKind   string
-	OwnerID     string
-	Remote      string
-	RequiredRef string
+	Operation     string
+	Kind          ShallowDependencyKind
+	MissingID     string
+	Objectish     string
+	ObjectType    string
+	OwnerKind     string
+	OwnerID       string
+	OwnerMemoryID string
+	OwnerStream   string
+	Remote        string
+	RequiredRef   string
 }
 
 type gitObjectProbe struct {
@@ -374,7 +390,8 @@ func loadReplicationTransactionRecords(gitDir string) ([]replicationTransactionR
 			for _, promotion := range record.Promotions {
 				_, _, actorOK := parseAcceptedActorRef(promotion.Ref)
 				_, _, proposalOK := parseAcceptedProposalRef(promotion.Ref)
-				if (!actorOK && !proposalOK) || !validGitOID(promotion.NewOID) || (promotion.OldOID != "" && !validGitOID(promotion.OldOID)) {
+				_, _, _, memoryOK := parseAcceptedMemoryRef(promotion.Ref)
+				if (!actorOK && !proposalOK && !memoryOK) || !validGitOID(promotion.NewOID) || (promotion.OldOID != "" && !validGitOID(promotion.OldOID)) {
 					return nil, fmt.Errorf("replication transaction %s contains invalid promotion", record.ID)
 				}
 			}
@@ -688,22 +705,39 @@ func classifyShallowDependency(dependency exactDependency, cause error) error {
 		return fmt.Errorf("inspect saved replication selection: %w", err)
 	}
 	gap := &ShallowDependencyGap{
-		Operation:   dependency.Operation,
-		Kind:        dependency.Kind,
-		MissingID:   dependency.MissingID,
-		Objectish:   dependency.Objectish,
-		ObjectType:  dependency.ObjectType,
-		OwnerKind:   dependency.OwnerKind,
-		OwnerID:     dependency.OwnerID,
-		Remote:      remote,
-		RequiredRef: ref,
-		Recovery:    recovery,
-		Cause:       cause,
+		Operation:     dependency.Operation,
+		Kind:          dependency.Kind,
+		MissingID:     dependency.MissingID,
+		Objectish:     dependency.Objectish,
+		ObjectType:    dependency.ObjectType,
+		OwnerKind:     dependency.OwnerKind,
+		OwnerID:       dependency.OwnerID,
+		OwnerMemoryID: dependency.OwnerMemoryID,
+		OwnerStream:   dependency.OwnerStream,
+		Remote:        remote,
+		RequiredRef:   ref,
+		Recovery:      recovery,
+		Cause:         cause,
 	}
 	if err := recordShallowDependencyGap(gap); err != nil {
 		return fmt.Errorf("record shallow dependency gap: %w", err)
 	}
 	return gap
+}
+
+func memoryShallowDependencyKind(kind string) ShallowDependencyKind {
+	switch kind {
+	case "lifecycle-target":
+		return shallowMemoryLifecycle
+	case "anchor-commit", "anchor-path", "query-commit", "anchor-ancestry":
+		return shallowMemoryAnchor
+	case "stream-predecessor":
+		return shallowMemoryPredecessor
+	case "supplying-stream":
+		return shallowMemoryStream
+	default:
+		return shallowMemoryEvidence
+	}
 }
 
 const shallowGapRecordVersion = 2
@@ -791,6 +825,9 @@ func shallowRecoveryGuidance(dependency exactDependency) (string, string, string
 			ref = actorRef(dependency.OwnerID)
 		case replicationProposal:
 			ref = proposalRef(dependency.OwnerID)
+		case replicationMemory:
+			// Memory refs bind both owner and stream. Callers that know the
+			// owner must supply RequiredRef; never guess an owner here.
 		}
 	}
 	selected := false
@@ -812,6 +849,8 @@ func shallowRecoveryGuidance(dependency exactDependency) (string, string, string
 		return remote, ref, "nh replication select " + remote + " --actor " + dependency.OwnerID + " (preserve existing selectors and budgets), then nh sync " + remote + " --recover-shallow", nil
 	case replicationProposal:
 		return remote, ref, "nh replication select " + remote + " --proposal " + dependency.OwnerID + " (preserve existing selectors and budgets), then nh sync " + remote + " --recover-shallow", nil
+	case replicationMemory:
+		return remote, ref, "nh replication select " + remote + " --memory " + dependency.OwnerID + " (preserve existing selectors and budgets), then nh sync " + remote + " --recover-shallow", nil
 	default:
 		switch dependency.Kind {
 		case shallowCandidateEvent, shallowRunRequest, shallowRunResult, shallowDecision, shallowSelectedFact, shallowActorPredecessor:
@@ -844,6 +883,8 @@ func selectedRemoteFor(kind, id, preferred string) (string, bool, error) {
 		values := selection.Actors
 		if kind == replicationProposal {
 			values = selection.Proposals
+		} else if kind == replicationMemory {
+			values = selection.Memories
 		}
 		for _, value := range values {
 			if value == id {
@@ -1095,6 +1136,13 @@ func releaseRecoveredShallowBoundaries(gitDir string, promotions []replicationPr
 			continue
 		}
 		if _, _, proposalRef := parseAcceptedProposalRef(promotion.Ref); proposalRef {
+			if promotion.OldOID != "" {
+				selectedBoundaries[promotion.OldOID] = true
+			}
+			selectedBoundaries[promotion.NewOID] = true
+			continue
+		}
+		if _, _, _, memoryRef := parseAcceptedMemoryRef(promotion.Ref); memoryRef {
 			if promotion.OldOID != "" {
 				selectedBoundaries[promotion.OldOID] = true
 			}
@@ -1855,7 +1903,7 @@ func recoverSelectedShallow(remote string) error {
 		return err
 	}
 	if !explicit || selection.All {
-		return fmt.Errorf("%w: save an exact actor/proposal selection and positive budgets for remote %s", errShallowRecoveryUnavailable, remote)
+		return fmt.Errorf("%w: save an exact actor/proposal/memory selection and positive budgets for remote %s", errShallowRecoveryUnavailable, remote)
 	}
 	selectionPath, err := replicationSelectionPath(remote)
 	if err != nil {
@@ -1930,9 +1978,54 @@ func recoverySelectionSubset(selection ReplicationSelection, gap *ShallowDepende
 			}
 		}
 		return ReplicationSelection{}, fmt.Errorf("candidate supplier %s is not in the saved exact selection; %s", gap.OwnerID, gap.Recovery)
+	case replicationMemory:
+		for _, stream := range selection.Memories {
+			if stream == gap.OwnerID {
+				subset.Memories = []string{stream}
+				for _, selector := range gap.RequiredSelectors {
+					kind, id, ok := strings.Cut(selector, ":")
+					if !ok {
+						return ReplicationSelection{}, fmt.Errorf("invalid recorded memory recovery selector")
+					}
+					switch kind {
+					case replicationActor:
+						if !stringInSlice(id, selection.Actors) {
+							return ReplicationSelection{}, fmt.Errorf("required actor supplier %s is no longer selected", id)
+						}
+						subset.Actors = append(subset.Actors, id)
+					case replicationProposal:
+						if !stringInSlice(id, selection.Proposals) {
+							return ReplicationSelection{}, fmt.Errorf("required proposal supplier %s is no longer selected", id)
+						}
+						subset.Proposals = append(subset.Proposals, id)
+					case replicationMemory:
+						if !stringInSlice(id, selection.Memories) {
+							return ReplicationSelection{}, fmt.Errorf("required memory supplier %s is no longer selected", id)
+						}
+						subset.Memories = append(subset.Memories, id)
+					default:
+						return ReplicationSelection{}, fmt.Errorf("invalid recorded memory recovery selector kind")
+					}
+				}
+				subset.Actors = sortedUniqueStrings(subset.Actors...)
+				subset.Proposals = sortedUniqueStrings(subset.Proposals...)
+				subset.Memories = sortedUniqueStrings(subset.Memories...)
+				return subset, nil
+			}
+		}
+		return ReplicationSelection{}, fmt.Errorf("memory supplier %s is not in the saved exact selection; %s", gap.OwnerID, gap.Recovery)
 	default:
 		return ReplicationSelection{}, fmt.Errorf("supplier for exact missing ID %s is not derivable from signed facts; %s", gap.MissingID, gap.Recovery)
 	}
+}
+
+func stringInSlice(value string, values []string) bool {
+	for _, candidate := range values {
+		if candidate == value {
+			return true
+		}
+	}
+	return false
 }
 
 func verifyRecordedShallowGap(gap *ShallowDependencyGap) error {
@@ -1949,13 +2042,52 @@ func verifyRecordedShallowGap(gap *ShallowDependencyGap) error {
 		}
 		_, err = resolveEventDependency(gap.Operation, gap.MissingID, gap.Kind, events)
 		return err
+	case shallowMemoryPredecessor, shallowMemoryLifecycle, shallowMemoryAnchor, shallowMemoryEvidence, shallowMemoryStream:
+		return verifyRecordedMemoryGap(gap)
 	default:
 		return requireExactDependency(exactDependency{
 			Operation: gap.Operation, Kind: gap.Kind, MissingID: gap.MissingID,
 			Objectish: gap.Objectish, ObjectType: gap.ObjectType,
-			OwnerKind: gap.OwnerKind, OwnerID: gap.OwnerID, Remote: gap.Remote, RequiredRef: gap.RequiredRef,
+			OwnerKind: gap.OwnerKind, OwnerID: gap.OwnerID,
+			OwnerMemoryID: gap.OwnerMemoryID, OwnerStream: gap.OwnerStream,
+			Remote: gap.Remote, RequiredRef: gap.RequiredRef,
 		})
 	}
+}
+
+func verifyRecordedMemoryGap(gap *ShallowDependencyGap) error {
+	memories, err := collectMemories()
+	if err != nil {
+		return err
+	}
+	events, err := collectEvents()
+	if err != nil {
+		return err
+	}
+	projection := ProjectMemories(memories, MemoryProjectionContext{Events: events})
+	for _, dependency := range projection.MissingDependencies {
+		if dependency.OwnerID == gap.OwnerMemoryID && dependency.Stream == gap.OwnerStream && dependency.MissingID == gap.MissingID {
+			return gap
+		}
+	}
+	for _, diagnostic := range projection.Diagnostics {
+		if diagnostic.MemoryID == gap.OwnerMemoryID {
+			return fmt.Errorf("recorded memory operation is invalid: %s", diagnostic.Code)
+		}
+	}
+	for _, row := range projection.Rows {
+		if row.ID != gap.OwnerMemoryID {
+			continue
+		}
+		if row.Applicability == memoryApplicabilityAnchorMissing || row.Evidence == memoryEvidenceMissing || row.Lifecycle == memoryLifecycleDependencyMissing {
+			return gap
+		}
+		if row.Applicability == memoryApplicabilityAnchorInvalid || row.Evidence == memoryEvidenceInvalid {
+			return fmt.Errorf("recorded memory operation has invalid anchor or evidence")
+		}
+		return nil
+	}
+	return gap
 }
 
 var _ error = (*ShallowDependencyGap)(nil)

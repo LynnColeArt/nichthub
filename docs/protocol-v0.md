@@ -2,7 +2,10 @@
 
 This document records the format implemented by the operational alpha. It is a
 testable sketch, not a compatibility promise. Existing version-0 event payloads
-and event IDs were not changed when identity continuity was added.
+and event IDs were not changed when identity continuity was added. Agent memory
+is the separate additive `nh-memory/0` protocol documented in
+[memory-v0.md](memory-v0.md); memory records are not inserted into `nh/0`
+actor chains or event kinds.
 
 ## Actor identity
 

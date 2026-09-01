@@ -11,6 +11,7 @@ claims qualify as authority.
 nh replication select [REMOTE] \
   [--actor <full-64-hex-actor>]... \
   [--proposal <full-sha256-candidate-event-id>]... \
+  [--memory <full-sha256-stream-id>]... \
   [--all] \
   [--max-events N] \
   [--max-objects N] \
@@ -21,10 +22,11 @@ nh replication select [REMOTE] \
 nh replication show [REMOTE]
 ```
 
-The remote defaults to `origin`. Actor and candidate selectors must be full
-IDs. Every budget is a positive integer. `--all` cannot be combined with actor
-or candidate selectors, and an exact selection must name at least one actor or
-candidate.
+The remote defaults to `origin`. Actor, candidate, and memory-stream selectors
+must be full IDs. Every budget is a positive integer. `--all` cannot be
+combined with exact selectors, and an exact selection must name at least one
+actor, candidate, or memory stream. An actor/candidate-only selection imports
+zero memory; memory selection is independent transport authorization.
 
 Selections are sorted and saved as owner-only local state below
 `.git/nh/replication/selections/`; they are never committed or published.
@@ -42,10 +44,11 @@ When flags are omitted, the saved budget defaults are:
 | `max-total-bytes` | 1,073,741,824 (1 GiB) |
 
 No saved selection means version-0 bounded compatibility-all. The client
-enumerates advertised `refs/nh/actors/*` and `refs/nh/proposals/*`, accepts only
-well-formed ref names, and sends every discovered ref through the same
-quarantine, budgets, validation, and promotion path. An explicit saved
-selection remains authoritative until replaced.
+enumerates advertised `refs/nh/actors/*`, `refs/nh/proposals/*`, and
+`refs/nh/memory/*/*`, accepts only well-formed ref names, and sends every
+discovered ref through the same quarantine, budgets, validation, and promotion
+path. A memory stream ID must resolve to one unambiguous actor owner. An
+explicit saved selection remains authoritative until replaced.
 
 ## Exact fetch and quarantine lifecycle
 
@@ -61,6 +64,12 @@ For each selected candidate, it requests exactly:
 +refs/nh/proposals/<candidate-hash>:refs/nh/quarantine/proposals/<candidate-hash>
 ```
 
+For each selected memory stream, it requests exactly the one advertised owner:
+
+```text
++refs/nh/memory/<full-actor>/<stream-hash>:refs/nh/quarantine/memory/<full-actor>/<stream-hash>
+```
+
 The destination refs live inside a generated separate bare repository, not the
 main object database. The transaction then:
 
@@ -68,10 +77,11 @@ main object database. The transaction then:
 2. exact-fetches each advertised selection into quarantine;
 3. confirms the fetched root equals the advertised object ID;
 4. measures the selected graph against every configured budget;
-5. validates root/object types, exact event-tree shape, event signatures,
-   actor fingerprints, sequence and parent chains, signed attachments,
-   candidate ref/head bindings, identity relations, and all exact event,
-   policy, pipeline, evidence, and merge relationships;
+5. validates root/object types, exact event or two-file memory tree shape,
+   signatures, actor fingerprints, sequence and parent chains, signed
+   attachments, candidate ref/head bindings, identity relations, and all exact
+   event, memory lifecycle, anchor, policy, pipeline, evidence, and merge
+   relationships;
 6. classifies valid, invalid, over-budget, and missing-dependency selections
    independently, then propagates failure only to selections that depend on a
    failed selection;
@@ -89,6 +99,7 @@ Accepted roots are:
 ```text
 refs/nh/remotes/<remote>/actors/<full-actor>
 refs/nh/remotes/<remote>/proposals/<candidate-hash>
+refs/nh/remotes/<remote>/memory/<full-actor>/<stream-hash>
 ```
 
 `collectEvents` projects only local actor refs and these accepted remote refs.
@@ -107,7 +118,7 @@ unrelated objects already present locally cannot weaken a later check.
 
 | Budget | Measurement |
 | --- | --- |
-| `max-events` | Number of commits/events in the selected actor history |
+| `max-events` | Number of commits/events in the selected actor or memory history |
 | `max-objects` | Newly reachable Git objects beyond that selection's previous accepted value |
 | `max-object-bytes` | Largest individual newly reachable Git object |
 | `max-attachment-bytes` | Largest attachment in the selected actor history (`log.txt` today) |
@@ -125,7 +136,8 @@ memory, or disk quotas.
 
 ## Per-selection failure isolation
 
-`nh sync` reports one outcome per full selected actor/candidate ID:
+`nh sync` reports one outcome per full selected actor/candidate/stream ID. A
+memory outcome has `kind=memory` and the full stream ID:
 
 - `promoted` — selected data validated and its accepted ref committed;
 - `over-budget` — at least one inclusive limit was exceeded;
@@ -155,10 +167,10 @@ prefix is substituted.
 ## Publication is separate from import
 
 After import, `nh sync [REMOTE]` uses ordinary explicit Git pushes to publish
-all local `refs/nh/actors/*` histories and locally present
-`refs/nh/proposals/*` candidate refs. Remote histories accepted under
-`refs/nh/remotes/*` are not republished as local actors. The command does not
-push a primary branch:
+all local `refs/nh/actors/*` histories, locally present
+`refs/nh/proposals/*` candidate refs, and local `refs/nh/memory/*/*` streams.
+Remote histories accepted under `refs/nh/remotes/*` are not republished as
+local facts. The command does not push a primary branch:
 
 ```sh
 nh sync origin
@@ -192,6 +204,7 @@ Recovery is explicit:
 nh replication select origin \
   --actor <full-supplying-actor> \
   --proposal <full-supplying-candidate> \
+  --memory <full-supplying-stream> \
   --max-events 10000 \
   --max-objects 100000 \
   --max-object-bytes 16777216 \
@@ -224,4 +237,5 @@ The alpha does not claim that selection implies trust, that quotas stop bytes
 before network receipt, that rejected unreachable residue is securely erased,
 or that a remote cannot advertise hostile data. Its guarantee is narrower:
 selected data is not an accepted projection root until bounded validation and
-atomic promotion succeed.
+atomic promotion succeed. Memory recall consumes only local and promoted
+accepted roots, never quarantine.
