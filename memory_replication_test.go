@@ -186,7 +186,7 @@ func TestMemoryReplicationDiscoveryRejectsAmbiguousOwnersAndIgnoresMalformedRefs
 func TestMemoryReplicationPublishUsesExactLocalRefs(t *testing.T) {
 	inReplicationTestRepository(t)
 	remote := filepath.Join(t.TempDir(), "published.git")
-	mustGit(t, "init", "--bare", "-q", remote)
+	initBareMainRemote(t, remote)
 	mustGit(t, "remote", "add", "origin", remote)
 	identity := deterministicMemoryIdentity()
 	stored := appendReplicableMemory(t, identity, defaultMemoryStream(identity.Actor), nil, "publish")
@@ -314,7 +314,7 @@ func TestMemoryReplicationMixedHostileTransactionPreservesCollaborationBytes(t *
 	over = appendReplicableMemory(t, alice, over.Envelope.Stream, over, "over two")
 	over = appendReplicableMemory(t, alice, over.Envelope.Stream, over, "over three")
 
-	mustGit(t, "init", "--bare", "-q", remote)
+	initBareMainRemote(t, remote)
 	mustGit(t, "remote", "add", "origin", remote)
 	refs := []string{actorRef(alice.Actor), actorRef(bob.Actor), proposalRef(proposal.ID)}
 	for _, stored := range []*StoredMemory{valid, missing, over} {
@@ -541,7 +541,7 @@ func setupMixedMemoryTransactionFixture(t *testing.T) mixedMemoryTransactionFixt
 		t.Fatal(err)
 	}
 	firstMemory := appendReplicableMemory(t, identity, defaultMemoryStream(identity.Actor), nil, "old accepted memory")
-	mustGit(t, "init", "--bare", "-q", remote)
+	initBareMainRemote(t, remote)
 	mustGit(t, "remote", "add", "origin", remote)
 	mustGit(t, "push", "-q", "origin", "main:main")
 	mustGit(t, "clone", "-q", remote, receiver)
@@ -889,7 +889,7 @@ func TestMemoryReplicationShallowGapAndRecoveryUseProductionPath(t *testing.T) {
 		t.Fatal(err)
 	}
 	memoryLocal, _ := memoryRef(identity.Actor, memory.Envelope.Stream)
-	mustGit(t, "init", "--bare", "-q", remote)
+	initBareMainRemote(t, remote)
 	mustGit(t, "remote", "add", "origin", remote)
 	mustGit(t, "push", "-q", "origin", "main:main")
 	mustGit(t, "push", "-q", "origin", memoryLocal+":"+memoryLocal)
@@ -1008,7 +1008,7 @@ func TestMemoryReplicationTypedShallowSupplierRecovery(t *testing.T) {
 				t.Fatal(err)
 			}
 			ownerRef := mustMemoryRef(t, ownerIdentity.Actor, ownerStream)
-			mustGit(t, "init", "--bare", "-q", remote)
+			initBareMainRemote(t, remote)
 			mustGit(t, "remote", "add", "origin", remote)
 			mustGit(t, "push", "-q", "origin", "main:main")
 			mustGit(t, "clone", "-q", remote, receiver)
@@ -1094,7 +1094,7 @@ func TestMemoryReplicationGitEvidenceShallowSupplierRecovery(t *testing.T) {
 		t.Fatal(err)
 	}
 	memorySource := mustMemoryRef(t, identity.Actor, memory.Envelope.Stream)
-	mustGit(t, "init", "--bare", "-q", remote)
+	initBareMainRemote(t, remote)
 	mustGit(t, "remote", "add", "origin", remote)
 	mustGit(t, "push", "-q", "origin", "main:main", memorySource+":"+memorySource)
 	mustGit(t, "clone", "-q", remote, receiver)
@@ -1323,7 +1323,7 @@ func setupMemoryReplicationFixture(t *testing.T) (publisher, remote, receiver st
 	}
 	identity = deterministicMemoryIdentity()
 	stored = appendReplicableMemory(t, identity, defaultMemoryStream(identity.Actor), nil, "replicable")
-	mustGit(t, "init", "--bare", "-q", remote)
+	initBareMainRemote(t, remote)
 	mustGit(t, "remote", "add", "origin", remote)
 	mustGit(t, "push", "-q", "origin", "main:main")
 	mustGit(t, "clone", "-q", remote, receiver)
@@ -1335,9 +1335,15 @@ func setupMemoryReplicationFixture(t *testing.T) (publisher, remote, receiver st
 func testAdvertisedRemote(t *testing.T, refs map[string]string) string {
 	t.Helper()
 	remote := filepath.Join(t.TempDir(), "advertised.git")
-	mustGit(t, "init", "--bare", "-q", remote)
+	initBareMainRemote(t, remote)
 	for ref, oid := range refs {
 		mustGit(t, "push", "-q", remote, oid+":"+ref)
 	}
 	return remote
+}
+
+func initBareMainRemote(t *testing.T, remote string) {
+	t.Helper()
+	mustGit(t, "init", "--bare", "-q", remote)
+	mustGit(t, "--git-dir", remote, "symbolic-ref", "HEAD", "refs/heads/main")
 }
