@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -271,6 +272,257 @@ func TestReplicationNamespaceIgnoresLegacyRemoteAdvertisements(t *testing.T) {
 	if !strings.Contains(advertised, legacyRef) {
 		t.Fatalf("legacy advertisement was unexpectedly mutated: %q", advertised)
 	}
+}
+
+func TestNamespaceCutoverMergeCommitUsesHNLabel(t *testing.T) {
+	root := inIdentityTestRepository(t)
+	maintainer, _, err := createIdentity("Maintainer")
+	if err != nil {
+		t.Fatal(err)
+	}
+	writeTestPolicy(t, root, PolicyDocument{
+		Version:     policyVersion,
+		Maintainers: []string{maintainer.Actor},
+		Proposals: ProposalPolicy{
+			RequiredApprovals: 0,
+			RequiredAccepts:   1,
+		},
+		Pipelines: map[string]PipelinePolicy{},
+	})
+	mustGit(t, "add", ".hn/policy.json")
+	mustGit(t, "commit", "-q", "-m", "active policy")
+	base := mustGitText(t, "rev-parse", "HEAD")
+	mustGit(t, "switch", "-q", "-c", "candidate")
+	if err := os.WriteFile(filepath.Join(root, "candidate.txt"), []byte("candidate\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	mustGit(t, "add", "candidate.txt")
+	mustGit(t, "commit", "-q", "-m", "candidate")
+	head := mustGitText(t, "rev-parse", "HEAD")
+	mustGit(t, "switch", "-q", "main")
+
+	proposalEvent, err := nextEvent(maintainer, "proposal.open")
+	if err != nil {
+		t.Fatal(err)
+	}
+	proposalEvent.Title = "Namespace label"
+	proposalEvent.Base = base
+	proposalEvent.Head = head
+	proposal, err := appendEvent(proposalEvent, maintainer)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := createProposalRef(proposal.ID, head); err != nil {
+		t.Fatal(err)
+	}
+	_, _, policyDigest, err := loadPolicy(base)
+	if err != nil {
+		t.Fatal(err)
+	}
+	appendRevisionDecision(t, maintainer, proposal.ID, policyDigest, nil)
+	if _, err := captureTestOutput(t, func() error { return cmdMerge([]string{proposal.ID}) }); err != nil {
+		t.Fatal(err)
+	}
+	subject := mustGitText(t, "show", "-s", "--format=%s", "HEAD")
+	want := "Merge HN proposal " + shortID(proposal.ID) + ": Namespace label"
+	if subject != want {
+		t.Fatalf("merge subject = %q, want %q", subject, want)
+	}
+	if strings.Contains(subject, " NH ") {
+		t.Fatalf("merge subject retained legacy label: %q", subject)
+	}
+}
+
+func TestReplicationNamespaceMixedRemoteSyncIsolatesLegacyState(t *testing.T) {
+	root := t.TempDir()
+	publisher := filepath.Join(root, "publisher")
+	remote := filepath.Join(root, "project.git")
+	receiver := filepath.Join(root, "receiver")
+	mustGit(t, "init", "-q", "-b", "main", publisher)
+	mustGit(t, "-C", publisher, "config", "user.name", "Publisher")
+	mustGit(t, "-C", publisher, "config", "user.email", "publisher@hn.invalid")
+	mustGit(t, "-C", publisher, "commit", "--allow-empty", "-q", "-m", "base")
+	initBareMainRemote(t, remote)
+
+	original, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		replicationAfterFetchHook = nil
+		_ = os.Chdir(original)
+	})
+	if err := os.Chdir(publisher); err != nil {
+		t.Fatal(err)
+	}
+	mustGit(t, "remote", "add", "origin", remote)
+	mustGit(t, "push", "-q", "origin", "main:main")
+	remoteIdentity := testIdentity(t, "Remote Actor")
+	remoteEvent := newEvent(remoteIdentity, "issue.open", 1, "")
+	remoteEvent.Title = "active remote event"
+	remoteStored, err := appendEvent(remoteEvent, remoteIdentity)
+	if err != nil {
+		t.Fatal(err)
+	}
+	activeRemoteRef := actorRef(remoteIdentity.Actor)
+	legacyRemoteRefs := []string{
+		"refs/nh/actors/" + remoteIdentity.Actor,
+		"refs/nh/proposals/" + strings.TrimPrefix(remoteStored.ID, "sha256:"),
+		"refs/nh/memory/" + remoteIdentity.Actor + "/" + strings.TrimPrefix(defaultMemoryStream(remoteIdentity.Actor), "sha256:"),
+	}
+	mustGit(t, "push", "-q", "origin", activeRemoteRef+":"+activeRemoteRef)
+	for _, ref := range legacyRemoteRefs {
+		mustGit(t, "push", "-q", "origin", "HEAD:"+ref)
+	}
+	mustGit(t, "clone", "-q", remote, receiver)
+
+	if err := os.Chdir(receiver); err != nil {
+		t.Fatal(err)
+	}
+	mustGit(t, "config", "user.name", "Receiver")
+	mustGit(t, "config", "user.email", "receiver@hn.invalid")
+	legacyLocalRefs := []string{
+		"refs/nh/actors/" + remoteIdentity.Actor,
+		"refs/nh/proposals/" + strings.TrimPrefix(remoteStored.ID, "sha256:"),
+		"refs/nh/memory/" + remoteIdentity.Actor + "/" + strings.TrimPrefix(defaultMemoryStream(remoteIdentity.Actor), "sha256:"),
+	}
+	for _, ref := range legacyLocalRefs {
+		mustGit(t, "update-ref", ref, "HEAD")
+	}
+	legacyRoot := filepath.Join(receiver, ".git", "nh")
+	seedLegacyPrivateTree(t, legacyRoot, remoteIdentity)
+	legacyTreeBefore := snapshotLegacyPrivateTree(t, legacyRoot)
+	localLegacyRefsBefore := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh")
+	remoteLegacyRefsBefore := mustGitText(t, "ls-remote", "--refs", remote, "refs/nh/*")
+
+	if err := cmdIdentity([]string{"show"}); err == nil || !strings.Contains(err.Error(), "run 'hn init'") {
+		t.Fatalf("legacy-only identity command = %v", err)
+	}
+	if err := cmdMemory([]string{"index", "verify"}); err == nil {
+		t.Fatal("legacy memory index was accepted as the active index")
+	}
+	recallOutput, err := captureTestOutput(t, func() error { return cmdMemory([]string{"recall"}) })
+	if err != nil {
+		t.Fatalf("legacy-only memory recall: %v", err)
+	}
+	if !strings.Contains(recallOutput, "Matched: 0; returned: 0") {
+		t.Fatalf("legacy memory index affected recall:\n%s", recallOutput)
+	}
+
+	localIdentity, _, err := createIdentity("Local Actor")
+	if err != nil {
+		t.Fatal(err)
+	}
+	localEvent, err := nextEvent(localIdentity, "issue.open")
+	if err != nil {
+		t.Fatal(err)
+	}
+	localEvent.Title = "publish active local event"
+	localStored, err := appendEvent(localEvent, localIdentity)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := cmdReplication([]string{"select", "origin", "--actor", remoteIdentity.Actor}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := captureTestOutput(t, func() error { return cmdReplication([]string{"show", "origin"}) }); err != nil {
+		t.Fatal(err)
+	}
+
+	reachedQuarantineBoundary := false
+	replicationAfterFetchHook = func() error {
+		reachedQuarantineBoundary = true
+		if got := snapshotLegacyPrivateTree(t, legacyRoot); !reflect.DeepEqual(got, legacyTreeBefore) {
+			t.Fatalf("legacy private tree changed during quarantine: before=%#v after=%#v", legacyTreeBefore, got)
+		}
+		return nil
+	}
+	output, err := captureTestOutput(t, func() error { return cmdSync([]string{"origin"}) })
+	if err != nil {
+		t.Fatalf("mixed-remote sync: %v\n%s", err, output)
+	}
+	if !reachedQuarantineBoundary {
+		t.Fatal("sync did not exercise the quarantine transaction")
+	}
+	assertRefValue(t, acceptedActorRef("origin", remoteIdentity.Actor), remoteStored.Commit)
+	if got := mustGitText(t, "ls-remote", "--refs", remote, actorRef(localIdentity.Actor)); !strings.Contains(got, localStored.Commit+"\t"+actorRef(localIdentity.Actor)) {
+		t.Fatalf("active local actor was not published: %q", got)
+	}
+	if got := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh"); got != localLegacyRefsBefore {
+		t.Fatalf("legacy local refs changed:\nbefore %s\nafter  %s", localLegacyRefsBefore, got)
+	}
+	if got := mustGitText(t, "ls-remote", "--refs", remote, "refs/nh/*"); got != remoteLegacyRefsBefore {
+		t.Fatalf("legacy remote refs changed:\nbefore %s\nafter  %s", remoteLegacyRefsBefore, got)
+	}
+	if got := snapshotLegacyPrivateTree(t, legacyRoot); !reflect.DeepEqual(got, legacyTreeBefore) {
+		t.Fatalf("legacy private tree changed after sync: before=%#v after=%#v", legacyTreeBefore, got)
+	}
+	if refs := mustGitText(t, "for-each-ref", "--format=%(refname)", "refs/nh/remotes"); refs != "" {
+		t.Fatalf("sync projected active facts into legacy refs: %s", refs)
+	}
+	transactions, err := filepath.Glob(filepath.Join(receiver, ".git", "hn", "replication", "transactions", "*.json"))
+	if err != nil || len(transactions) != 1 {
+		t.Fatalf("active transaction records = %v, err=%v", transactions, err)
+	}
+	quarantines, err := filepath.Glob(filepath.Join(receiver, ".git", "hn", "replication", "quarantine", "txn-*"))
+	if err != nil || len(quarantines) != 0 {
+		t.Fatalf("active quarantine cleanup = %v, err=%v", quarantines, err)
+	}
+}
+
+func seedLegacyPrivateTree(t *testing.T, root string, identity *Identity) {
+	t.Helper()
+	encodedIdentity, err := json.Marshal(identity)
+	if err != nil {
+		t.Fatal(err)
+	}
+	files := map[string][]byte{
+		"identity.json": encodedIdentity,
+		filepath.Join("identities", identity.Actor+".json"): encodedIdentity,
+		"active":        []byte(identity.Actor + "\n"),
+		"rotation.json": []byte(`{"version":1,"legacy":true}` + "\n"),
+		filepath.Join("replication", "selections", "origin.json"):   []byte(`{"version":1,"legacy":true}` + "\n"),
+		filepath.Join("replication", "transactions", "legacy.json"): []byte(`{"version":1,"legacy":true}` + "\n"),
+		filepath.Join("replication", "anchors", "legacy.json"):      []byte(`{"version":1,"legacy":true}` + "\n"),
+		filepath.Join("memory", "index-v0.json"):                    []byte(`{"version":0,"legacy":true}` + "\n"),
+	}
+	for relative, contents := range files {
+		path := filepath.Join(root, relative)
+		if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, contents, 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+func snapshotLegacyPrivateTree(t *testing.T, root string) map[string]string {
+	t.Helper()
+	snapshot := make(map[string]string)
+	err := filepath.Walk(root, func(path string, info os.FileInfo, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		relative, err := filepath.Rel(root, path)
+		if err != nil {
+			return err
+		}
+		value := info.Mode().String()
+		if info.Mode().IsRegular() {
+			contents, err := os.ReadFile(path)
+			if err != nil {
+				return err
+			}
+			value += "\x00" + string(contents)
+		}
+		snapshot[relative] = value
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return snapshot
 }
 
 func TestCLINamespaceUsesHNOnly(t *testing.T) {

@@ -188,7 +188,7 @@ func cmdMerge(args []string) error {
 	if contained {
 		return fmt.Errorf("proposal head is already contained in branch %s", branch)
 	}
-	message := fmt.Sprintf("Merge NH proposal %s: %s", shortID(proposal.ID), oneLine(evaluation.DisplayTitle))
+	message := fmt.Sprintf("Merge HN proposal %s: %s", shortID(proposal.ID), oneLine(evaluation.DisplayTitle))
 	if _, err := gitOutput("merge", "--no-ff", "-m", message, proposal.Event.Head); err != nil {
 		if _, abortErr := gitOutput("merge", "--abort"); abortErr != nil {
 			return fmt.Errorf("merge failed and automatic abort also failed: %v; abort error: %v", err, abortErr)
