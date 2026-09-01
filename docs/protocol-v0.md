@@ -1,4 +1,4 @@
-# Nichthub protocol v0 experiment
+# Hubnot protocol v0 experiment
 
 This document records the format implemented by the operational alpha. It is a
 testable sketch, not a compatibility promise. Existing version-0 event payloads
@@ -54,7 +54,7 @@ version-0 field order is:
   "log": "<full-log-digest>",
   "backend": "sandbox",
   "platform": "linux/amd64",
-  "runner": "nichthub/0",
+  "runner": "nh/<version>",
   "policy": "<full-policy-digest>",
   "evidence": ["<full-evidence-event-id>"]
 }

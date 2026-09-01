@@ -1,3 +1,3 @@
-module nichthub
+module hubnot
 
 go 1.26

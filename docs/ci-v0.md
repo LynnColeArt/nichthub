@@ -1,6 +1,6 @@
 # CI and runner v0
 
-Nichthub CI separates coordination from computation:
+Hubnot CI separates coordination from computation:
 
 ```text
 signed proposal

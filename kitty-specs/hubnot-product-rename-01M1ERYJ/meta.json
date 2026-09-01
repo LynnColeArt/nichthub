@@ -18,7 +18,7 @@
   "flattened": false,
   "friendly_name": "hubnot product rename",
   "mission_id": "01M1ERYJE0W7FZ2EP94WKTEQ7V",
-  "mission_number": null,
+  "mission_number": 1,
   "mission_slug": "hubnot-product-rename-01M1ERYJ",
   "mission_type": "software-dev",
   "purpose_context": "This mission advances the Hubnot product rename on a dedicated feature branch for governed landing into main.",
