@@ -58,7 +58,8 @@
       "last_transition_at": "2026-09-01T15:56:45.157847+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "Ready for review: Hubnot documentation, active metadata, current URLs, and runner example updated with nh compatibility and historical records preserved"
+        "Ready for review: Hubnot documentation, active metadata, current URLs, and runner example updated with nh compatibility and historical records preserved",
+        "Review passed: active documentation and metadata consistently use Hubnot; current URLs use LynnColeArt/hubnot; protocol runner example matches nh/<version>; frozen nh namespaces, project UUID/node/build identity, journals, signed history, and completed mission evidence remain unchanged; owned diff is narrow and whitespace-clean."
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
