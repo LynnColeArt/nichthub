@@ -17,6 +17,7 @@ const replicationSelectionVersion = 1
 const (
 	replicationActor    = "actor"
 	replicationProposal = "proposal"
+	replicationMemory   = "memory"
 )
 
 var errShallowRecoveryUnavailable = errors.New("selected shallow recovery is not available until WP05")
@@ -63,6 +64,7 @@ type ReplicationSelection struct {
 	Remote    string             `json:"remote"`
 	Actors    []string           `json:"actors"`
 	Proposals []string           `json:"proposals"`
+	Memories  []string           `json:"memories,omitempty"`
 	All       bool               `json:"all"`
 	Budgets   ReplicationBudgets `json:"budgets"`
 }
@@ -116,11 +118,11 @@ func validateReplicationSelection(selection ReplicationSelection) error {
 	if err := selection.Budgets.validate(); err != nil {
 		return err
 	}
-	if selection.All && (len(selection.Actors) != 0 || len(selection.Proposals) != 0) {
-		return fmt.Errorf("--all is mutually exclusive with actor and proposal selectors")
+	if selection.All && (len(selection.Actors) != 0 || len(selection.Proposals) != 0 || len(selection.Memories) != 0) {
+		return fmt.Errorf("--all is mutually exclusive with actor, proposal, and memory selectors")
 	}
-	if !selection.All && len(selection.Actors) == 0 && len(selection.Proposals) == 0 {
-		return fmt.Errorf("replication selection requires at least one actor or proposal, or explicit --all")
+	if !selection.All && len(selection.Actors) == 0 && len(selection.Proposals) == 0 && len(selection.Memories) == 0 {
+		return fmt.Errorf("replication selection requires at least one actor, proposal, or memory, or explicit --all")
 	}
 	seen := make(map[string]string)
 	for _, actor := range selection.Actors {
@@ -141,6 +143,16 @@ func validateReplicationSelection(selection ReplicationSelection) error {
 		}
 		seen[proposal] = replicationProposal
 	}
+	seenMemories := make(map[string]bool)
+	for _, stream := range selection.Memories {
+		if !validMemoryStreamID(stream) {
+			return fmt.Errorf("memory selector %q must be a full memory stream ID", stream)
+		}
+		if seenMemories[stream] {
+			return fmt.Errorf("duplicate memory selector %s", stream)
+		}
+		seenMemories[stream] = true
+	}
 	return nil
 }
 
@@ -150,6 +162,7 @@ func saveReplicationSelection(selection ReplicationSelection) error {
 	}
 	sort.Strings(selection.Actors)
 	sort.Strings(selection.Proposals)
+	sort.Strings(selection.Memories)
 	path, err := replicationSelectionPath(selection.Remote)
 	if err != nil {
 		return err
@@ -235,9 +248,10 @@ func cmdReplicationSelect(args []string) error {
 	}
 	budgets := defaultReplicationBudgets()
 	flags := quietFlags("replication select")
-	var actors, proposals repeatedStringFlag
+	var actors, proposals, memories repeatedStringFlag
 	flags.Var(&actors, "actor", "full actor fingerprint")
 	flags.Var(&proposals, "proposal", "full candidate event ID")
+	flags.Var(&memories, "memory", "full memory stream ID")
 	all := flags.Bool("all", false, "select all advertised Nichthub refs")
 	flags.Int64Var(&budgets.MaxEvents, "max-events", budgets.MaxEvents, "maximum actor events")
 	flags.Int64Var(&budgets.MaxObjects, "max-objects", budgets.MaxObjects, "maximum reachable objects")
@@ -248,10 +262,10 @@ func cmdReplicationSelect(args []string) error {
 		return err
 	}
 	if flags.NArg() != 0 {
-		return usageError("usage: nh replication select [REMOTE] [--actor ACTOR]... [--proposal ID]... [--all] [budgets]")
+		return usageError("usage: nh replication select [REMOTE] [--actor ACTOR]... [--proposal ID]... [--memory STREAM]... [--all] [budgets]")
 	}
 	selection := ReplicationSelection{
-		Version: replicationSelectionVersion, Remote: remote, Actors: actors, Proposals: proposals, All: *all, Budgets: budgets,
+		Version: replicationSelectionVersion, Remote: remote, Actors: actors, Proposals: proposals, Memories: memories, All: *all, Budgets: budgets,
 	}
 	if err := saveReplicationSelection(selection); err != nil {
 		return err
@@ -284,6 +298,9 @@ func printReplicationSelection(selection ReplicationSelection, explicit bool) er
 	}
 	for _, proposal := range selection.Proposals {
 		fmt.Printf("proposal: %s\n", proposal)
+	}
+	for _, stream := range selection.Memories {
+		fmt.Printf("memory: %s\n", stream)
 	}
 	fmt.Printf("max-events: %d\n", selection.Budgets.MaxEvents)
 	fmt.Printf("max-objects: %d\n", selection.Budgets.MaxObjects)
