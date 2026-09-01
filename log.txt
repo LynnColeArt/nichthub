@@ -1,6 +1,0 @@
-Hubnot pipeline test
-Commit ededa84683caa1dfeed028e5938e61c00e2b588b
-Backend sandbox
-
-[1/1] Go tests
-ok  	hubnot	60.365s
