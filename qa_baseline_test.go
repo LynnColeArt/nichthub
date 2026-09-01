@@ -28,7 +28,7 @@ func setupTrustIDFixture(t *testing.T) trustIDFixture {
 		Version:     policyVersion,
 		Maintainers: []string{identity.Actor},
 		Proposals: ProposalPolicy{
-			RequiredApprovals:   0,
+			RequiredApprovals:   1,
 			RequiredAccepts:     1,
 			TrustedReviewers:    []string{identity.Actor},
 			AllowAuthorApproval: true,
@@ -131,6 +131,26 @@ func TestTrustBearingFullIDsAndDisplayPrefixesRemainDistinct(t *testing.T) {
 	}
 	if _, err := captureTestOutput(t, func() error { return cmdIssueShow(shortID(fixture.issue.ID)) }); err != nil {
 		t.Fatalf("display-only issue prefix: %v", err)
+	}
+}
+
+func TestDecisionRecoveryHintUsesExecutableFullProposalID(t *testing.T) {
+	fixture := setupTrustIDFixture(t)
+	err := cmdDecide([]string{fixture.proposal.ID, "--accept"})
+	if err == nil {
+		t.Fatal("not-ready decision unexpectedly succeeded")
+	}
+	const commandPrefix = "hn proposal status "
+	start := strings.Index(err.Error(), commandPrefix)
+	if start < 0 {
+		t.Fatalf("decision recovery diagnostic lacks status command: %v", err)
+	}
+	suggested := strings.Trim(strings.Fields(err.Error()[start+len(commandPrefix):])[0], "'\"")
+	if suggested != fixture.proposal.ID {
+		t.Fatalf("decision recovery suggested %q, want full proposal ID %q", suggested, fixture.proposal.ID)
+	}
+	if _, statusErr := captureTestOutput(t, func() error { return cmdProposalStatus(suggested) }); statusErr != nil {
+		t.Fatalf("suggested recovery command was not executable: %v", statusErr)
 	}
 }
 
@@ -271,6 +291,72 @@ func TestMergeRetryRepairsMissingEventAndIsIdempotent(t *testing.T) {
 	}
 	if got := len(mergeEventsForProposal(events, fixture.proposal.ID)); got != 1 {
 		t.Fatalf("idempotent retry created %d merge facts", got)
+	}
+}
+
+func TestShallowMergeRetryRepairsMissingEventWithAppendCAS(t *testing.T) {
+	fixture := setupMergeRepairFixture(t)
+	mergeCommit := crashAfterCodeMerge(t, fixture)
+	shallowPath := mustGitText(t, "rev-parse", "--git-path", "shallow")
+	if err := os.WriteFile(shallowPath, []byte(fixture.proposal.Event.Base+"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	shallow, err := repositoryIsShallow()
+	if err != nil || !shallow {
+		t.Fatalf("fixture is not shallow: shallow=%t err=%v", shallow, err)
+	}
+
+	gitDir := mustGitText(t, "rev-parse", "--absolute-git-dir")
+	lock := filepath.Join(gitDir, "refs", "hn", "actors", fixture.maintainer.Actor+".lock")
+	if err := os.WriteFile(lock, []byte("inject reconciliation append failure\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	lockedErr := cmdMerge([]string{fixture.proposal.ID})
+	if lockedErr == nil || !strings.Contains(lockedErr.Error(), "merge event repair") {
+		t.Fatalf("shallow repair with append lock = %v, want retryable repair failure", lockedErr)
+	}
+	if err := os.Remove(lock); err != nil {
+		t.Fatal(err)
+	}
+	if got := mustGitText(t, "rev-parse", "HEAD"); got != mergeCommit {
+		t.Fatalf("failed shallow repair advanced HEAD to %s, want %s", got, mergeCommit)
+	}
+	events, err := collectEvents()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := len(mergeEventsForProposal(events, fixture.proposal.ID)); got != 0 {
+		t.Fatalf("failed shallow repair published %d merge facts", got)
+	}
+
+	output, err := captureTestOutput(t, func() error { return cmdMerge([]string{fixture.proposal.ID}) })
+	if err != nil {
+		t.Fatalf("shallow repair retry: %v", err)
+	}
+	if !strings.Contains(output, "Recorded missing merge event") {
+		t.Fatalf("shallow repair output did not identify reconciliation:\n%s", output)
+	}
+	if got := mustGitText(t, "rev-parse", "HEAD"); got != mergeCommit {
+		t.Fatalf("shallow repair reran or advanced the code merge: HEAD=%s want=%s", got, mergeCommit)
+	}
+	events, err = collectEvents()
+	if err != nil {
+		t.Fatal(err)
+	}
+	merges := mergeEventsForProposal(events, fixture.proposal.ID)
+	if len(merges) != 1 || merges[0].Event.Commit != mergeCommit || merges[0].Event.Head != fixture.proposal.Event.Head ||
+		merges[0].Event.Policy != fixture.decision.Event.Policy || len(merges[0].Event.Evidence) != 1 || merges[0].Event.Evidence[0] != fixture.decision.ID {
+		t.Fatalf("shallow repaired merge facts = %#v", merges)
+	}
+	if err := cmdMerge([]string{fixture.proposal.ID}); err == nil || !strings.Contains(err.Error(), "already recorded as merged") {
+		t.Fatalf("idempotent shallow retry = %v", err)
+	}
+	events, err = collectEvents()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := len(mergeEventsForProposal(events, fixture.proposal.ID)); got != 1 {
+		t.Fatalf("idempotent shallow retry created %d merge facts", got)
 	}
 }
 

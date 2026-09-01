@@ -63,7 +63,7 @@ func cmdDecide(args []string) error {
 		return fmt.Errorf("identity %s is not a maintainer under policy %s", shortID(identity.Actor), shortID(evaluation.PolicyDigest))
 	}
 	if *accept && !evaluation.Ready {
-		return fmt.Errorf("proposal is not ready; run 'hn proposal status %s' for missing evidence", shortID(proposal.ID))
+		return fmt.Errorf("proposal is not ready; run 'hn proposal status %s' for missing evidence", proposal.ID)
 	}
 	if *accept {
 		currentEvents, err := collectEvents()
@@ -85,7 +85,7 @@ func cmdDecide(args []string) error {
 			return err
 		}
 		if !currentEvaluation.Ready {
-			return fmt.Errorf("proposal is not ready; run 'hn proposal status %s' for missing evidence", shortID(proposal.ID))
+			return fmt.Errorf("proposal is not ready; run 'hn proposal status %s' for missing evidence", proposal.ID)
 		}
 		evaluation = currentEvaluation
 	}

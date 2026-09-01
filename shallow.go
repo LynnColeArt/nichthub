@@ -1655,7 +1655,7 @@ func verifyShallowOperation(scope shallowVerificationScope) error {
 		if err := guardMergeAncestry(scope.Operation, proposal, current); err != nil {
 			return err
 		}
-		contained, missing, err := exactCommitAncestorUntil(proposal.Event.Head, current, proposal.Event.Base)
+		_, missing, err := exactCommitAncestorUntil(proposal.Event.Head, current, proposal.Event.Base)
 		if err != nil {
 			return err
 		}
@@ -1664,9 +1664,6 @@ func verifyShallowOperation(scope shallowVerificationScope) error {
 				Operation: scope.Operation, Kind: shallowMergeAncestor, MissingID: missing,
 				ObjectType: "commit", OwnerKind: replicationProposal, OwnerID: proposal.ID,
 			}, fmt.Errorf("exact proposal containment requires unavailable parent %s", missing))
-		}
-		if contained {
-			return fmt.Errorf("proposal head is already contained in current branch")
 		}
 		return nil
 	case "proposal open", "proposal revision":
