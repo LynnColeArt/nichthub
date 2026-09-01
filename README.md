@@ -1,8 +1,8 @@
-# Nichthub
+# Hubnot
 
-Nichthub is an experiment in distributing collaboration with a Git repository.
-Git distributes the work; Nichthub distributes the signed intent, discussion,
-policy, and evidence around it. There is no Nichthub service or database: an
+Hubnot is an experiment in distributing collaboration with a Git repository.
+Git distributes the work; Hubnot distributes the signed intent, discussion,
+policy, and evidence around it. There is no Hubnot service or database: an
 ordinary Git remote transports both code and `refs/nh/*` collaboration facts.
 
 The current operational alpha supports signed issues, immutable proposal
@@ -14,10 +14,10 @@ multi-tenant system.
 
 ## Project status
 
-The initial operational-alpha roadmap is complete. Nichthub has used its own
+The initial operational-alpha roadmap is complete. Hubnot has used its own
 published protocol to revise, independently sandbox-test, approve, accept, and
 merge changes into public `main`. An ordinary Git remote carried the code and
-signed collaboration refs; it did not supply Nichthub-specific governance or
+signed collaboration refs; it did not supply Hubnot-specific governance or
 CI services.
 
 "Alpha complete" means the end-to-end protocol boundary documented here is
@@ -141,7 +141,7 @@ Each selected ref is fetched into a separate bare quarantine repository,
 measured and verified, then promoted to `refs/nh/remotes/<remote>/*` in one
 atomic ref transaction. Independently valid selections may promote when
 another selected history fails. Standard Git can download a selected pack
-before Nichthub measures it, so these are hard validation, promotion, and
+before Hubnot measures it, so these are hard validation, promotion, and
 retention limits—not portable pre-download network quotas.
 
 A trust-sensitive command in a depth-limited clone reports a full missing ID
@@ -155,7 +155,7 @@ This never performs a global unshallow and never silently adds a selector.
 
 ## Record and recall agent memory
 
-Nichthub can carry deliberate project cognition without a hosted memory
+Hubnot can carry deliberate project cognition without a hosted memory
 service. `nh-memory/0` is separate from the collaboration protocol: each actor
 owns append-only memory streams under `refs/nh/memory/*`, while private keys,
 replication selections, and the rebuildable lexical index stay below
@@ -241,7 +241,7 @@ nh run execute <full-run-request-event-id> \
   --allow-unsafe-host-execution
 ```
 
-If Git reports a merge conflict, resolve it outside Nichthub and publish a new
+If Git reports a merge conflict, resolve it outside Hubnot and publish a new
 immutable revision. The predecessor and all prior evidence remain unchanged;
 the revision needs its own exact review, CI, and acceptance evidence:
 

@@ -252,7 +252,7 @@ func cmdReplicationSelect(args []string) error {
 	flags.Var(&actors, "actor", "full actor fingerprint")
 	flags.Var(&proposals, "proposal", "full candidate event ID")
 	flags.Var(&memories, "memory", "full memory stream ID")
-	all := flags.Bool("all", false, "select all advertised Nichthub refs")
+	all := flags.Bool("all", false, "select all advertised Hubnot refs")
 	flags.Int64Var(&budgets.MaxEvents, "max-events", budgets.MaxEvents, "maximum actor events")
 	flags.Int64Var(&budgets.MaxObjects, "max-objects", budgets.MaxObjects, "maximum reachable objects")
 	flags.Int64Var(&budgets.MaxObjectBytes, "max-object-bytes", budgets.MaxObjectBytes, "maximum individual object bytes")

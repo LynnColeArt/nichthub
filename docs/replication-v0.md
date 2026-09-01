@@ -1,6 +1,6 @@
 # Selected replication and shallow recovery v0
 
-Nichthub imports collaboration facts through an explicit validate-before-
+Hubnot imports collaboration facts through an explicit validate-before-
 promotion transaction. Selection controls which remote histories may enter the
 local accepted projection; project policy independently controls whose valid
 claims qualify as authority.
@@ -52,7 +52,7 @@ explicit saved selection remains authoritative until replaced.
 
 ## Exact fetch and quarantine lifecycle
 
-For each selected actor, Nichthub requests exactly:
+For each selected actor, Hubnot requests exactly:
 
 ```text
 +refs/nh/actors/<full-actor>:refs/nh/quarantine/actors/<full-actor>
@@ -129,7 +129,7 @@ of `N-1` rejects, `N` accepts, and `N+1` accepts. A rejected selection reports
 the full selected ID, budget name, configured value, and measured value, and
 its accepted ref does not advance.
 
-Standard Git may receive the selected pack before Nichthub can measure its
+Standard Git may receive the selected pack before Hubnot can measure its
 contents. These are hard validation, promotion, accepted-projection, and
 retention boundaries. They are not portable hard pre-download network, CPU,
 memory, or disk quotas.

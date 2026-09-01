@@ -217,7 +217,7 @@ func TestPolicyCheckRejectsInvalidSidesWithoutMutation(t *testing.T) {
 				t.Fatalf("tracked working tree changed: before %q, after %q", beforeStatus, got)
 			}
 			if got := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh"); got != beforeRefs {
-				t.Fatalf("Nichthub refs changed: before %q, after %q", beforeRefs, got)
+				t.Fatalf("Hubnot refs changed: before %q, after %q", beforeRefs, got)
 			}
 			afterDraft, err := os.ReadFile(draft)
 			if err != nil {

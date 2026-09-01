@@ -3,7 +3,7 @@ mission: software-dev
 profile: minimal
 answers:
   project_intent: >-
-    Build Nichthub as the distributed collaboration protocol that complements
+    Build Hubnot as the distributed collaboration protocol that complements
     Git: repository-native, server-independent issues, proposals, reviews,
     policy decisions, and CI attestations whose history is signed, portable,
     and independently verifiable.
@@ -22,7 +22,7 @@ answers:
     changes, and Spec Kitty review before a work package is approved.
   review_policy: >-
     Develop on focused feature branches with narrowly staged commits. Review
-    each Spec Kitty work package before approval; when Nichthub can represent
+    each Spec Kitty work package before approval; when Hubnot can represent
     the change itself, also dogfood its signed proposal, review, CI, decision,
     and merge path without treating self-approval as proof of independent trust.
   performance_targets: >-

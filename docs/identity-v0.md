@@ -194,5 +194,5 @@ The operational alpha does not implement:
 - a claim that distinct keys prove distinct people.
 
 Published continuity facts are immutable and may be superseded or made
-ambiguous by later facts. Nichthub cannot remove copies already replicated by
+ambiguous by later facts. Hubnot cannot remove copies already replicated by
 others.
