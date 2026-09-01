@@ -1,0 +1,7 @@
+evidence_id,source_id,finding,decision_supported,location
+E001,S001,"The operator renamed the public repository and selected Hubnot as the current product name.","Rename current product surfaces and hosted URLs to Hubnot.","mission spec"
+E002,S002,"Signed protocols refs storage paths policy formats memory formats and CLI automation use nh-prefixed exact strings.","Preserve nh compatibility namespaces; do not turn the brand rename into a protocol migration.","event.go; memory_event.go; README.md"
+E003,S003,"The former product name appears in maintained prose runtime messages module identity and hosted URLs.","Classify and rename all active user-facing and module occurrences.","occurrence inventory in plan.md"
+E004,S004,"Canonical and mission event journals record literal historical slugs paths and prose.","Keep append-only journals and completed mission evidence unchanged.","occurrence_map.yaml exceptions"
+E005,S002,"CI result events use nh/<version> while the protocol guide carries an obsolete branded runner example.","Correct the guide to nh/0.0.1-dev without changing the runner namespace.","ci.go; docs/protocol-v0.md"
+E006,S005,"The pre-rename public commit passes build vet formatting race and live binary smoke tests.","Use 7dcfbc1 as the behavioral baseline and rerun the same gates after the rename.","QA review"
