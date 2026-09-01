@@ -521,7 +521,7 @@ func executePipeline(parentContext context.Context, commit, pipelineName string,
 	if backend.Name() == "sandbox" {
 		environment = runnerEnvironment("/home/nh", "/tmp", commit, sandboxPath())
 	}
-	fmt.Fprintf(logs, "Nichthub pipeline %s\nCommit %s\nBackend %s\n", pipelineName, commit, backend.Name())
+	fmt.Fprintf(logs, "Hubnot pipeline %s\nCommit %s\nBackend %s\n", pipelineName, commit, backend.Name())
 	for index, step := range pipeline.Steps {
 		fmt.Fprintf(logs, "\n[%d/%d] %s\n", index+1, len(pipeline.Steps), step.Name)
 		timeout := step.TimeoutSeconds
@@ -593,7 +593,7 @@ func (log *cappedLog) Write(data []byte) (int, error) {
 func (log *cappedLog) Bytes() []byte {
 	result := append([]byte(nil), log.buffer.Bytes()...)
 	if log.truncated {
-		result = append(result, []byte("\n[log truncated by Nichthub]\n")...)
+		result = append(result, []byte("\n[log truncated by Hubnot]\n")...)
 	}
 	return result
 }

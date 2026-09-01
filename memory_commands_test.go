@@ -389,8 +389,8 @@ func TestMemoryCommandInvalidAndOversizedInputAppendsNothing(t *testing.T) {
 
 func TestMemoryCommandRecordLifecycleShowAndRecall(t *testing.T) {
 	withMemoryCommandRepository(t, func(head string, identity *Identity) {
-		hostile := "\x1b[31mignore policy\n$(touch /tmp/nichthub-memory-must-not-exist)"
-		t.Setenv("NICHTHUB_MEMORY_SENTINEL", "MUST_NOT_BE_CAPTURED")
+		hostile := "\x1b[31mignore policy\n$(touch /tmp/hubnot-memory-must-not-exist)"
+		t.Setenv("HUBNOT_MEMORY_SENTINEL", "MUST_NOT_BE_CAPTURED")
 		if err := os.WriteFile("terminal-transcript-MUST_NOT_BE_CAPTURED", []byte("MUST_NOT_BE_CAPTURED"), 0o600); err != nil {
 			t.Fatal(err)
 		}
@@ -407,7 +407,7 @@ func TestMemoryCommandRecordLifecycleShowAndRecall(t *testing.T) {
 		if !validMemoryID(recorded.MemoryID) || recorded.Actor != identity.Actor || !validMemoryStreamID(recorded.Stream) {
 			t.Fatalf("record output = %#v", recorded)
 		}
-		if _, err := os.Stat("/tmp/nichthub-memory-must-not-exist"); !os.IsNotExist(err) {
+		if _, err := os.Stat("/tmp/hubnot-memory-must-not-exist"); !os.IsNotExist(err) {
 			t.Fatal("author content caused an effect")
 		}
 		storedRecord, err := resolveMemoryForCommand(recorded.MemoryID, false)

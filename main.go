@@ -62,7 +62,7 @@ func run(args []string) error {
 }
 
 func printUsage() {
-	fmt.Print(`Nichthub distributes collaboration with a Git repository.
+	fmt.Print(`Hubnot distributes collaboration with a Git repository.
 
 Usage:
   nh init [--name NAME]
