@@ -41,3 +41,6 @@ exceptions:
   - path: "kitty-specs/hubnot-product-rename-01M1ERYJ/occurrence_map.yaml"
     action: do_not_change
     reason: "The classification artifact must name the exact source term it governs."
+  - path: "kitty-specs/hubnot-product-rename-01M1ERYJ/tasks/**"
+    action: do_not_change
+    reason: "Implementation prompts must identify exact source strings and search commands while governing their removal from active product surfaces."
