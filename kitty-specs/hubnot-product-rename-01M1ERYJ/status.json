@@ -88,7 +88,8 @@
       "last_transition_at": "2026-09-01T16:28:11.091967+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "Ready for review: occurrence classification, immutable-history proof, full release gates, governed public landing, and credential-free clone all pass"
+        "Ready for review: occurrence classification, immutable-history proof, full release gates, governed public landing, and credential-free clone all pass",
+        "Review passed: exact candidate/proposal/public tree identity; complete historical occurrence classification; immutable journal blobs and 43-to-49 signed-event inclusion; append-only actor refs; governed IDs; compatibility-focused gates; credential-free public clone/build/help/operational scenarios; all requirement mappings and WP anti-pattern checks pass."
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
