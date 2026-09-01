@@ -144,11 +144,11 @@ func memoryIndexPathAtGitDir(gitDir string) (string, error) {
 	if info.Mode()&os.ModeSymlink != 0 || !info.IsDir() {
 		return "", fmt.Errorf("memory index Git directory is unsafe")
 	}
-	return filepath.Join(gitDir, "nh", "memory", "index-v0.json"), nil
+	return filepath.Join(gitDir, "hn", "memory", "index-v0.json"), nil
 }
 
 func ensureMemoryIndexDirectory(gitDir string) error {
-	for _, directory := range []string{filepath.Join(gitDir, "nh"), filepath.Join(gitDir, "nh", "memory")} {
+	for _, directory := range []string{filepath.Join(gitDir, "hn"), filepath.Join(gitDir, "hn", "memory")} {
 		if err := ensurePrivateDirectory(directory); err != nil {
 			return fmt.Errorf("prepare private memory index directory: %w", err)
 		}
@@ -157,7 +157,7 @@ func ensureMemoryIndexDirectory(gitDir string) error {
 }
 
 func validateMemoryIndexDirectory(gitDir string) error {
-	for _, directory := range []string{filepath.Join(gitDir, "nh"), filepath.Join(gitDir, "nh", "memory")} {
+	for _, directory := range []string{filepath.Join(gitDir, "hn"), filepath.Join(gitDir, "hn", "memory")} {
 		info, err := os.Lstat(directory)
 		if err != nil {
 			return err
@@ -183,7 +183,7 @@ func memoryIndexSourceFingerprint(sources []memoryIndexSource, policyDigest stri
 		return ordered[i].Head < ordered[j].Head
 	})
 	var preimage bytes.Buffer
-	writeMemoryIndexFingerprintPart(&preimage, "nh-memory-index-source-v0")
+	writeMemoryIndexFingerprintPart(&preimage, "hn-memory-index-source-v0")
 	writeMemoryIndexFingerprintPart(&preimage, policyDigest)
 	seen := make(map[string]bool, len(ordered))
 	for _, source := range ordered {
@@ -225,7 +225,7 @@ func validateMemoryIndexSourceIdentity(source memoryIndexSource) error {
 }
 
 func collectMemoryIndexSourcesAt(gitDir string) ([]memoryIndexSource, error) {
-	text, err := gitTextAt(gitDir, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh/memory", "refs/nh/remotes")
+	text, err := gitTextAt(gitDir, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn/memory", "refs/hn/remotes")
 	if err != nil {
 		return nil, fmt.Errorf("collect verified memory sources: %w", err)
 	}

@@ -7,7 +7,7 @@ import (
 
 func cmdDecide(args []string) error {
 	if len(args) < 1 {
-		return usageError("usage: nh decide PROPOSAL <--accept|--reject> [--body TEXT]")
+		return usageError("usage: hn decide PROPOSAL <--accept|--reject> [--body TEXT]")
 	}
 	query := args[0]
 	flags := quietFlags("decide")
@@ -60,7 +60,7 @@ func cmdDecide(args []string) error {
 		return fmt.Errorf("identity %s is not a maintainer under policy %s", shortID(identity.Actor), shortID(evaluation.PolicyDigest))
 	}
 	if *accept && !evaluation.Ready {
-		return fmt.Errorf("proposal is not ready; run 'nh proposal status %s' for missing evidence", shortID(proposal.ID))
+		return fmt.Errorf("proposal is not ready; run 'hn proposal status %s' for missing evidence", shortID(proposal.ID))
 	}
 	if *accept {
 		currentEvents, err := collectEvents()
@@ -82,7 +82,7 @@ func cmdDecide(args []string) error {
 			return err
 		}
 		if !currentEvaluation.Ready {
-			return fmt.Errorf("proposal is not ready; run 'nh proposal status %s' for missing evidence", shortID(proposal.ID))
+			return fmt.Errorf("proposal is not ready; run 'hn proposal status %s' for missing evidence", shortID(proposal.ID))
 		}
 		evaluation = currentEvaluation
 	}
@@ -112,7 +112,7 @@ func cmdDecide(args []string) error {
 
 func cmdMerge(args []string) error {
 	if len(args) != 1 {
-		return usageError("usage: nh merge PROPOSAL")
+		return usageError("usage: hn merge PROPOSAL")
 	}
 	if err := prepareShallowVerification(shallowVerificationScope{Operation: "proposal merge", Subject: args[0]}); err != nil {
 		return err
@@ -193,7 +193,7 @@ func cmdMerge(args []string) error {
 		if _, abortErr := gitOutput("merge", "--abort"); abortErr != nil {
 			return fmt.Errorf("merge failed and automatic abort also failed: %v; abort error: %v", err, abortErr)
 		}
-		return fmt.Errorf("merge failed and was aborted for proposal %s; recover with 'nh proposal revise %s --base REV --head REV': %w", proposal.ID, proposal.ID, err)
+		return fmt.Errorf("merge failed and was aborted for proposal %s; recover with 'hn proposal revise %s --base REV --head REV': %w", proposal.ID, proposal.ID, err)
 	}
 	mergeCommit, err := resolveCommit("HEAD")
 	if err != nil {
@@ -218,7 +218,7 @@ func cmdMerge(args []string) error {
 }
 
 func requireLineageTerminalEligibility(operation, proposalID string, state proposalLineageState) error {
-	statusCommand := fmt.Sprintf("nh proposal status %s", proposalID)
+	statusCommand := fmt.Sprintf("hn proposal status %s", proposalID)
 	if state.MergeConflict {
 		return fmt.Errorf("cannot %s proposal %s: lineage has competing merges at %s; run '%s'", operation, proposalID, strings.Join(state.MergedCandidateIDs, ", "), statusCommand)
 	}

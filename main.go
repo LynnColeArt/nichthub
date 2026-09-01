@@ -10,7 +10,7 @@ const version = "0.0.1-dev"
 
 func main() {
 	if err := run(os.Args[1:]); err != nil {
-		fmt.Fprintf(os.Stderr, "nh: %v\n", err)
+		fmt.Fprintf(os.Stderr, "hn: %v\n", err)
 		os.Exit(1)
 	}
 }
@@ -57,7 +57,7 @@ func run(args []string) error {
 	case "log":
 		return cmdLog(args[1:])
 	default:
-		return fmt.Errorf("unknown command %q; run 'nh help'", args[0])
+		return fmt.Errorf("unknown command %q; run 'hn help'", args[0])
 	}
 }
 
@@ -65,42 +65,42 @@ func printUsage() {
 	fmt.Print(`Hubnot distributes collaboration with a Git repository.
 
 Usage:
-  nh init [--name NAME]
-  nh identity show|list|public|authorize|accept|rotate
-  nh memory record --kind KIND --at REV --applies MODE [record fields]
-  nh memory record --input FILE|- --json
-  nh memory handoff --at REV --applies MODE --input FILE|- --json
-  nh memory supersede MEMORY [record fields]
-  nh memory retract MEMORY --reason REASON
-  nh memory challenge MEMORY --reason REASON [--evidence TYPED-ID]...
-  nh memory show MEMORY [--json]
-  nh memory recall [filters] [bounds] [--json]
-  nh memory index rebuild|verify
-  nh issue open [--body TEXT] TITLE
-  nh issue comment ISSUE [--body TEXT] [TEXT]
-  nh issue list
-  nh issue show ISSUE
-  nh proposal open --base REV --head REV [--body TEXT] TITLE
-  nh proposal revise PREDECESSOR --base REV --head REV [--body TEXT]
-  nh proposal list
-  nh proposal show PROPOSAL
-  nh proposal status PROPOSAL
-  nh policy show [REV]
-  nh policy check --base REV <--head REV|--file PATH>
-  nh review PROPOSAL <--approve|--request-changes> [--body TEXT]
-  nh run request PROPOSAL PIPELINE
-  nh run list
-  nh run show REQUEST
-  nh run execute REQUEST [--backend sandbox|host]
-  nh run logs RESULT
-  nh runner once --accept-pipeline NAME --accept-actor ACTOR
-  nh runner watch --accept-pipeline NAME --accept-actor ACTOR
-  nh decide PROPOSAL <--accept|--reject> [--body TEXT]
-  nh merge PROPOSAL
-  nh replication select|show [REMOTE] [full actor fingerprints and event IDs] [budgets]
-  nh sync [REMOTE] [--recover-shallow]
-  nh log
-  nh version
+  hn init [--name NAME]
+  hn identity show|list|public|authorize|accept|rotate
+  hn memory record --kind KIND --at REV --applies MODE [record fields]
+  hn memory record --input FILE|- --json
+  hn memory handoff --at REV --applies MODE --input FILE|- --json
+  hn memory supersede MEMORY [record fields]
+  hn memory retract MEMORY --reason REASON
+  hn memory challenge MEMORY --reason REASON [--evidence TYPED-ID]...
+  hn memory show MEMORY [--json]
+  hn memory recall [filters] [bounds] [--json]
+  hn memory index rebuild|verify
+  hn issue open [--body TEXT] TITLE
+  hn issue comment ISSUE [--body TEXT] [TEXT]
+  hn issue list
+  hn issue show ISSUE
+  hn proposal open --base REV --head REV [--body TEXT] TITLE
+  hn proposal revise PREDECESSOR --base REV --head REV [--body TEXT]
+  hn proposal list
+  hn proposal show PROPOSAL
+  hn proposal status PROPOSAL
+  hn policy show [REV]
+  hn policy check --base REV <--head REV|--file PATH>
+  hn review PROPOSAL <--approve|--request-changes> [--body TEXT]
+  hn run request PROPOSAL PIPELINE
+  hn run list
+  hn run show REQUEST
+  hn run execute REQUEST [--backend sandbox|host]
+  hn run logs RESULT
+  hn runner once --accept-pipeline NAME --accept-actor ACTOR
+  hn runner watch --accept-pipeline NAME --accept-actor ACTOR
+  hn decide PROPOSAL <--accept|--reject> [--body TEXT]
+  hn merge PROPOSAL
+  hn replication select|show [REMOTE] [full actor fingerprints and event IDs] [budgets]
+  hn sync [REMOTE] [--recover-shallow]
+  hn log
+  hn version
 `)
 }
 

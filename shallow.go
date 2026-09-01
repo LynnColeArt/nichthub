@@ -121,7 +121,7 @@ func (pending *ReplicationAcceptancePendingError) Error() string {
 		parts = append(parts, "state=invalid")
 	}
 	if pending.Remote != "" {
-		parts = append(parts, "recovery=retry nh sync "+safeDiagnostic(pending.Remote)+" --recover-shallow")
+		parts = append(parts, "recovery=retry hn sync "+safeDiagnostic(pending.Remote)+" --recover-shallow")
 	} else {
 		parts = append(parts, "recovery=repair the local replication transaction record before retrying sync")
 	}
@@ -172,7 +172,7 @@ type replicationUnacceptedObjects struct {
 }
 
 func replicationUnacceptedObjectsPath(gitDir string) string {
-	return filepath.Join(gitDir, "nh", "replication", "unaccepted-objects.json")
+	return filepath.Join(gitDir, "hn", "replication", "unaccepted-objects.json")
 }
 
 func loadReplicationUnacceptedObjects(gitDir string) (map[string]bool, error) {
@@ -270,17 +270,17 @@ func replicationObjectIsUnaccepted(gitDir, objectID string) (bool, error) {
 }
 
 func replicationTransactionsPath(gitDir string) string {
-	return filepath.Join(gitDir, "nh", "replication", "transactions")
+	return filepath.Join(gitDir, "hn", "replication", "transactions")
 }
 
 func replicationAnchorsPath(gitDir string) string {
-	return filepath.Join(gitDir, "nh", "replication", "anchors")
+	return filepath.Join(gitDir, "hn", "replication", "anchors")
 }
 
 func ensureReplicationStateDirectory(gitDir, directory string) error {
 	for _, path := range []string{
-		filepath.Join(gitDir, "nh"),
-		filepath.Join(gitDir, "nh", "replication"),
+		filepath.Join(gitDir, "hn"),
+		filepath.Join(gitDir, "hn", "replication"),
 		directory,
 	} {
 		if err := ensurePrivateDirectory(path); err != nil {
@@ -291,7 +291,7 @@ func ensureReplicationStateDirectory(gitDir, directory string) error {
 }
 
 func readReplicationStateDirectory(gitDir, directory string) ([]os.DirEntry, bool, error) {
-	for _, path := range []string{filepath.Join(gitDir, "nh"), filepath.Join(gitDir, "nh", "replication")} {
+	for _, path := range []string{filepath.Join(gitDir, "hn"), filepath.Join(gitDir, "hn", "replication")} {
 		info, err := os.Lstat(path)
 		if errors.Is(err, os.ErrNotExist) {
 			return nil, false, nil
@@ -765,7 +765,7 @@ func shallowGapPath() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	root := filepath.Join(gitDir, "nh")
+	root := filepath.Join(gitDir, "hn")
 	if err := ensurePrivateDirectory(root); err != nil {
 		return "", err
 	}
@@ -842,15 +842,15 @@ func shallowRecoveryGuidance(dependency exactDependency) (string, string, string
 		remote = "origin"
 	}
 	if selected {
-		return remote, ref, "nh sync " + remote + " --recover-shallow", nil
+		return remote, ref, "hn sync " + remote + " --recover-shallow", nil
 	}
 	switch dependency.OwnerKind {
 	case replicationActor:
-		return remote, ref, "nh replication select " + remote + " --actor " + dependency.OwnerID + " (preserve existing selectors and budgets), then nh sync " + remote + " --recover-shallow", nil
+		return remote, ref, "hn replication select " + remote + " --actor " + dependency.OwnerID + " (preserve existing selectors and budgets), then hn sync " + remote + " --recover-shallow", nil
 	case replicationProposal:
-		return remote, ref, "nh replication select " + remote + " --proposal " + dependency.OwnerID + " (preserve existing selectors and budgets), then nh sync " + remote + " --recover-shallow", nil
+		return remote, ref, "hn replication select " + remote + " --proposal " + dependency.OwnerID + " (preserve existing selectors and budgets), then hn sync " + remote + " --recover-shallow", nil
 	case replicationMemory:
-		return remote, ref, "nh replication select " + remote + " --memory " + dependency.OwnerID + " (preserve existing selectors and budgets), then nh sync " + remote + " --recover-shallow", nil
+		return remote, ref, "hn replication select " + remote + " --memory " + dependency.OwnerID + " (preserve existing selectors and budgets), then hn sync " + remote + " --recover-shallow", nil
 	default:
 		switch dependency.Kind {
 		case shallowCandidateEvent, shallowRunRequest, shallowRunResult, shallowDecision, shallowSelectedFact, shallowActorPredecessor:
@@ -972,7 +972,7 @@ func guardShallowEventClosure(operation string) error {
 }
 
 func shallowAcceptedFacts(operation string) ([]shallowEventFact, error) {
-	refText, err := gitText("for-each-ref", "--format=%(refname) %(objectname)", "refs/nh/actors", "refs/nh/remotes")
+	refText, err := gitText("for-each-ref", "--format=%(refname) %(objectname)", "refs/hn/actors", "refs/hn/remotes")
 	if err != nil {
 		return nil, err
 	}
@@ -1048,7 +1048,7 @@ func collectAcceptedEventsForReplication(selection ReplicationSelection) ([]Stor
 	for _, actor := range selection.Actors {
 		selectedActors[actor] = true
 	}
-	refText, err := gitText("for-each-ref", "--format=%(refname) %(objectname)", "refs/nh/actors", "refs/nh/remotes")
+	refText, err := gitText("for-each-ref", "--format=%(refname) %(objectname)", "refs/hn/actors", "refs/hn/remotes")
 	if err != nil {
 		return nil, err
 	}
@@ -1230,7 +1230,7 @@ func releaseRecoveredShallowBoundaries(gitDir string, promotions []replicationPr
 	if len(updated) > 0 {
 		updated = append(updated, '\n')
 	}
-	temporary, err := os.CreateTemp(filepath.Dir(path), ".nh-shallow-*")
+	temporary, err := os.CreateTemp(filepath.Dir(path), ".hn-shallow-*")
 	if err != nil {
 		return err
 	}
@@ -1273,8 +1273,8 @@ func validateExactEventReferenceClosure(events []StoredEvent) error {
 }
 
 func shallowActorRefOwner(ref string) (actor, remote string, accepted bool) {
-	if strings.HasPrefix(ref, "refs/nh/actors/") {
-		actor = strings.TrimPrefix(ref, "refs/nh/actors/")
+	if strings.HasPrefix(ref, "refs/hn/actors/") {
+		actor = strings.TrimPrefix(ref, "refs/hn/actors/")
 		if validActorFingerprint(actor) {
 			return actor, "", false
 		}
@@ -1373,12 +1373,12 @@ func guardBasePolicy(operation, base, ownerKind, ownerID string) error {
 	}); err != nil {
 		return err
 	}
-	policyOID, exists, err := exactTreeEntry(base, ".nh/policy.json")
+	policyOID, exists, err := exactTreeEntry(base, ".hn/policy.json")
 	if err != nil {
 		return err
 	}
 	if !exists {
-		return fmt.Errorf("no .nh/policy.json at commit %s", base)
+		return fmt.Errorf("no .hn/policy.json at commit %s", base)
 	}
 	if err := requireExactDependency(exactDependency{
 		Operation: operation, Kind: shallowPolicyBlob, MissingID: policyOID,
@@ -1411,7 +1411,7 @@ func guardPipelineDefinition(operation, commit, name, ownerID, expectedDefinitio
 	}); err != nil {
 		return err
 	}
-	pipelineOID, exists, err := exactTreeEntry(commit, ".nh/pipelines/"+name+".json")
+	pipelineOID, exists, err := exactTreeEntry(commit, ".hn/pipelines/"+name+".json")
 	if err != nil {
 		return err
 	}

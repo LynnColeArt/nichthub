@@ -26,7 +26,7 @@ func TestProposalAndReviewStorage(t *testing.T) {
 
 	mustGit(t, "init", "-q", "-b", "main")
 	mustGit(t, "config", "user.name", "Test")
-	mustGit(t, "config", "user.email", "test@nh.invalid")
+	mustGit(t, "config", "user.email", "test@hn.invalid")
 	mustGit(t, "commit", "--allow-empty", "-q", "-m", "base")
 	base := mustGitText(t, "rev-parse", "HEAD")
 	mustGit(t, "commit", "--allow-empty", "-q", "-m", "feature")
@@ -155,7 +155,7 @@ func TestProposalRevisionCommandAndLineageInspection(t *testing.T) {
 
 	mustGit(t, "init", "-q", "-b", "main")
 	mustGit(t, "config", "user.name", "Test")
-	mustGit(t, "config", "user.email", "test@nh.invalid")
+	mustGit(t, "config", "user.email", "test@hn.invalid")
 	alice, _, err := createIdentity("Alice")
 	if err != nil {
 		t.Fatal(err)
@@ -170,7 +170,7 @@ func TestProposalRevisionCommandAndLineageInspection(t *testing.T) {
 		},
 		Pipelines: map[string]PipelinePolicy{},
 	})
-	mustGit(t, "add", ".nh/policy.json")
+	mustGit(t, "add", ".hn/policy.json")
 	mustGit(t, "commit", "-q", "-m", "base policy")
 	base := mustGitText(t, "rev-parse", "HEAD")
 	mustGit(t, "commit", "--allow-empty", "-q", "-m", "proposal head")
@@ -412,7 +412,7 @@ func TestProposalRevisionCommandAndLineageInspection(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		proposalRefDirectory := filepath.Join(gitDirectory, "refs", "nh", "proposals")
+		proposalRefDirectory := filepath.Join(gitDirectory, "refs", "hn", "proposals")
 		info, err := os.Stat(proposalRefDirectory)
 		if err != nil {
 			t.Fatal(err)
@@ -470,7 +470,7 @@ func TestProposalAndReviewSync(t *testing.T) {
 	}
 	mustGit(t, "-C", seed, "init", "-q", "-b", "main")
 	mustGit(t, "-C", seed, "config", "user.name", "Seed")
-	mustGit(t, "-C", seed, "config", "user.email", "seed@nh.invalid")
+	mustGit(t, "-C", seed, "config", "user.email", "seed@hn.invalid")
 	mustGit(t, "-C", seed, "commit", "--allow-empty", "-q", "-m", "base")
 	mustGit(t, "clone", "-q", "--bare", seed, remote)
 	mustGit(t, "clone", "-q", remote, aliceDirectory)
@@ -480,7 +480,7 @@ func TestProposalAndReviewSync(t *testing.T) {
 		t.Fatal(err)
 	}
 	mustGit(t, "config", "user.name", "Alice")
-	mustGit(t, "config", "user.email", "alice@nh.invalid")
+	mustGit(t, "config", "user.email", "alice@hn.invalid")
 	base := mustGitText(t, "rev-parse", "main")
 	mustGit(t, "switch", "-q", "-c", "feature")
 	mustGit(t, "commit", "--allow-empty", "-q", "-m", "feature")

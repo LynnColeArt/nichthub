@@ -22,7 +22,7 @@ func TestMemoryRefGrammarAndDefaultStream(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if want := "refs/nh/memory/" + actor + "/" + strings.TrimPrefix(stream, "sha256:"); local != want {
+	if want := "refs/hn/memory/" + actor + "/" + strings.TrimPrefix(stream, "sha256:"); local != want {
 		t.Fatalf("local ref = %q, want %q", local, want)
 	}
 	gotActor, gotStream, ok := parseMemoryRef(local)
@@ -42,7 +42,7 @@ func TestMemoryRefGrammarAndDefaultStream(t *testing.T) {
 		t.Fatal("accepted ref parsed as a local append ref")
 	}
 
-	goldenInput := []byte("nh-memory-stream-v0\x00" + actor + "\x00default")
+	goldenInput := []byte("hn-memory-stream-v0\x00" + actor + "\x00default")
 	goldenSum := sha256.Sum256(goldenInput)
 	wantDefault := "sha256:" + hex.EncodeToString(goldenSum[:])
 	if got := defaultMemoryStream(actor); got != wantDefault {
@@ -81,11 +81,11 @@ func TestMemoryRefRejectsHostileComponents(t *testing.T) {
 	}
 
 	badRefs := []string{
-		"refs/nh/memory/" + actor,
-		"refs/nh/memory/" + actor + "/" + strings.Repeat("a", 64) + "/extra",
-		"refs/nh/memory/" + strings.ToUpper(actor) + "/" + strings.Repeat("a", 64),
-		"refs/nh/remotes/origin/memory/" + actor,
-		"refs/nh/remotes/origin/memory/" + actor + "/" + strings.Repeat("A", 64),
+		"refs/hn/memory/" + actor,
+		"refs/hn/memory/" + actor + "/" + strings.Repeat("a", 64) + "/extra",
+		"refs/hn/memory/" + strings.ToUpper(actor) + "/" + strings.Repeat("a", 64),
+		"refs/hn/remotes/origin/memory/" + actor,
+		"refs/hn/remotes/origin/memory/" + actor + "/" + strings.Repeat("A", 64),
 	}
 	for _, ref := range badRefs {
 		if _, _, ok := parseMemoryRef(ref); ok {
@@ -168,7 +168,7 @@ func TestMemoryStoreCollectionIsCanonicalDeterministicAndIndependent(t *testing.
 		if len(beforeEvents) != 1 || beforeEvents[0].ID != storedEvent.ID {
 			t.Fatalf("collaboration fixture = %#v", beforeEvents)
 		}
-		beforeCollaborationRefs := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh/actors", "refs/nh/proposals")
+		beforeCollaborationRefs := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn/actors", "refs/hn/proposals")
 		if empty, err := collectMemories(); err != nil || len(empty) != 0 {
 			t.Fatalf("collaboration-only memory collection = %#v, %v", empty, err)
 		}
@@ -182,7 +182,7 @@ func TestMemoryStoreCollectionIsCanonicalDeterministicAndIndependent(t *testing.
 		mustGit(t, "update-ref", accepted, first.Commit)
 
 		gitDir := mustGitText(t, "rev-parse", "--absolute-git-dir")
-		privateDir := filepath.Join(gitDir, "nh", "memory")
+		privateDir := filepath.Join(gitDir, "hn", "memory")
 		if err := os.MkdirAll(privateDir, 0o700); err != nil {
 			t.Fatal(err)
 		}
@@ -210,7 +210,7 @@ func TestMemoryStoreCollectionIsCanonicalDeterministicAndIndependent(t *testing.
 		if err != nil || len(afterEvents) != 1 || afterEvents[0].ID != beforeEvents[0].ID || string(afterEvents[0].Payload) != string(beforeEvents[0].Payload) {
 			t.Fatalf("memory changed collaboration projection: before=%#v after=%#v err=%v", beforeEvents, afterEvents, err)
 		}
-		if refs := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh/actors", "refs/nh/proposals"); refs != beforeCollaborationRefs {
+		if refs := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn/actors", "refs/hn/proposals"); refs != beforeCollaborationRefs {
 			t.Fatalf("memory changed collaboration refs:\nbefore=%s\nafter=%s", beforeCollaborationRefs, refs)
 		}
 	})
@@ -233,7 +233,7 @@ func TestMemoryStoreSupportsSHA256GitObjectsWhenAvailable(t *testing.T) {
 		t.Skip("installed Git does not support SHA-256 repositories")
 	}
 	mustGit(t, "config", "user.name", "Test")
-	mustGit(t, "config", "user.email", "test@nh.invalid")
+	mustGit(t, "config", "user.email", "test@hn.invalid")
 	identity := deterministicMemoryIdentity()
 	stored, err := appendMemory(validMemoryEnvelopeFixture(memoryOperationRecord), identity)
 	if err != nil {
@@ -330,11 +330,11 @@ func TestMemoryStoreRejectsInvalidSignatureWithoutRefMutation(t *testing.T) {
 		commit := writeRawMemoryCommit(t, payload, badSignature, nil)
 		ref, _ := memoryRef(identity.Actor, envelope.Stream)
 		mustGit(t, "update-ref", ref, commit)
-		before := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh")
+		before := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn")
 		if _, err := collectMemories(); err == nil || !strings.Contains(err.Error(), "signature") {
 			t.Fatalf("invalid signature error = %v", err)
 		}
-		if after := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh"); after != before {
+		if after := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn"); after != before {
 			t.Fatalf("failed collection mutated refs:\nbefore=%s\nafter=%s", before, after)
 		}
 	})
@@ -720,7 +720,7 @@ func TestMemoryStoreNamespaceExplicitGitDirPendingAndNoncanonicalSources(t *test
 			unreferencedEnvelope.Record.Content = "unreferenced"
 			payload, signature := mustSignMemoryEnvelope(t, unreferencedEnvelope, identity)
 			unreferenced := writeRawMemoryCommit(t, payload, signature, nil)
-			mustGit(t, "update-ref", "refs/nh/quarantine/txn-memory/stream", unreferenced)
+			mustGit(t, "update-ref", "refs/hn/quarantine/txn-memory/stream", unreferenced)
 			trulyUnreferencedEnvelope := unreferencedEnvelope
 			trulyUnreferencedEnvelope.Timestamp = "2026-08-30T13:01:00Z"
 			trulyUnreferencedEnvelope.Record.Content = "truly-unreferenced"
@@ -764,7 +764,7 @@ func TestMemoryStoreCorruptionCannotAffectCollaborationOrExposePrivateSentinels(
 		if err != nil {
 			t.Fatal(err)
 		}
-		beforeRefs := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh/actors", "refs/nh/proposals")
+		beforeRefs := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn/actors", "refs/hn/proposals")
 
 		memoryIdentity := deterministicMemoryIdentity()
 		if _, exists, err := refValue(actorRef(memoryIdentity.Actor)); err != nil || exists {
@@ -780,12 +780,12 @@ func TestMemoryStoreCorruptionCannotAffectCollaborationOrExposePrivateSentinels(
 		if _, exists, err := refValue(actorRef(memoryIdentity.Actor)); err != nil || exists {
 			t.Fatalf("memory operations created collaboration actor ref: exists=%v err=%v", exists, err)
 		}
-		secret := "NH_PRIVATE_SENTINEL_84a2d992"
-		t.Setenv("NH_MEMORY_PRIVATE_SENTINEL", secret)
+		secret := "HN_PRIVATE_SENTINEL_84a2d992"
+		t.Setenv("HN_MEMORY_PRIVATE_SENTINEL", secret)
 		gitDir := mustGitText(t, "rev-parse", "--absolute-git-dir")
 		privateFiles := []string{
-			filepath.Join(gitDir, "nh", "identities", "sentinel-keyring.json"),
-			filepath.Join(gitDir, "nh", "memory", "index-v0.json"),
+			filepath.Join(gitDir, "hn", "identities", "sentinel-keyring.json"),
+			filepath.Join(gitDir, "hn", "memory", "index-v0.json"),
 			"private-working-memory.txt",
 		}
 		for _, name := range privateFiles {
@@ -801,19 +801,19 @@ func TestMemoryStoreCorruptionCannotAffectCollaborationOrExposePrivateSentinels(
 		badCommit := writeRawMemoryCommit(t, payload, signMemoryPayload(t, memoryIdentity, payload), nil)
 		ref, _ := memoryRef(memoryIdentity.Actor, storedMemory.Envelope.Stream)
 		mustGit(t, "update-ref", ref, badCommit, storedMemory.Commit)
-		allRefsBeforeFailure := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh")
+		allRefsBeforeFailure := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn")
 		_, memoryErr := collectMemories()
 		if memoryErr == nil || strings.Contains(memoryErr.Error(), secret) {
 			t.Fatalf("corrupt memory diagnostic = %v", memoryErr)
 		}
-		if refs := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh"); refs != allRefsBeforeFailure {
+		if refs := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn"); refs != allRefsBeforeFailure {
 			t.Fatalf("corrupt memory load changed refs:\nbefore=%s\nafter=%s", allRefsBeforeFailure, refs)
 		}
 		afterEvents, err := collectEvents()
 		if err != nil || len(afterEvents) != len(beforeEvents) || afterEvents[0].ID != storedEvent.ID || !bytes.Equal(afterEvents[0].Payload, beforeEvents[0].Payload) {
 			t.Fatalf("corrupt memory affected collaboration: %#v, %v", afterEvents, err)
 		}
-		if refs := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh/actors", "refs/nh/proposals"); refs != beforeRefs {
+		if refs := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn/actors", "refs/hn/proposals"); refs != beforeRefs {
 			t.Fatalf("corrupt memory changed collaboration refs:\nbefore=%s\nafter=%s", beforeRefs, refs)
 		}
 		mustGit(t, "update-ref", "-d", ref)
@@ -835,12 +835,12 @@ type memoryTreeFixture struct {
 
 func assertMemoryCollectionRejectedWithoutRefMutation(t *testing.T, want string) {
 	t.Helper()
-	before := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh")
+	before := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn")
 	_, err := collectMemories()
 	if err == nil || !strings.Contains(err.Error(), want) {
 		t.Fatalf("memory collection error = %v, want substring %q", err, want)
 	}
-	if after := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh"); after != before {
+	if after := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn"); after != before {
 		t.Fatalf("rejected memory changed refs:\nbefore=%s\nafter=%s", before, after)
 	}
 }
@@ -975,7 +975,7 @@ func withMemoryRepository(t *testing.T, run func()) {
 	}()
 	mustGit(t, "init", "-q", "-b", "main")
 	mustGit(t, "config", "user.name", "Test")
-	mustGit(t, "config", "user.email", "test@nh.invalid")
+	mustGit(t, "config", "user.email", "test@hn.invalid")
 	run()
 }
 

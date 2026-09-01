@@ -9,15 +9,15 @@ import (
 )
 
 func actorRef(actor string) string {
-	return "refs/nh/actors/" + actor
+	return "refs/hn/actors/" + actor
 }
 
 func proposalRef(id string) string {
-	return "refs/nh/proposals/" + strings.TrimPrefix(id, "sha256:")
+	return "refs/hn/proposals/" + strings.TrimPrefix(id, "sha256:")
 }
 
 func createProposalRef(id, head string) error {
-	if _, err := gitOutput("update-ref", "-m", "nh: publish proposal code", proposalRef(id), head, ""); err != nil {
+	if _, err := gitOutput("update-ref", "-m", "hn: publish proposal code", proposalRef(id), head, ""); err != nil {
 		return fmt.Errorf("create proposal ref: %w", err)
 	}
 	return nil
@@ -28,8 +28,8 @@ func proposalHead(id string) (string, bool, error) {
 	out, err := gitText(
 		"for-each-ref",
 		"--format=%(refname) %(objectname)",
-		"refs/nh/proposals",
-		"refs/nh/remotes",
+		"refs/hn/proposals",
+		"refs/hn/remotes",
 	)
 	if err != nil {
 		return "", false, err
@@ -38,7 +38,7 @@ func proposalHead(id string) (string, bool, error) {
 	fields := strings.Fields(out)
 	for index := 0; index+1 < len(fields); index += 2 {
 		ref, object := fields[index], fields[index+1]
-		matched := ref == "refs/nh/proposals/"+suffix
+		matched := ref == "refs/hn/proposals/"+suffix
 		if !matched {
 			_, acceptedID, ok := parseAcceptedProposalRef(ref)
 			matched = ok && acceptedID == id
@@ -124,11 +124,11 @@ func appendEventWithAttachments(event Event, identity *Identity, attachments map
 		return nil, err
 	}
 
-	commitArgs := []string{"commit-tree", strings.TrimSpace(string(tree)), "-m", "nh event " + id}
+	commitArgs := []string{"commit-tree", strings.TrimSpace(string(tree)), "-m", "hn event " + id}
 	if hasPrevious {
 		commitArgs = append(commitArgs, "-p", previousCommit)
 	}
-	email := shortID(identity.Actor) + "@nh.invalid"
+	email := shortID(identity.Actor) + "@hn.invalid"
 	env := []string{
 		"GIT_AUTHOR_NAME=" + identity.Name,
 		"GIT_AUTHOR_EMAIL=" + email,
@@ -141,7 +141,7 @@ func appendEventWithAttachments(event Event, identity *Identity, attachments map
 	}
 	commitID := strings.TrimSpace(string(commit))
 
-	updateArgs := []string{"update-ref", "-m", "nh: append " + event.Kind, ref, commitID}
+	updateArgs := []string{"update-ref", "-m", "hn: append " + event.Kind, ref, commitID}
 	if hasPrevious {
 		updateArgs = append(updateArgs, previousCommit)
 	} else {
@@ -240,7 +240,7 @@ func loadActorEventsAt(gitDir, head string) ([]StoredEvent, error) {
 }
 
 func collectEvents() ([]StoredEvent, error) {
-	refOutput, err := gitText("for-each-ref", "--format=%(refname) %(objectname)", "refs/nh/actors", "refs/nh/remotes")
+	refOutput, err := gitText("for-each-ref", "--format=%(refname) %(objectname)", "refs/hn/actors", "refs/hn/remotes")
 	if err != nil {
 		return nil, err
 	}
@@ -252,8 +252,8 @@ func collectEvents() ([]StoredEvent, error) {
 	fields := strings.Fields(refOutput)
 	for index := 0; index+1 < len(fields); index += 2 {
 		ref, head := fields[index], fields[index+1]
-		if strings.HasPrefix(ref, "refs/nh/actors/") {
-			actor := strings.TrimPrefix(ref, "refs/nh/actors/")
+		if strings.HasPrefix(ref, "refs/hn/actors/") {
+			actor := strings.TrimPrefix(ref, "refs/hn/actors/")
 			if !validActorFingerprint(actor) {
 				return nil, fmt.Errorf("invalid local actor ref %s", ref)
 			}

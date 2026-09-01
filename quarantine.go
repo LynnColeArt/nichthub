@@ -131,7 +131,7 @@ var (
 )
 
 func runReplicationProcessHook(step string) error {
-	if os.Getenv("NH_INTERNAL_TESTING") == "1" && os.Getenv("NH_TEST_REPLICATION_INTERRUPT_AFTER") == step {
+	if os.Getenv("HN_INTERNAL_TESTING") == "1" && os.Getenv("HN_TEST_REPLICATION_INTERRUPT_AFTER") == step {
 		return fmt.Errorf("injected replication interruption at %s", step)
 	}
 	return nil
@@ -142,15 +142,15 @@ func replicationPhaseError(remote, phase string) error {
 }
 
 func acceptedActorRef(remote, actor string) string {
-	return "refs/nh/remotes/" + remote + "/actors/" + actor
+	return "refs/hn/remotes/" + remote + "/actors/" + actor
 }
 
 func acceptedProposalRef(remote, proposal string) string {
-	return "refs/nh/remotes/" + remote + "/proposals/" + strings.TrimPrefix(proposal, "sha256:")
+	return "refs/hn/remotes/" + remote + "/proposals/" + strings.TrimPrefix(proposal, "sha256:")
 }
 
 func parseAcceptedActorRef(ref string) (string, string, bool) {
-	const prefix = "refs/nh/remotes/"
+	const prefix = "refs/hn/remotes/"
 	if !strings.HasPrefix(ref, prefix) {
 		return "", "", false
 	}
@@ -162,7 +162,7 @@ func parseAcceptedActorRef(ref string) (string, string, bool) {
 }
 
 func parseAcceptedProposalRef(ref string) (string, string, bool) {
-	const prefix = "refs/nh/remotes/"
+	const prefix = "refs/hn/remotes/"
 	if !strings.HasPrefix(ref, prefix) {
 		return "", "", false
 	}
@@ -195,8 +195,8 @@ func runReplicationTransaction(selection ReplicationSelection) (replicationTrans
 		return result, err
 	}
 	result.Outcomes = append(result.Outcomes, initialOutcomes...)
-	quarantineRoot := filepath.Join(mainGitDir, "nh", "replication", "quarantine")
-	for _, directory := range []string{filepath.Join(mainGitDir, "nh"), filepath.Join(mainGitDir, "nh", "replication"), quarantineRoot} {
+	quarantineRoot := filepath.Join(mainGitDir, "hn", "replication", "quarantine")
+	for _, directory := range []string{filepath.Join(mainGitDir, "hn"), filepath.Join(mainGitDir, "hn", "replication"), quarantineRoot} {
 		if err := ensurePrivateDirectory(directory); err != nil {
 			return result, replicationPhaseError(selection.Remote, "quarantine setup")
 		}
@@ -515,10 +515,10 @@ func runReplicationTransaction(selection ReplicationSelection) (replicationTrans
 		return result, shallowReleasePartialSuccessError(selection.Remote, mainGitDir, quarantineRoot, quarantineDir, promotions, err)
 	}
 	if err := runReplicationProcessHook("before-completion-receipt"); err != nil {
-		return result, fmt.Errorf("replication promotion succeeded for %d selection(s), but completion recording failed for remote %s; refs and shallow boundaries are committed, trust operations remain fail-closed; retry nh sync %s --recover-shallow", result.Promoted, selection.Remote, selection.Remote)
+		return result, fmt.Errorf("replication promotion succeeded for %d selection(s), but completion recording failed for remote %s; refs and shallow boundaries are committed, trust operations remain fail-closed; retry hn sync %s --recover-shallow", result.Promoted, selection.Remote, selection.Remote)
 	}
 	if err := replicationRecordTransaction(mainGitDir, result, "complete"); err != nil {
-		return result, fmt.Errorf("replication promotion succeeded for %d selection(s), but completion recording failed for remote %s; refs and shallow boundaries are committed, trust operations remain fail-closed; retry nh sync %s --recover-shallow", result.Promoted, selection.Remote, selection.Remote)
+		return result, fmt.Errorf("replication promotion succeeded for %d selection(s), but completion recording failed for remote %s; refs and shallow boundaries are committed, trust operations remain fail-closed; retry hn sync %s --recover-shallow", result.Promoted, selection.Remote, selection.Remote)
 	}
 	if err := removeReplicationPendingAnchor(mainGitDir, result.ID); err != nil {
 		return result, fmt.Errorf("replication promotion succeeded for %d selection(s), but completed pending-anchor cleanup failed for remote %s: %w", result.Promoted, selection.Remote, err)
@@ -560,7 +560,7 @@ func shallowReleasePartialSuccessError(remote, mainGitDir, quarantineRoot, quara
 	}
 	sort.Strings(outcomes)
 	diagnostic := redactReplicationDiagnostic(cause.Error(), mainGitDir, quarantineRoot, quarantineDir)
-	return fmt.Errorf("replication ref transaction committed for remote %s with %d ref value change(s); outcomes: %s; required objects were imported, but shallow boundary release failed: %s; accepted fact projection remains fail-closed; retry nh sync %s --recover-shallow", remote, changed, strings.Join(outcomes, ","), diagnostic, remote)
+	return fmt.Errorf("replication ref transaction committed for remote %s with %d ref value change(s); outcomes: %s; required objects were imported, but shallow boundary release failed: %s; accepted fact projection remains fail-closed; retry hn sync %s --recover-shallow", remote, changed, strings.Join(outcomes, ","), diagnostic, remote)
 }
 
 func reachableObjectIDsAt(gitDir string, roots []string) ([]string, error) {
@@ -585,7 +585,7 @@ func reachableObjectIDsAt(gitDir string, roots []string) ([]string, error) {
 }
 
 func resolveReplicationRequests(selection ReplicationSelection, remoteURL string) ([]replicationRequest, []ReplicationOutcome, error) {
-	advertisedText, err := gitText("ls-remote", "--refs", "--", remoteURL, "refs/nh/actors/*", "refs/nh/proposals/*", "refs/nh/memory/*/*")
+	advertisedText, err := gitText("ls-remote", "--refs", "--", remoteURL, "refs/hn/actors/*", "refs/hn/proposals/*", "refs/hn/memory/*/*")
 	if err != nil {
 		return nil, nil, replicationPhaseError(selection.Remote, "advertisement")
 	}
@@ -616,13 +616,13 @@ func resolveReplicationRequests(selection ReplicationSelection, remoteURL string
 		reportedAmbiguousMemory := make(map[string]bool)
 		for _, ref := range refs {
 			switch {
-			case strings.HasPrefix(ref, "refs/nh/actors/"):
-				id := strings.TrimPrefix(ref, "refs/nh/actors/")
+			case strings.HasPrefix(ref, "refs/hn/actors/"):
+				id := strings.TrimPrefix(ref, "refs/hn/actors/")
 				if validActorFingerprint(id) {
 					wanted = append(wanted, newReplicationRequest(replicationActor, id, ref, advertised[ref]))
 				}
-			case strings.HasPrefix(ref, "refs/nh/proposals/"):
-				id := "sha256:" + strings.TrimPrefix(ref, "refs/nh/proposals/")
+			case strings.HasPrefix(ref, "refs/hn/proposals/"):
+				id := "sha256:" + strings.TrimPrefix(ref, "refs/hn/proposals/")
 				if validEventID(id) {
 					wanted = append(wanted, newReplicationRequest(replicationProposal, id, ref, advertised[ref]))
 				}
@@ -678,15 +678,15 @@ func resolveReplicationRequests(selection ReplicationSelection, remoteURL string
 }
 
 func newReplicationRequest(kind, id, sourceRef, oid string) replicationRequest {
-	destination := "refs/nh/quarantine/actors/" + id
+	destination := "refs/hn/quarantine/actors/" + id
 	if kind == replicationProposal {
-		destination = "refs/nh/quarantine/proposals/" + strings.TrimPrefix(id, "sha256:")
+		destination = "refs/hn/quarantine/proposals/" + strings.TrimPrefix(id, "sha256:")
 	} else if kind == replicationMemory {
 		actor, stream, ok := parseMemoryRef(sourceRef)
 		if ok && stream == id {
-			destination = "refs/nh/quarantine/memory/" + actor + "/" + strings.TrimPrefix(stream, "sha256:")
+			destination = "refs/hn/quarantine/memory/" + actor + "/" + strings.TrimPrefix(stream, "sha256:")
 		} else {
-			destination = "refs/nh/quarantine/memory/unresolved/" + strings.TrimPrefix(id, "sha256:")
+			destination = "refs/hn/quarantine/memory/unresolved/" + strings.TrimPrefix(id, "sha256:")
 		}
 	}
 	return replicationRequest{Kind: kind, ID: id, SourceRef: sourceRef, QuarantineRef: destination, OID: oid}
@@ -911,7 +911,7 @@ func validateQuarantinedEventTree(gitDir string, event StoredEvent) error {
 }
 
 func acceptedProposalHeads() (map[string]string, map[string]string, error) {
-	text, err := gitText("for-each-ref", "--format=%(refname) %(objectname)", "refs/nh/proposals", "refs/nh/remotes")
+	text, err := gitText("for-each-ref", "--format=%(refname) %(objectname)", "refs/hn/proposals", "refs/hn/remotes")
 	if err != nil {
 		return nil, nil, err
 	}
@@ -921,8 +921,8 @@ func acceptedProposalHeads() (map[string]string, map[string]string, error) {
 	for index := 0; index+1 < len(fields); index += 2 {
 		ref, oid := fields[index], fields[index+1]
 		var id string
-		if strings.HasPrefix(ref, "refs/nh/proposals/") {
-			id = "sha256:" + strings.TrimPrefix(ref, "refs/nh/proposals/")
+		if strings.HasPrefix(ref, "refs/hn/proposals/") {
+			id = "sha256:" + strings.TrimPrefix(ref, "refs/hn/proposals/")
 			if !validEventID(id) {
 				continue
 			}
@@ -1034,11 +1034,11 @@ func replicationEventReferences(event Event) []string {
 }
 
 func loadReplicationPolicyAt(gitDir, acceptedGitDir, commit string) (PolicyDocument, string, error) {
-	encoded, err := gitOutputAt(gitDir, "show", commit+":.nh/policy.json")
+	encoded, err := gitOutputAt(gitDir, "show", commit+":.hn/policy.json")
 	if err != nil {
-		encoded, err = gitOutputAt(acceptedGitDir, "show", commit+":.nh/policy.json")
+		encoded, err = gitOutputAt(acceptedGitDir, "show", commit+":.hn/policy.json")
 		if err != nil {
-			return PolicyDocument{}, "", fmt.Errorf("no .nh/policy.json at commit %s", commit)
+			return PolicyDocument{}, "", fmt.Errorf("no .hn/policy.json at commit %s", commit)
 		}
 	}
 	policy, digest, err := parsePolicyBytes(encoded)
@@ -1049,9 +1049,9 @@ func replicationPipelineDigestAt(gitDir, acceptedGitDir, commit, name string) (s
 	if !validPipelineName(name) {
 		return "", fmt.Errorf("invalid pipeline name %q", name)
 	}
-	encoded, err := gitOutputAt(gitDir, "show", commit+":"+".nh/pipelines/"+name+".json")
+	encoded, err := gitOutputAt(gitDir, "show", commit+":"+".hn/pipelines/"+name+".json")
 	if err != nil {
-		encoded, err = gitOutputAt(acceptedGitDir, "show", commit+":"+".nh/pipelines/"+name+".json")
+		encoded, err = gitOutputAt(acceptedGitDir, "show", commit+":"+".hn/pipelines/"+name+".json")
 		if err != nil {
 			return "", fmt.Errorf("pipeline %q does not exist at commit %s", name, commit)
 		}
@@ -1514,7 +1514,7 @@ func memoryReplicationRequiredSupplier(selection ReplicationSelection, gitDir st
 	if err != nil {
 		return nil, ""
 	}
-	advertised, err := gitText("ls-remote", "--refs", "--", remoteURL, "refs/nh/actors/*", "refs/nh/memory/*/*")
+	advertised, err := gitText("ls-remote", "--refs", "--", remoteURL, "refs/hn/actors/*", "refs/hn/memory/*/*")
 	if err != nil {
 		return nil, ""
 	}
@@ -1530,7 +1530,7 @@ func memoryReplicationRequiredSupplier(selection ReplicationSelection, gitDir st
 		}
 		switch dependency.Kind {
 		case "evidence-event":
-			actor := strings.TrimPrefix(ref, "refs/nh/actors/")
+			actor := strings.TrimPrefix(ref, "refs/hn/actors/")
 			if !validActorFingerprint(actor) || ref != actorRef(actor) {
 				continue
 			}
@@ -1587,16 +1587,16 @@ func memoryReplicationRecovery(selection ReplicationSelection, dependency Memory
 		return "supplier for exact " + dependency.Kind + " dependency " + dependency.MissingID + " is not derivable from signed facts; select its exact supplier, then retry"
 	}
 	if len(missing) != 0 {
-		sync := "nh sync " + selection.Remote
+		sync := "hn sync " + selection.Remote
 		if shallow {
 			sync += " --recover-shallow"
 		}
-		return "nh replication select " + selection.Remote + " " + strings.Join(missing, " ") + " (preserve existing selectors and budgets), then " + sync
+		return "hn replication select " + selection.Remote + " " + strings.Join(missing, " ") + " (preserve existing selectors and budgets), then " + sync
 	}
 	if shallow {
-		return "nh sync " + selection.Remote + " --recover-shallow"
+		return "hn sync " + selection.Remote + " --recover-shallow"
 	}
-	return "repair the exact advertised dependency, then nh sync " + selection.Remote
+	return "repair the exact advertised dependency, then hn sync " + selection.Remote
 }
 
 func recordReplicationMemoryShallowGap(selection ReplicationSelection, outcome *ReplicationOutcome, dependency MemoryDependency) error {

@@ -22,7 +22,7 @@ func cmdInit(args []string) error {
 		return err
 	}
 	if flags.NArg() != 0 {
-		return usageError("usage: nh init [--name NAME]")
+		return usageError("usage: hn init [--name NAME]")
 	}
 	identity, path, err := createIdentity(*name)
 	if err != nil {
@@ -35,7 +35,7 @@ func cmdInit(args []string) error {
 
 func cmdIdentity(args []string) error {
 	if len(args) == 0 {
-		return usageError("usage: nh identity <show|list|public|authorize|accept|rotate>")
+		return usageError("usage: hn identity <show|list|public|authorize|accept|rotate>")
 	}
 	switch args[0] {
 	case "show":
@@ -57,7 +57,7 @@ func cmdIdentity(args []string) error {
 
 func cmdIssue(args []string) error {
 	if len(args) == 0 {
-		return usageError("usage: nh issue <open|comment|list|show>")
+		return usageError("usage: hn issue <open|comment|list|show>")
 	}
 	switch args[0] {
 	case "open":
@@ -66,12 +66,12 @@ func cmdIssue(args []string) error {
 		return cmdIssueComment(args[1:])
 	case "list":
 		if len(args) != 1 {
-			return usageError("usage: nh issue list")
+			return usageError("usage: hn issue list")
 		}
 		return cmdIssueList()
 	case "show":
 		if len(args) != 2 {
-			return usageError("usage: nh issue show ISSUE")
+			return usageError("usage: hn issue show ISSUE")
 		}
 		return cmdIssueShow(args[1])
 	default:
@@ -87,7 +87,7 @@ func cmdIssueOpen(args []string) error {
 	}
 	title := strings.TrimSpace(strings.Join(flags.Args(), " "))
 	if title == "" {
-		return usageError("usage: nh issue open [--body TEXT] TITLE")
+		return usageError("usage: hn issue open [--body TEXT] TITLE")
 	}
 	identity, err := loadIdentity()
 	if err != nil {
@@ -109,7 +109,7 @@ func cmdIssueOpen(args []string) error {
 
 func cmdIssueComment(args []string) error {
 	if len(args) < 1 {
-		return usageError("usage: nh issue comment ISSUE [--body TEXT] [TEXT]")
+		return usageError("usage: hn issue comment ISSUE [--body TEXT] [TEXT]")
 	}
 	subjectQuery := args[0]
 	flags := quietFlags("issue comment")
@@ -211,16 +211,16 @@ func cmdSync(args []string) error {
 		switch {
 		case argument == "--recover-shallow":
 			if recoverShallow {
-				return usageError("usage: nh sync [REMOTE] [--recover-shallow]")
+				return usageError("usage: hn sync [REMOTE] [--recover-shallow]")
 			}
 			recoverShallow = true
 		case strings.HasPrefix(argument, "-"):
-			return usageError("usage: nh sync [REMOTE] [--recover-shallow]")
+			return usageError("usage: hn sync [REMOTE] [--recover-shallow]")
 		case !remoteSet:
 			remote = argument
 			remoteSet = true
 		default:
-			return usageError("usage: nh sync [REMOTE] [--recover-shallow]")
+			return usageError("usage: hn sync [REMOTE] [--recover-shallow]")
 		}
 	}
 	if !validReplicationRemote(remote) {
@@ -270,7 +270,7 @@ func cmdSync(args []string) error {
 }
 
 func publishLocalFacts(remote string) error {
-	actorRefs, err := gitText("for-each-ref", "--format=%(refname)", "refs/nh/actors")
+	actorRefs, err := gitText("for-each-ref", "--format=%(refname)", "refs/hn/actors")
 	if err != nil {
 		return replicationPhaseError(remote, "actor publication inspection")
 	}
@@ -279,7 +279,7 @@ func publishLocalFacts(remote string) error {
 			return replicationPhaseError(remote, "actor publication")
 		}
 	}
-	proposalRefs, err := gitText("for-each-ref", "--format=%(refname)", "refs/nh/proposals")
+	proposalRefs, err := gitText("for-each-ref", "--format=%(refname)", "refs/hn/proposals")
 	if err != nil {
 		return replicationPhaseError(remote, "proposal publication inspection")
 	}
@@ -305,7 +305,7 @@ func publishLocalFacts(remote string) error {
 
 func cmdLog(args []string) error {
 	if len(args) != 0 {
-		return usageError("usage: nh log")
+		return usageError("usage: hn log")
 	}
 	if err := prepareShallowVerification(shallowVerificationScope{Operation: "log"}); err != nil {
 		return err

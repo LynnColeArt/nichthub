@@ -84,7 +84,7 @@ func (backend bubblewrapBackend) RunStep(ctx context.Context, root string, step 
 		"--dev", "/dev",
 		"--tmpfs", "/tmp",
 		"--tmpfs", "/home",
-		"--dir", "/home/nh",
+		"--dir", "/home/hn",
 	)
 	for _, variable := range environment {
 		name, value, found := strings.Cut(variable, "=")

@@ -8,7 +8,7 @@ import (
 
 func cmdProposal(args []string) error {
 	if len(args) == 0 {
-		return usageError("usage: nh proposal <open|revise|list|show|status>")
+		return usageError("usage: hn proposal <open|revise|list|show|status>")
 	}
 	switch args[0] {
 	case "open":
@@ -17,7 +17,7 @@ func cmdProposal(args []string) error {
 		return cmdProposalRevise(args[1:])
 	case "list":
 		if len(args) != 1 {
-			return usageError("usage: nh proposal list")
+			return usageError("usage: hn proposal list")
 		}
 		if err := prepareShallowVerification(shallowVerificationScope{Operation: "proposal list"}); err != nil {
 			return err
@@ -28,12 +28,12 @@ func cmdProposal(args []string) error {
 		return cmdProposalList()
 	case "show":
 		if len(args) != 2 {
-			return usageError("usage: nh proposal show PROPOSAL")
+			return usageError("usage: hn proposal show PROPOSAL")
 		}
 		return cmdProposalShow(args[1])
 	case "status":
 		if len(args) != 2 {
-			return usageError("usage: nh proposal status PROPOSAL")
+			return usageError("usage: hn proposal status PROPOSAL")
 		}
 		return cmdProposalStatus(args[1])
 	default:
@@ -43,7 +43,7 @@ func cmdProposal(args []string) error {
 
 func cmdProposalRevise(args []string) error {
 	if len(args) < 1 {
-		return usageError("usage: nh proposal revise PREDECESSOR --base REV --head REV [--body TEXT]")
+		return usageError("usage: hn proposal revise PREDECESSOR --base REV --head REV [--body TEXT]")
 	}
 	predecessorQuery := args[0]
 	flags := quietFlags("proposal revise")
@@ -54,7 +54,7 @@ func cmdProposalRevise(args []string) error {
 		return err
 	}
 	if flags.NArg() != 0 || *baseRevision == "" || *headRevision == "" {
-		return usageError("usage: nh proposal revise PREDECESSOR --base REV --head REV [--body TEXT]")
+		return usageError("usage: hn proposal revise PREDECESSOR --base REV --head REV [--body TEXT]")
 	}
 	if err := prepareShallowVerification(shallowVerificationScope{
 		Operation: "proposal revision", Subject: predecessorQuery, Base: *baseRevision, Head: *headRevision,
@@ -138,7 +138,7 @@ func cmdProposalOpen(args []string) error {
 	}
 	title := strings.TrimSpace(strings.Join(flags.Args(), " "))
 	if *baseRevision == "" || *headRevision == "" || title == "" {
-		return usageError("usage: nh proposal open --base REV --head REV [--body TEXT] TITLE")
+		return usageError("usage: hn proposal open --base REV --head REV [--body TEXT] TITLE")
 	}
 	if err := prepareShallowVerification(shallowVerificationScope{
 		Operation: "proposal open", Base: *baseRevision, Head: *headRevision,
@@ -410,7 +410,7 @@ func reviewCounts(reviews []StoredEvent) (approvals, changes int) {
 
 func cmdReview(args []string) error {
 	if len(args) < 1 {
-		return usageError("usage: nh review PROPOSAL <--approve|--request-changes> [--body TEXT]")
+		return usageError("usage: hn review PROPOSAL <--approve|--request-changes> [--body TEXT]")
 	}
 	proposalQuery := args[0]
 	flags := quietFlags("review")

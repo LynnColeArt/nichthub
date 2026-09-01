@@ -13,7 +13,7 @@ import (
 
 // TestOperationalAgentMemory proves that repository-native memory can carry a
 // deliberate two-actor handoff through an ordinary Git remote. Everything in
-// this test crosses the public nh command boundary; the assertions inspect
+// this test crosses the public hn command boundary; the assertions inspect
 // only command JSON, Git refs, and documented private-state locations.
 func TestOperationalAgentMemory(t *testing.T) {
 	binary := buildOperationalBinary(t)
@@ -27,7 +27,7 @@ func TestOperationalAgentMemory(t *testing.T) {
 	runOperationalCommand(t, binary, author, "init", "--name", "Memory author")
 	authorIdentity := readOperationalIdentity(t, binary, author)
 	writeOperationalMemoryPolicy(t, author, authorIdentity.Actor, []string{authorIdentity.Actor})
-	runOperationalGit(t, author, "add", ".nh/policy.json")
+	runOperationalGit(t, author, "add", ".hn/policy.json")
 	runOperationalGit(t, author, "commit", "-q", "-m", "initial memory policy")
 	runOperationalGit(t, "", "init", "--bare", "-q", remote)
 	runOperationalGit(t, author, "remote", "add", "origin", remote)
@@ -44,7 +44,7 @@ func TestOperationalAgentMemory(t *testing.T) {
 	assertNoForeignMemoryIdentity(t, successor, authorIdentity)
 
 	writeOperationalMemoryPolicy(t, author, authorIdentity.Actor, []string{authorIdentity.Actor, successorIdentity.Actor})
-	runOperationalGit(t, author, "add", ".nh/policy.json")
+	runOperationalGit(t, author, "add", ".hn/policy.json")
 	runOperationalGit(t, author, "commit", "-q", "-m", "qualify memory actors")
 	runOperationalGit(t, author, "push", "-q", "origin", "main")
 	runOperationalGit(t, successor, "pull", "-q", "--ff-only", "origin", "main")
@@ -128,9 +128,9 @@ func TestOperationalAgentMemory(t *testing.T) {
 	configureOperationalGit(t, verifier, "Memory Verifier")
 	gitDir := runOperationalGit(t, verifier, "rev-parse", "--absolute-git-dir")
 	for _, private := range []string{
-		filepath.Join(gitDir, "nh", "identity.json"),
-		filepath.Join(gitDir, "nh", "keyring"),
-		filepath.Join(gitDir, "nh", "memory", "index-v0.json"),
+		filepath.Join(gitDir, "hn", "identity.json"),
+		filepath.Join(gitDir, "hn", "keyring"),
+		filepath.Join(gitDir, "hn", "memory", "index-v0.json"),
 	} {
 		if _, err := os.Stat(private); !errors.Is(err, os.ErrNotExist) {
 			t.Fatalf("fresh clone received private state %s: %v", private, err)
@@ -140,7 +140,7 @@ func TestOperationalAgentMemory(t *testing.T) {
 	selectOperationalMemories(t, binary, verifier, authorStream, successorStream)
 	runOperationalCommand(t, binary, verifier, "sync", "origin")
 	runOperationalCommand(t, binary, verifier, "memory", "index", "rebuild")
-	firstIndex, err := os.ReadFile(filepath.Join(gitDir, "nh", "memory", "index-v0.json"))
+	firstIndex, err := os.ReadFile(filepath.Join(gitDir, "hn", "memory", "index-v0.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -171,11 +171,11 @@ func TestOperationalAgentMemory(t *testing.T) {
 		t.Fatalf("recalling hostile inert data caused an effect: %v", err)
 	}
 
-	if err := os.Remove(filepath.Join(gitDir, "nh", "memory", "index-v0.json")); err != nil {
+	if err := os.Remove(filepath.Join(gitDir, "hn", "memory", "index-v0.json")); err != nil {
 		t.Fatal(err)
 	}
 	runOperationalCommand(t, binary, verifier, "memory", "index", "rebuild")
-	secondIndex, err := os.ReadFile(filepath.Join(gitDir, "nh", "memory", "index-v0.json"))
+	secondIndex, err := os.ReadFile(filepath.Join(gitDir, "hn", "memory", "index-v0.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -211,10 +211,10 @@ func writeOperationalMemoryPolicy(t *testing.T, repository, maintainer string, t
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := os.MkdirAll(filepath.Join(repository, ".nh"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(repository, ".hn"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(repository, ".nh", "policy.json"), append(encoded, '\n'), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(repository, ".hn", "policy.json"), append(encoded, '\n'), 0o644); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -224,7 +224,7 @@ func recordOperationalMemory(t *testing.T, binary, repository string, args ...st
 	output := runOperationalCommand(t, binary, repository, append([]string{"memory"}, args...)...)
 	var result memoryCommandResultV0
 	if err := json.Unmarshal([]byte(output), &result); err != nil {
-		t.Fatalf("decode nh memory %s: %v\n%s", strings.Join(args, " "), err, output)
+		t.Fatalf("decode hn memory %s: %v\n%s", strings.Join(args, " "), err, output)
 	}
 	if result.Version != 0 || !validMemoryID(result.MemoryID) || !validMemoryStreamID(result.Stream) || !validActorFingerprint(result.Actor) {
 		t.Fatalf("invalid public memory result: %#v", result)
@@ -300,7 +300,7 @@ func assertOperationalMemoryProjection(t *testing.T, recall MemoryRecallEnvelope
 
 func assertNoMemoryRefs(t *testing.T, repository string) {
 	t.Helper()
-	refs := runOperationalGit(t, repository, "for-each-ref", "--format=%(refname)", "refs/nh/memory", "refs/nh/remotes")
+	refs := runOperationalGit(t, repository, "for-each-ref", "--format=%(refname)", "refs/hn/memory", "refs/hn/remotes")
 	if strings.TrimSpace(refs) != "" {
 		t.Fatalf("fresh clone unexpectedly received local or accepted memory refs:\n%s", refs)
 	}
@@ -310,8 +310,8 @@ func assertNoForeignMemoryIdentity(t *testing.T, repository string, identity ope
 	t.Helper()
 	gitDir := runOperationalGit(t, repository, "rev-parse", "--absolute-git-dir")
 	for _, path := range []string{
-		filepath.Join(gitDir, "nh", "identities", identity.Actor+".json"),
-		filepath.Join(gitDir, "nh", "identity.json"),
+		filepath.Join(gitDir, "hn", "identities", identity.Actor+".json"),
+		filepath.Join(gitDir, "hn", "identity.json"),
 	} {
 		contents, err := os.ReadFile(path)
 		if err == nil && (bytes.Contains(contents, []byte(identity.PublicKey)) || bytes.Contains(contents, []byte(identity.Actor))) {
@@ -321,7 +321,7 @@ func assertNoForeignMemoryIdentity(t *testing.T, repository string, identity ope
 			t.Fatal(err)
 		}
 	}
-	active, err := os.ReadFile(filepath.Join(gitDir, "nh", "active"))
+	active, err := os.ReadFile(filepath.Join(gitDir, "hn", "active"))
 	if err == nil && strings.TrimSpace(string(active)) == identity.Actor {
 		t.Fatalf("repository activated another actor's identity %s", identity.Actor)
 	}

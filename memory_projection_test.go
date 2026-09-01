@@ -570,11 +570,11 @@ func TestMemoryPolicyExactCommitLoad(t *testing.T) {
 		alice := deterministicMemoryIdentity()
 		bob := testIdentity(t, "Bob")
 		writeProjectionPolicy(t, alice, []string{alice.Actor}, []string{memoryKindDecision})
-		mustGit(t, "add", ".nh/policy.json")
+		mustGit(t, "add", ".hn/policy.json")
 		mustGit(t, "commit", "-q", "-m", "alice memory policy")
 		alicePolicyCommit := mustGitText(t, "rev-parse", "HEAD")
 		writeProjectionPolicy(t, alice, []string{bob.Actor}, []string{memoryKindObservation})
-		mustGit(t, "add", ".nh/policy.json")
+		mustGit(t, "add", ".hn/policy.json")
 		mustGit(t, "commit", "-q", "-m", "bob memory policy")
 		bobPolicyCommit := mustGitText(t, "rev-parse", "HEAD")
 
@@ -586,7 +586,7 @@ func TestMemoryPolicyExactCommitLoad(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		aliceBytes, err := gitOutput("show", alicePolicyCommit+":.nh/policy.json")
+		aliceBytes, err := gitOutput("show", alicePolicyCommit+":.hn/policy.json")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -603,7 +603,7 @@ func TestMemoryPolicyExactCommitLoad(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		bobBytes, err := gitOutput("show", bobPolicyCommit+":.nh/policy.json")
+		bobBytes, err := gitOutput("show", bobPolicyCommit+":.hn/policy.json")
 		if err != nil {
 			t.Fatal(err)
 		}

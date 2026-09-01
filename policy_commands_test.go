@@ -19,7 +19,7 @@ func TestPolicyShowAndCheckContract(t *testing.T) {
 	// Git repository. WP06 owns that route and formally handed off this wiring.
 	root := enterPolicyTestRepository(t)
 	baseBytes := []byte(`{
-  "version": "nh.policy/0",
+  "version": "hn.policy/0",
   "maintainers": ["` + policyActorB + `", "` + policyActorA + `"],
   "proposals": {
     "requiredApprovals": 1,
@@ -72,7 +72,7 @@ func TestPolicyShowAndCheckContract(t *testing.T) {
     "requiredApprovals": 1
   },
   "maintainers": ["` + policyActorC + `", "` + policyActorA + `"],
-  "version": "nh.policy/0"
+  "version": "hn.policy/0"
 }
 `)
 	head := commitPolicyBytes(t, root, headBytes, "proposed policy")
@@ -105,7 +105,7 @@ func TestPolicyShowAndCheckContract(t *testing.T) {
 	assertBefore(t, check, "pipeline alpha required results", "pipeline beta required results")
 	assertBefore(t, check, "pipeline beta required results", "pipeline zeta required results")
 
-	draftBytes := []byte(`{"version":"nh.policy/0","maintainers":["` + policyActorA + `"],"proposals":{"requiredApprovals":0,"requiredAccepts":1,"trustedReviewers":[],"allowAuthorApproval":false},"pipelines":{}}` + "\n")
+	draftBytes := []byte(`{"version":"hn.policy/0","maintainers":["` + policyActorA + `"],"proposals":{"requiredApprovals":0,"requiredAccepts":1,"trustedReviewers":[],"allowAuthorApproval":false},"pipelines":{}}` + "\n")
 	draftPath := filepath.Join(root, "draft-policy.json")
 	if err := os.WriteFile(draftPath, draftBytes, 0o644); err != nil {
 		t.Fatal(err)
@@ -125,9 +125,9 @@ func TestPolicyShowAndCheckContract(t *testing.T) {
 
 func TestPolicyCheckSemanticallyEqualExactBytesAndUsage(t *testing.T) {
 	root := enterPolicyTestRepository(t)
-	baseBytes := []byte(`{"version":"nh.policy/0","maintainers":["` + policyActorA + `"],"proposals":{"requiredApprovals":0,"requiredAccepts":1,"trustedReviewers":[],"allowAuthorApproval":false},"pipelines":{}}` + "\n")
+	baseBytes := []byte(`{"version":"hn.policy/0","maintainers":["` + policyActorA + `"],"proposals":{"requiredApprovals":0,"requiredAccepts":1,"trustedReviewers":[],"allowAuthorApproval":false},"pipelines":{}}` + "\n")
 	base := commitPolicyBytes(t, root, baseBytes, "base")
-	headBytes := []byte("{\n  \"version\": \"nh.policy/0\",\n  \"maintainers\": [\"" + policyActorA + "\"],\n  \"proposals\": {\"requiredApprovals\": 0, \"requiredAccepts\": 1, \"trustedReviewers\": [], \"allowAuthorApproval\": false},\n  \"pipelines\": {}\n}\n")
+	headBytes := []byte("{\n  \"version\": \"hn.policy/0\",\n  \"maintainers\": [\"" + policyActorA + "\"],\n  \"proposals\": {\"requiredApprovals\": 0, \"requiredAccepts\": 1, \"trustedReviewers\": [], \"allowAuthorApproval\": false},\n  \"pipelines\": {}\n}\n")
 	head := commitPolicyBytes(t, root, headBytes, "same semantics")
 
 	output, err := captureTestOutput(t, func() error {
@@ -153,11 +153,11 @@ func TestPolicyCheckSemanticallyEqualExactBytesAndUsage(t *testing.T) {
 		args []string
 		want string
 	}{
-		{[]string{"show", "HEAD", "extra"}, "usage: nh policy show [REV]"},
+		{[]string{"show", "HEAD", "extra"}, "usage: hn policy show [REV]"},
 		{[]string{"check", "--base", base}, "exactly one of --head and --file is required"},
 		{[]string{"check", "--base", base, "--head", head, "--file", "draft"}, "exactly one of --head and --file is required"},
-		{[]string{"check", "--head", head}, "usage: nh policy check --base REV <--head REV|--file PATH>"},
-		{[]string{"check", "--base", base, "--head", head, "extra"}, "usage: nh policy check --base REV <--head REV|--file PATH>"},
+		{[]string{"check", "--head", head}, "usage: hn policy check --base REV <--head REV|--file PATH>"},
+		{[]string{"check", "--base", base, "--head", head, "extra"}, "usage: hn policy check --base REV <--head REV|--file PATH>"},
 		{[]string{"unknown"}, "unknown policy command \"unknown\""},
 	}
 	for _, test := range usageCases {
@@ -171,7 +171,7 @@ func TestPolicyCheckRejectsInvalidSidesWithoutMutation(t *testing.T) {
 	// Boundary: the policy command handler plus real Git state and files; no
 	// policy parser or validator implementation detail is invoked directly.
 	root := enterPolicyTestRepository(t)
-	validBytes := []byte(`{"version":"nh.policy/0","maintainers":["` + policyActorA + `"],"proposals":{"requiredApprovals":0,"requiredAccepts":1,"trustedReviewers":[],"allowAuthorApproval":false},"pipelines":{}}` + "\n")
+	validBytes := []byte(`{"version":"hn.policy/0","maintainers":["` + policyActorA + `"],"proposals":{"requiredApprovals":0,"requiredAccepts":1,"trustedReviewers":[],"allowAuthorApproval":false},"pipelines":{}}` + "\n")
 	base := commitPolicyBytes(t, root, validBytes, "valid")
 
 	tests := []struct {
@@ -179,16 +179,16 @@ func TestPolicyCheckRejectsInvalidSidesWithoutMutation(t *testing.T) {
 		policy     string
 		wantReason string
 	}{
-		{"empty maintainers", `{"version":"nh.policy/0","maintainers":[],"proposals":{"requiredApprovals":0,"requiredAccepts":1,"trustedReviewers":[],"allowAuthorApproval":false},"pipelines":{}}`, "requires at least one maintainer"},
-		{"malformed actor", `{"version":"nh.policy/0","maintainers":["bad"],"proposals":{"requiredApprovals":0,"requiredAccepts":1,"trustedReviewers":[],"allowAuthorApproval":false},"pipelines":{}}`, "contains invalid actor \"bad\""},
-		{"duplicate actor", `{"version":"nh.policy/0","maintainers":["` + policyActorA + `","` + policyActorA + `"],"proposals":{"requiredApprovals":0,"requiredAccepts":1,"trustedReviewers":[],"allowAuthorApproval":false},"pipelines":{}}`, "contains duplicate actor " + policyActorA},
-		{"accept lockout", `{"version":"nh.policy/0","maintainers":["` + policyActorA + `"],"proposals":{"requiredApprovals":0,"requiredAccepts":2,"trustedReviewers":[],"allowAuthorApproval":false},"pipelines":{}}`, "requiredAccepts must be between 1 and the number of maintainers"},
-		{"approval lockout", `{"version":"nh.policy/0","maintainers":["` + policyActorA + `"],"proposals":{"requiredApprovals":1,"requiredAccepts":1,"trustedReviewers":[],"allowAuthorApproval":false},"pipelines":{}}`, "requiredApprovals exceeds the number of trusted reviewers"},
-		{"invalid pipeline", `{"version":"nh.policy/0","maintainers":["` + policyActorA + `"],"proposals":{"requiredApprovals":0,"requiredAccepts":1,"trustedReviewers":[],"allowAuthorApproval":false},"pipelines":{"bad/name":{"requiredResults":1,"trustedRunners":["` + policyActorB + `"]}}}`, "invalid pipeline name \"bad/name\""},
-		{"result lockout", `{"version":"nh.policy/0","maintainers":["` + policyActorA + `"],"proposals":{"requiredApprovals":0,"requiredAccepts":1,"trustedReviewers":[],"allowAuthorApproval":false},"pipelines":{"test":{"requiredResults":2,"trustedRunners":["` + policyActorB + `"]}}}`, "requiredResults exceeds its trusted runner count"},
-		{"unsupported version", `{"version":"nh.policy/9","maintainers":["` + policyActorA + `"],"proposals":{"requiredApprovals":0,"requiredAccepts":1,"trustedReviewers":[],"allowAuthorApproval":false},"pipelines":{}}`, "unsupported policy version \"nh.policy/9\""},
-		{"unknown field", `{"version":"nh.policy/0","maintainers":["` + policyActorA + `"],"proposals":{"requiredApprovals":0,"requiredAccepts":1,"trustedReviewers":[],"allowAuthorApproval":false},"pipelines":{},"admin":true}`, "unknown field \"admin\""},
-		{"malformed JSON", `{"version":"nh.policy/0"`, "unexpected EOF"},
+		{"empty maintainers", `{"version":"hn.policy/0","maintainers":[],"proposals":{"requiredApprovals":0,"requiredAccepts":1,"trustedReviewers":[],"allowAuthorApproval":false},"pipelines":{}}`, "requires at least one maintainer"},
+		{"malformed actor", `{"version":"hn.policy/0","maintainers":["bad"],"proposals":{"requiredApprovals":0,"requiredAccepts":1,"trustedReviewers":[],"allowAuthorApproval":false},"pipelines":{}}`, "contains invalid actor \"bad\""},
+		{"duplicate actor", `{"version":"hn.policy/0","maintainers":["` + policyActorA + `","` + policyActorA + `"],"proposals":{"requiredApprovals":0,"requiredAccepts":1,"trustedReviewers":[],"allowAuthorApproval":false},"pipelines":{}}`, "contains duplicate actor " + policyActorA},
+		{"accept lockout", `{"version":"hn.policy/0","maintainers":["` + policyActorA + `"],"proposals":{"requiredApprovals":0,"requiredAccepts":2,"trustedReviewers":[],"allowAuthorApproval":false},"pipelines":{}}`, "requiredAccepts must be between 1 and the number of maintainers"},
+		{"approval lockout", `{"version":"hn.policy/0","maintainers":["` + policyActorA + `"],"proposals":{"requiredApprovals":1,"requiredAccepts":1,"trustedReviewers":[],"allowAuthorApproval":false},"pipelines":{}}`, "requiredApprovals exceeds the number of trusted reviewers"},
+		{"invalid pipeline", `{"version":"hn.policy/0","maintainers":["` + policyActorA + `"],"proposals":{"requiredApprovals":0,"requiredAccepts":1,"trustedReviewers":[],"allowAuthorApproval":false},"pipelines":{"bad/name":{"requiredResults":1,"trustedRunners":["` + policyActorB + `"]}}}`, "invalid pipeline name \"bad/name\""},
+		{"result lockout", `{"version":"hn.policy/0","maintainers":["` + policyActorA + `"],"proposals":{"requiredApprovals":0,"requiredAccepts":1,"trustedReviewers":[],"allowAuthorApproval":false},"pipelines":{"test":{"requiredResults":2,"trustedRunners":["` + policyActorB + `"]}}}`, "requiredResults exceeds its trusted runner count"},
+		{"unsupported version", `{"version":"hn.policy/9","maintainers":["` + policyActorA + `"],"proposals":{"requiredApprovals":0,"requiredAccepts":1,"trustedReviewers":[],"allowAuthorApproval":false},"pipelines":{}}`, "unsupported policy version \"hn.policy/9\""},
+		{"unknown field", `{"version":"hn.policy/0","maintainers":["` + policyActorA + `"],"proposals":{"requiredApprovals":0,"requiredAccepts":1,"trustedReviewers":[],"allowAuthorApproval":false},"pipelines":{},"admin":true}`, "unknown field \"admin\""},
+		{"malformed JSON", `{"version":"hn.policy/0"`, "unexpected EOF"},
 		{"trailing JSON", string(validBytes) + `{}`, "contains more than one JSON value"},
 	}
 
@@ -200,7 +200,7 @@ func TestPolicyCheckRejectsInvalidSidesWithoutMutation(t *testing.T) {
 			}
 			beforeHead := mustGitText(t, "rev-parse", "HEAD")
 			beforeStatus := mustGitText(t, "status", "--porcelain", "--untracked-files=no")
-			beforeRefs := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh")
+			beforeRefs := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn")
 			beforeDraft, err := os.ReadFile(draft)
 			if err != nil {
 				t.Fatal(err)
@@ -216,7 +216,7 @@ func TestPolicyCheckRejectsInvalidSidesWithoutMutation(t *testing.T) {
 			if got := mustGitText(t, "status", "--porcelain", "--untracked-files=no"); got != beforeStatus {
 				t.Fatalf("tracked working tree changed: before %q, after %q", beforeStatus, got)
 			}
-			if got := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh"); got != beforeRefs {
+			if got := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn"); got != beforeRefs {
 				t.Fatalf("Hubnot refs changed: before %q, after %q", beforeRefs, got)
 			}
 			afterDraft, err := os.ReadFile(draft)
@@ -247,10 +247,10 @@ func TestPolicyCheckRejectsInvalidSidesWithoutMutation(t *testing.T) {
 	}
 
 	missingCommit := commitWithoutPolicy(t, root)
-	if err := cmdPolicy([]string{"show", missingCommit}); err == nil || !strings.Contains(err.Error(), "policy") || !strings.Contains(err.Error(), missingCommit) || !strings.Contains(err.Error(), ".nh/policy.json") {
+	if err := cmdPolicy([]string{"show", missingCommit}); err == nil || !strings.Contains(err.Error(), "policy") || !strings.Contains(err.Error(), missingCommit) || !strings.Contains(err.Error(), ".hn/policy.json") {
 		t.Fatalf("missing policy error = %v", err)
 	}
-	if err := cmdPolicy([]string{"show", "HEAD:.nh/policy.json"}); err == nil || !strings.Contains(err.Error(), "not a commit") {
+	if err := cmdPolicy([]string{"show", "HEAD:.hn/policy.json"}); err == nil || !strings.Contains(err.Error(), "not a commit") {
 		t.Fatalf("non-commit revision error = %v", err)
 	}
 	if err := cmdPolicy([]string{"check", "--base", missingCommit, "--head", base}); err == nil || !strings.Contains(err.Error(), "base policy") {
@@ -272,10 +272,10 @@ func TestPolicyEvaluationUsesExactBaseAcrossAmendment(t *testing.T) {
 	}
 	writeTestPolicy(t, root, basePolicy)
 	writeTestPipeline(t, root)
-	mustGit(t, "add", ".nh")
+	mustGit(t, "add", ".hn")
 	mustGit(t, "commit", "-q", "-m", "base policy")
 	base := mustGitText(t, "rev-parse", "HEAD")
-	baseBytes, err := gitOutput("show", base+":.nh/policy.json")
+	baseBytes, err := gitOutput("show", base+":.hn/policy.json")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -286,7 +286,7 @@ func TestPolicyEvaluationUsesExactBaseAcrossAmendment(t *testing.T) {
 	headPolicy.Proposals.AllowAuthorApproval = true
 	headPolicy.Pipelines = map[string]PipelinePolicy{"test": {RequiredResults: 1, TrustedRunners: []string{oldRunner.Actor, newRunner.Actor}}}
 	writeTestPolicy(t, root, headPolicy)
-	mustGit(t, "add", ".nh/policy.json")
+	mustGit(t, "add", ".hn/policy.json")
 	mustGit(t, "commit", "-q", "-m", "add policy actors")
 	amended := mustGitText(t, "rev-parse", "HEAD")
 
@@ -389,7 +389,7 @@ func TestPolicyEvaluationUsesExactBaseAcrossAmendment(t *testing.T) {
 	laterHead := mustGitText(t, "rev-parse", "HEAD")
 	second := appendPolicyTestProposal(t, maintainer, amended, laterHead, "Later candidate")
 	appendPolicyTestReviewAndResult(t, maintainer, newReviewer, newRunner, second, laterHead)
-	amendedBytes, err := gitOutput("show", amended+":.nh/policy.json")
+	amendedBytes, err := gitOutput("show", amended+":.hn/policy.json")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -427,9 +427,9 @@ func TestProposalOpenUsesPolicyAmendmentDiagnostic(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	baseBytes := []byte(`{"version":"nh.policy/0","maintainers":["` + author.Actor + `"],"proposals":{"requiredApprovals":0,"requiredAccepts":1,"trustedReviewers":[],"allowAuthorApproval":false},"pipelines":{}}` + "\n")
+	baseBytes := []byte(`{"version":"hn.policy/0","maintainers":["` + author.Actor + `"],"proposals":{"requiredApprovals":0,"requiredAccepts":1,"trustedReviewers":[],"allowAuthorApproval":false},"pipelines":{}}` + "\n")
 	base := commitPolicyBytes(t, root, baseBytes, "base")
-	headBytes := []byte(`{"version":"nh.policy/0","maintainers":["` + author.Actor + `","` + policyActorA + `"],"proposals":{"requiredApprovals":0,"requiredAccepts":1,"trustedReviewers":[],"allowAuthorApproval":false},"pipelines":{}}` + "\n")
+	headBytes := []byte(`{"version":"hn.policy/0","maintainers":["` + author.Actor + `","` + policyActorA + `"],"proposals":{"requiredApprovals":0,"requiredAccepts":1,"trustedReviewers":[],"allowAuthorApproval":false},"pipelines":{}}` + "\n")
 	head := commitPolicyBytes(t, root, headBytes, "amend policy")
 
 	output, err := captureTestOutput(t, func() error {
@@ -464,9 +464,9 @@ func TestProposalOpenRejectsInvalidPolicyBeforeEventsOrRefs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	baseBytes := []byte(`{"version":"nh.policy/0","maintainers":["` + author.Actor + `"],"proposals":{"requiredApprovals":0,"requiredAccepts":1,"trustedReviewers":[],"allowAuthorApproval":false},"pipelines":{}}` + "\n")
+	baseBytes := []byte(`{"version":"hn.policy/0","maintainers":["` + author.Actor + `"],"proposals":{"requiredApprovals":0,"requiredAccepts":1,"trustedReviewers":[],"allowAuthorApproval":false},"pipelines":{}}` + "\n")
 	base := commitPolicyBytes(t, root, baseBytes, "base")
-	invalidHead := commitPolicyBytes(t, root, []byte(`{"version":"nh.policy/0","maintainers":[]}`+"\n"), "invalid amendment")
+	invalidHead := commitPolicyBytes(t, root, []byte(`{"version":"hn.policy/0","maintainers":[]}`+"\n"), "invalid amendment")
 	identityPaths, err := identityKeyringPaths()
 	if err != nil {
 		t.Fatal(err)
@@ -474,7 +474,7 @@ func TestProposalOpenRejectsInvalidPolicyBeforeEventsOrRefs(t *testing.T) {
 	if err := os.Remove(identityPaths.active); err != nil {
 		t.Fatal(err)
 	}
-	beforeRefs := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh")
+	beforeRefs := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn")
 
 	_, err = captureTestOutput(t, func() error {
 		return run([]string{"proposal", "open", "--base", base, "--head", invalidHead, "Invalid policy"})
@@ -482,14 +482,14 @@ func TestProposalOpenRejectsInvalidPolicyBeforeEventsOrRefs(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), "proposed policy") || !strings.Contains(err.Error(), "requires at least one maintainer") {
 		t.Fatalf("proposal error = %v, want proposed policy lockout rejection", err)
 	}
-	if afterRefs := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh"); afterRefs != beforeRefs {
+	if afterRefs := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn"); afterRefs != beforeRefs {
 		t.Fatalf("rejected proposal changed refs: before %q, after %q", beforeRefs, afterRefs)
 	}
 }
 
 func TestPolicyAmendmentDiagnosticIsExactAndReadOnly(t *testing.T) {
 	root := enterPolicyTestRepository(t)
-	baseBytes := []byte(`{"version":"nh.policy/0","maintainers":["` + policyActorA + `"],"proposals":{"requiredApprovals":0,"requiredAccepts":1,"trustedReviewers":[],"allowAuthorApproval":false},"pipelines":{}}` + "\n")
+	baseBytes := []byte(`{"version":"hn.policy/0","maintainers":["` + policyActorA + `"],"proposals":{"requiredApprovals":0,"requiredAccepts":1,"trustedReviewers":[],"allowAuthorApproval":false},"pipelines":{}}` + "\n")
 	base := commitPolicyBytes(t, root, baseBytes, "base")
 	message, err := policyAmendmentDiagnostic(base, base)
 	if err != nil {
@@ -501,7 +501,7 @@ func TestPolicyAmendmentDiagnosticIsExactAndReadOnly(t *testing.T) {
 	headBytes := append([]byte("\n"), baseBytes...)
 	head := commitPolicyBytes(t, root, headBytes, "byte-only policy change")
 	beforeHead := mustGitText(t, "rev-parse", "HEAD")
-	beforeRefs := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh")
+	beforeRefs := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn")
 	message, err = policyAmendmentDiagnostic(base, head)
 	if err != nil {
 		t.Fatal(err)
@@ -510,7 +510,7 @@ func TestPolicyAmendmentDiagnosticIsExactAndReadOnly(t *testing.T) {
 	if got := mustGitText(t, "rev-parse", "HEAD"); got != beforeHead {
 		t.Fatalf("diagnostic changed HEAD from %s to %s", beforeHead, got)
 	}
-	if got := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh"); got != beforeRefs {
+	if got := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn"); got != beforeRefs {
 		t.Fatalf("diagnostic changed refs: before %q, after %q", beforeRefs, got)
 	}
 }
@@ -532,30 +532,30 @@ func enterPolicyTestRepository(t *testing.T) string {
 	})
 	mustGit(t, "init", "-q", "-b", "main")
 	mustGit(t, "config", "user.name", "Policy Test")
-	mustGit(t, "config", "user.email", "policy@nh.invalid")
+	mustGit(t, "config", "user.email", "policy@hn.invalid")
 	return root
 }
 
 func commitPolicyBytes(t *testing.T, root string, encoded []byte, message string) string {
 	t.Helper()
-	path := filepath.Join(root, ".nh", "policy.json")
+	path := filepath.Join(root, ".hn", "policy.json")
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(path, encoded, 0o644); err != nil {
 		t.Fatal(err)
 	}
-	mustGit(t, "add", ".nh/policy.json")
+	mustGit(t, "add", ".hn/policy.json")
 	mustGit(t, "commit", "-q", "-m", message)
 	return mustGitText(t, "rev-parse", "HEAD")
 }
 
 func commitWithoutPolicy(t *testing.T, root string) string {
 	t.Helper()
-	if err := os.Remove(filepath.Join(root, ".nh", "policy.json")); err != nil {
+	if err := os.Remove(filepath.Join(root, ".hn", "policy.json")); err != nil {
 		t.Fatal(err)
 	}
-	mustGit(t, "add", ".nh/policy.json")
+	mustGit(t, "add", ".hn/policy.json")
 	mustGit(t, "commit", "-q", "-m", "remove policy")
 	return mustGitText(t, "rev-parse", "HEAD")
 }
@@ -579,11 +579,11 @@ func assertBefore(t *testing.T, output, first, second string) {
 
 func writeTestPipeline(t *testing.T, root string) {
 	t.Helper()
-	path := filepath.Join(root, ".nh", "pipelines", "test.json")
+	path := filepath.Join(root, ".hn", "pipelines", "test.json")
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(path, []byte(`{"version":"nh.pipeline/0","steps":[{"name":"test","command":"true"}]}`+"\n"), 0o644); err != nil {
+	if err := os.WriteFile(path, []byte(`{"version":"hn.pipeline/0","steps":[{"name":"test","command":"true"}]}`+"\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -634,7 +634,7 @@ func appendPolicyTestReviewAndResult(t *testing.T, maintainer, reviewer, runner 
 	}
 	log := []byte("passed\n")
 	result.Subject, result.Pipeline, result.Definition, result.Commit = storedRequest.ID, "test", definition, head
-	result.Outcome, result.Log, result.Backend, result.Platform, result.Runner = "passed", eventID(log), "sandbox", "test/test", "nh/test"
+	result.Outcome, result.Log, result.Backend, result.Platform, result.Runner = "passed", eventID(log), "sandbox", "test/test", "hn/test"
 	if _, err := appendEventWithAttachments(result, runner, map[string][]byte{"log.txt": log}); err != nil {
 		t.Fatal(err)
 	}

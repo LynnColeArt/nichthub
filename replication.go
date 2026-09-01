@@ -105,7 +105,7 @@ func replicationSelectionPath(remote string) (string, error) {
 		return "", err
 	}
 	encoded := base64.RawURLEncoding.EncodeToString([]byte(remote))
-	return filepath.Join(gitDir, "nh", "replication", "selections", encoded+".json"), nil
+	return filepath.Join(gitDir, "hn", "replication", "selections", encoded+".json"), nil
 }
 
 func validateReplicationSelection(selection ReplicationSelection) error {
@@ -229,7 +229,7 @@ func splitReplicationRemote(args []string) (string, []string, error) {
 
 func cmdReplication(args []string) error {
 	if len(args) == 0 {
-		return usageError("usage: nh replication <select|show> [REMOTE]")
+		return usageError("usage: hn replication <select|show> [REMOTE]")
 	}
 	switch args[0] {
 	case "select":
@@ -262,7 +262,7 @@ func cmdReplicationSelect(args []string) error {
 		return err
 	}
 	if flags.NArg() != 0 {
-		return usageError("usage: nh replication select [REMOTE] [--actor ACTOR]... [--proposal ID]... [--memory STREAM]... [--all] [budgets]")
+		return usageError("usage: hn replication select [REMOTE] [--actor ACTOR]... [--proposal ID]... [--memory STREAM]... [--all] [budgets]")
 	}
 	selection := ReplicationSelection{
 		Version: replicationSelectionVersion, Remote: remote, Actors: actors, Proposals: proposals, Memories: memories, All: *all, Budgets: budgets,
@@ -280,7 +280,7 @@ func cmdReplicationShow(args []string) error {
 		return err
 	}
 	if len(args) != 0 {
-		return usageError("usage: nh replication show [REMOTE]")
+		return usageError("usage: hn replication show [REMOTE]")
 	}
 	selection, explicit, err := loadReplicationSelection(remote)
 	if err != nil {
