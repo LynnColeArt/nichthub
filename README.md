@@ -12,14 +12,44 @@ quarantined replication, exact shallow-history recovery, and deliberate signed
 agent memory. It remains an experimental protocol, not a stable or hardened
 multi-tenant system.
 
-## Build
+## Project status
+
+The initial operational-alpha roadmap is complete. Nichthub has used its own
+published protocol to revise, independently sandbox-test, approve, accept, and
+merge changes into public `main`. An ordinary Git remote carried the code and
+signed collaboration refs; it did not supply Nichthub-specific governance or
+CI services.
+
+"Alpha complete" means the end-to-end protocol boundary documented here is
+implemented and exercised. It does not mean production-ready: compatibility is
+not yet stable, the security boundary is intentionally narrow, and the
+deferred work in [Completed alpha boundary](#completed-alpha-boundary) is the
+post-alpha roadmap.
+
+## Build and verify
 
 Go 1.26 or newer and Git 2.x are the baseline requirements. Docker is not
 required.
 
 ```sh
-go build -o nh .
-go test ./...
+go build -trimpath -o nh .
+go test -count=1 ./...
+```
+
+The two end-to-end acceptance scenarios compile the CLI and exercise the
+self-hosted governance/CI loop and repository-native agent memory through real
+Git repositories:
+
+```sh
+go test -count=1 -run 'TestOperational(SelfHostingAlpha|AgentMemory)$' ./...
+```
+
+Run the full local release checks with:
+
+```sh
+go test -race -count=1 ./...
+go vet ./...
+git diff --check
 ```
 
 Bubblewrap is used by the default Linux CI executor when you choose to execute
@@ -246,7 +276,10 @@ nh log
 Trust-bearing commands require full actor fingerprints and full
 `sha256:<64-hex>` event IDs. Short IDs are display conveniences only.
 
-## Alpha boundary
+## Completed alpha boundary
+
+The operational-alpha column is implemented. The deferred column describes
+the post-alpha roadmap; those capabilities are not implied by alpha completion.
 
 | Area | Operational alpha | Explicitly deferred |
 | --- | --- | --- |
