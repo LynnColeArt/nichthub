@@ -1,7 +1,7 @@
 {
-  "event_count": 3,
-  "last_event_id": "01M1EYYKXTVDCHYDS1R4SMJGN8",
-  "materialized_at": "2026-09-01T17:05:59.739015+00:00",
+  "event_count": 5,
+  "last_event_id": "01M1EZ435Z37Q7QJCVCYS4Y7D6",
+  "materialized_at": "2026-09-01T17:08:59.198474+00:00",
   "mission_number": "",
   "mission_slug": "hn-hard-cutover-01M1EY1B",
   "mission_type": "software-dev",
@@ -12,17 +12,20 @@
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 0,
+    "in_progress": 1,
     "in_review": 0,
-    "planned": 3
+    "planned": 2
   },
   "work_packages": {
     "WP01": {
-      "actor": "finalize-tasks",
+      "actor": "codex",
+      "agent": "codex",
       "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01M1EYYG3YJ3R3RKEKVK1RAH0V",
-      "last_transition_at": "2026-09-01T17:05:55.838606+00:00"
+      "lane": "in_progress",
+      "last_event_id": "01M1EZ435Z37Q7QJCVCYS4Y7D6",
+      "last_transition_at": "2026-09-01T17:08:59.198474+00:00",
+      "shell_pid": 2156508,
+      "shell_pid_created_at": "1788012444.72"
     },
     "WP02": {
       "actor": "finalize-tasks",
