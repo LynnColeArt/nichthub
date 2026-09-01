@@ -13,6 +13,7 @@
   "accepted_at": "2026-09-01T16:30:16.488190+00:00",
   "accepted_by": "lynn",
   "accepted_from_commit": "677c9b783e8f94658da4db7eb84bbc778687827a",
+  "baseline_merge_commit": "c8f0152633275a9d6ba3846a3ced077f1415871a",
   "change_mode": "bulk_edit",
   "created_at": "2026-09-01T15:21:06.753269+00:00",
   "flattened": false,
