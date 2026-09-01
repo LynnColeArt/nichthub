@@ -1,0 +1,13 @@
+{
+  "wp_id": "WP01",
+  "captured_at": "2026-09-01T17:09:06Z",
+  "base_branch": "feat/hn-hard-cutover",
+  "base_commit": "4971c78f63b3be9e78c7f1d072f2590f8012f1d6",
+  "test_runner": "pytest",
+  "total": 0,
+  "passed": 0,
+  "failed": 0,
+  "skipped": 0,
+  "failures": [],
+  "source_identity": "GateCoverageScopeSource/junit_xml"
+}
