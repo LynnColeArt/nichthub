@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "mission_slug": "hubnot-product-rename-01M1ERYJ",
+  "mission_id": "01M1ERYJE0W7FZ2EP94WKTEQ7V",
+  "mission_branch": "kitty/mission-hubnot-product-rename-01M1ERYJ",
+  "target_branch": "feat/hubnot-product-rename",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        ".gitignore",
+        "ci.go",
+        "go.mod",
+        "main.go",
+        "memory_commands_test.go",
+        "policy_commands_test.go",
+        "replication.go"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-b",
+      "wp_ids": [
+        "WP02"
+      ],
+      "write_scope": [
+        ".kittify/charter/charter.md",
+        ".kittify/charter/interview/answers.yaml",
+        ".kittify/config.yaml",
+        ".kittify/glossaries/team_domain.yaml",
+        "README.md",
+        "docs/**"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "app-shell",
+        "artifact-rendering",
+        "tracker-integration"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-planning",
+      "wp_ids": [
+        "WP03"
+      ],
+      "write_scope": [
+        "kitty-specs/hubnot-product-rename-01M1ERYJ/rename-verification.md"
+      ],
+      "predicted_surfaces": [
+        "planning"
+      ],
+      "depends_on_lanes": [
+        "lane-a",
+        "lane-b"
+      ],
+      "parallel_group": 1
+    }
+  ],
+  "computed_at": "2026-09-01T15:36:29.601684+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [
+    "WP03"
+  ],
+  "planning_commit_sha": "577e25475807a087b5b4d0973eba43c612787af8"
+}
