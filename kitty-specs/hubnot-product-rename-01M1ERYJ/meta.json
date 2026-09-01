@@ -24,6 +24,7 @@
   "purpose_context": "This mission advances the Hubnot product rename on a dedicated feature branch for governed landing into main.",
   "purpose_tldr": "hubnot product rename",
   "slug": "hubnot-product-rename-01M1ERYJ",
+  "status_phase": "1",
   "target_branch": "feat/hubnot-product-rename",
   "topology": "single_branch",
   "vcs": "git",
