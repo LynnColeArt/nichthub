@@ -1,6 +1,0 @@
-Nichthub pipeline test
-Commit eae417ae00bd930a9b5aeb6612485ef145b4c67e
-Backend sandbox
-
-[1/1] Go tests
-ok  	nichthub	60.801s
