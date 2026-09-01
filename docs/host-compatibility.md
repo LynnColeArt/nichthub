@@ -1,7 +1,7 @@
 # Hosted Git compatibility
 
 Hubnot needs an ordinary Git remote to accept, advertise, and transfer
-objects reachable through `refs/nh/*`. This document records direct
+objects reachable through `refs/hn/*`. This document records direct
 observations only; it does not infer support for providers or configurations
 that were not tested. Hosting UI/API state is not evidence.
 
@@ -47,6 +47,31 @@ effect and remained nested under the recall data boundary.
 
 The detailed run evidence and bounds are in
 [self-hosting-alpha.md](self-hosting-alpha.md).
+
+## Local bare `hn` pre-public observation
+
+On 2026-09-01, candidate `hn` version `0.0.1-dev`, built from
+`84d82ca52b86b520cbfad7a155f789b0eb914f66`, initialized an ephemeral actor,
+opened one signed issue, and synchronized it to a fresh local bare Git remote.
+Ordinary `git ls-remote` advertised exactly:
+
+```text
+544b02c42d391502c18b4171071888c79f772731 refs/hn/actors/fd388bbc342c4f157ee72c4dca963bb5f1c4416af3290216b3e33134cbba9497
+```
+
+A fresh clone saved that full actor selector with positive budgets, ran
+`hn sync origin`, and promoted the same OID to:
+
+```text
+refs/hn/remotes/origin/actors/fd388bbc342c4f157ee72c4dca963bb5f1c4416af3290216b3e33134cbba9497
+```
+
+`hn log` reconstructed the signed issue. Searches of both the remote
+advertisement and verifier refs returned no `refs/nh/*`. The sequence used
+only `git init --bare`, `hn init`, `hn issue open`, `hn sync`,
+`hn replication select`, `git ls-remote`, and `git for-each-ref` over a local
+file transport. This is pre-public candidate evidence, not a claim that the
+final cutover commit or `refs/hn/*` have been published to GitHub.com.
 
 ## GitHub.com private observation
 
@@ -196,8 +221,8 @@ moderation, redaction, deletion, or global erasure.
 
 An ordinary `git clone` and ordinary branch fetch do not import custom refs,
 because Git configures a branch refspec by default. This is expected. After an
-explicit selection, `nh sync` requests exact selected actor/candidate refs and
-stores validated roots below `refs/nh/remotes/<remote>/*`.
+explicit selection, `hn sync` requests exact selected actor/candidate refs and
+stores validated roots below `refs/hn/remotes/<remote>/*`.
 
 The primary branch and collaboration refs are separate namespaces and separate
 publication outcomes. A host accepting one does not imply that the other was
@@ -205,8 +230,8 @@ updated; verify both with ordinary Git:
 
 ```sh
 git ls-remote --symref origin HEAD
-git ls-remote origin 'refs/heads/main' 'refs/nh/actors/*' 'refs/nh/proposals/*'
-git ls-remote origin 'refs/nh/memory/*/*'
+git ls-remote origin 'refs/heads/main' 'refs/hn/actors/*' 'refs/hn/proposals/*'
+git ls-remote origin 'refs/hn/memory/*/*'
 ```
 
 ## Limits not established by these observations

@@ -1,0 +1,6 @@
+source_id,type,title,path,accessed_at,notes
+S001,user-decision,"Public product and repository rename","conversation input",2026-09-01,"Authoritative intent: current product name and remote are Hubnot."
+S002,repository-source,"Protocol and storage compatibility surfaces","event.go; memory_event.go; ci.go; store.go; replication.go",2026-09-01,"Primary evidence for nh-prefixed wire storage ref runner and environment contracts."
+S003,repository-documentation,"Current public identity and hosted URLs","README.md; docs/*.md",2026-09-01,"Primary inventory of maintained user-facing product references."
+S004,project-governance,"Active and historical Spec Kitty state",".kittify/config.yaml; .kittify/charter/**; .kittify/canonical-events.jsonl; kitty-specs/**/status.events.jsonl",2026-09-01,"Distinguishes living metadata from append-only historical records."
+S005,qa-evidence,"QA review of public main 7dcfbc1","conversation input",2026-09-01,"Confirms pre-rename build vet formatting race tests and live smoke baseline."

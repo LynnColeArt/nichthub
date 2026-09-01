@@ -27,10 +27,10 @@ func TestDistributedPipelineRun(t *testing.T) {
 	remote := filepath.Join(root, "project.git")
 	aliceDirectory := filepath.Join(root, "alice")
 	bobDirectory := filepath.Join(root, "bob")
-	if err := os.MkdirAll(filepath.Join(seed, ".nh", "pipelines"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(seed, ".hn", "pipelines"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.MkdirAll(filepath.Join(seed, ".nh", "actions"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(seed, ".hn", "actions"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	hostMarker := filepath.Join(root, "host-only-marker")
@@ -38,33 +38,33 @@ func TestDistributedPipelineRun(t *testing.T) {
 		t.Fatal(err)
 	}
 	pipeline := fmt.Sprintf(`{
-  "version": "nh.pipeline/0",
+  "version": "hn.pipeline/0",
   "steps": [
     {
       "name": "Custom repository action",
-      "command": "./.nh/actions/pass",
+      "command": "./.hn/actions/pass",
       "args": ["expected-argument", %q],
       "timeoutSeconds": 30
     }
   ]
 }`, hostMarker)
-	action := "#!/bin/sh\nset -eu\nif [ -e \"$2\" ]; then visibility=visible; else visibility=hidden; fi\nprintf 'custom action: %s at %s; host-marker-%s\\n' \"$1\" \"$NH_COMMIT\" \"$visibility\"\n"
+	action := "#!/bin/sh\nset -eu\nif [ -e \"$2\" ]; then visibility=visible; else visibility=hidden; fi\nprintf 'custom action: %s at %s; host-marker-%s\\n' \"$1\" \"$HN_COMMIT\" \"$visibility\"\n"
 	writeTestPolicy(t, seed, PolicyDocument{
 		Version:     policyVersion,
 		Maintainers: []string{strings.Repeat("a", 64)},
 		Proposals:   ProposalPolicy{RequiredAccepts: 1},
 		Pipelines:   map[string]PipelinePolicy{},
 	})
-	if err := os.WriteFile(filepath.Join(seed, ".nh", "pipelines", "check.json"), []byte(pipeline), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(seed, ".hn", "pipelines", "check.json"), []byte(pipeline), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(seed, ".nh", "actions", "pass"), []byte(action), 0o755); err != nil {
+	if err := os.WriteFile(filepath.Join(seed, ".hn", "actions", "pass"), []byte(action), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	mustGit(t, "-C", seed, "init", "-q", "-b", "main")
 	mustGit(t, "-C", seed, "config", "user.name", "Seed")
-	mustGit(t, "-C", seed, "config", "user.email", "seed@nh.invalid")
-	mustGit(t, "-C", seed, "add", ".nh")
+	mustGit(t, "-C", seed, "config", "user.email", "seed@hn.invalid")
+	mustGit(t, "-C", seed, "add", ".hn")
 	mustGit(t, "-C", seed, "commit", "-q", "-m", "pipeline")
 	mustGit(t, "clone", "-q", "--bare", seed, remote)
 	mustGit(t, "clone", "-q", remote, aliceDirectory)
@@ -74,7 +74,7 @@ func TestDistributedPipelineRun(t *testing.T) {
 		t.Fatal(err)
 	}
 	mustGit(t, "config", "user.name", "Alice")
-	mustGit(t, "config", "user.email", "alice@nh.invalid")
+	mustGit(t, "config", "user.email", "alice@hn.invalid")
 	base := mustGitText(t, "rev-parse", "main")
 	mustGit(t, "switch", "-q", "-c", "feature")
 	mustGit(t, "commit", "--allow-empty", "-q", "-m", "feature")
@@ -97,7 +97,7 @@ func TestDistributedPipelineRun(t *testing.T) {
 	if err := createProposalRef(storedProposal.ID, head); err != nil {
 		t.Fatal(err)
 	}
-	if err := cmdRunRequest([]string{shortID(storedProposal.ID), "check"}); err != nil {
+	if err := cmdRunRequest([]string{storedProposal.ID, "check"}); err != nil {
 		t.Fatal(err)
 	}
 	aliceEvents, err := collectEvents()
@@ -123,7 +123,7 @@ func TestDistributedPipelineRun(t *testing.T) {
 	if err := cmdSync(nil); err != nil {
 		t.Fatal(err)
 	}
-	if err := cmdRunExecute([]string{shortID(request.ID), "--backend", "host"}); err == nil || !strings.Contains(err.Error(), "host execution requires") {
+	if err := cmdRunExecute([]string{request.ID, "--backend", "host"}); err == nil || !strings.Contains(err.Error(), "host execution requires") {
 		t.Fatalf("run without host-execution opt-in returned %v", err)
 	}
 	ran, err := runnerOnce(runnerOptions{
@@ -173,7 +173,7 @@ func TestDistributedPipelineRun(t *testing.T) {
 		t.Fatal("result log digest does not match attachment")
 	}
 	if sandboxUsableForTest(t) {
-		if err := cmdRunExecute([]string{shortID(request.ID), "--backend", "sandbox", "--rerun"}); err != nil {
+		if err := cmdRunExecute([]string{request.ID, "--backend", "sandbox", "--rerun"}); err != nil {
 			t.Fatal(err)
 		}
 		bobEvents, err = collectEvents()
@@ -219,6 +219,6 @@ func sandboxUsableForTest(t *testing.T) bool {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	root := t.TempDir()
-	environment := runnerEnvironment("/home/nh", "/tmp", "test", sandboxPath())
+	environment := runnerEnvironment("/home/hn", "/tmp", "test", sandboxPath())
 	return backend.RunStep(ctx, root, PipelineStep{Name: "Probe", Command: "true"}, environment, io.Discard) == nil
 }

@@ -1,0 +1,55 @@
+# Bulk-edit classification for the public product rename. Compatibility and
+# historical exceptions are deliberate; this is not a protocol migration or
+# history rewrite.
+target:
+  term: Nichthub
+  replacement: Hubnot
+  operation: rename
+
+categories:
+  code_symbols:         { action: rename }
+  import_paths:         { action: rename }
+  filesystem_paths:     { action: manual_review }
+  serialized_keys:      { action: do_not_change }
+  cli_commands:         { action: do_not_change }
+  user_facing_strings:  { action: rename_if_user_visible }
+  tests_fixtures:       { action: rename }
+  logs_telemetry:       { action: rename }
+
+exceptions:
+  - path: ".kittify/canonical-events.jsonl"
+    action: do_not_change
+    reason: "Append-only historical project initialization event."
+  - path: "kitty-specs/hubnot-product-rename-01M1ERYJ/status.events.jsonl"
+    action: manual_review
+    reason: "This active mission journal may only receive append-only lifecycle events; existing lines and embedded historical project slugs remain byte-identical."
+  - path: "kitty-specs/**/status.events.jsonl"
+    action: do_not_change
+    reason: "Append-only mission event journals retain their original signed or recorded payloads."
+  - path: "kitty-specs/proposal-revision-conflict-recovery-01M1774Q/**"
+    action: do_not_change
+    reason: "Completed mission artifacts are retained as historical evidence, including literal former paths and slugs."
+  - path: ".kittify/config.yaml"
+    action: rename
+    reason: "The active project slug is current configuration, not a serialized protocol contract."
+  - path: ".kittify/charter/**"
+    action: rename_if_user_visible
+    reason: "The active charter and its source prose must use the current product brand; generated state and literal provenance remain excluded."
+  - path: "docs/protocol-v0.md"
+    action: manual_review
+    reason: "Rename prose while preserving nh/0 and correct the runner example to the existing nh/<version> namespace."
+  - path: ".gitignore"
+    action: manual_review
+    reason: "Replace the obsolete generated binary basename without changing protocol paths."
+  - path: "go.mod"
+    action: rename
+    reason: "The active Go module path is current product identity, while protocol and CLI namespaces remain unchanged."
+  - path: "kitty-specs/hubnot-product-rename-01M1ERYJ/occurrence_map.yaml"
+    action: manual_review
+    reason: "The governed classification may be refined while its exact source-term declaration remains unchanged."
+  - path: "kitty-specs/hubnot-product-rename-01M1ERYJ/tasks/**"
+    action: manual_review
+    reason: "Implementation prompts and generated baseline/status evidence may advance while exact source strings remain truthful governed inputs."
+  - path: "kitty-specs/hubnot-product-rename-01M1ERYJ/.kittify/dossiers/**"
+    action: manual_review
+    reason: "Generated active-mission dossier snapshots advance as evidence is recorded; embedded historical values remain unmodified."

@@ -101,17 +101,17 @@ func TestMemoryWireGolden(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := `{"protocol":"nh-memory/0","operation":"record","actor":"56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c","actorName":"Alice Agent","publicKey":"A6EHv/POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg","stream":"sha256:d5c42b67775cd9520bb0089b495230aad66693ef5385fe3ab766a2d5afec2076","sequence":1,"timestamp":"2026-08-30T12:34:56.123456789Z","record":{"kind":"decision","content":"Memory content remains inert data.","anchor":{"commit":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","paths":[{"path":"README.md","blob":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"},{"path":"docs/removed.md","blob":"absent"}],"subject":"proposal:sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"},"applicability":{"mode":"subject","subject":"proposal:sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"},"topics":["architecture","memory"],"evidence":["git:dddddddddddddddddddddddddddddddddddddddd","event:sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"]}}`
+	want := `{"protocol":"hn-memory/0","operation":"record","actor":"56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c","actorName":"Alice Agent","publicKey":"A6EHv/POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg","stream":"sha256:f298f9e0f0a75b23be66e545312634172c9f0c207ebc99725c680aebe17ed5ce","sequence":1,"timestamp":"2026-08-30T12:34:56.123456789Z","record":{"kind":"decision","content":"Memory content remains inert data.","anchor":{"commit":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","paths":[{"path":"README.md","blob":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"},{"path":"docs/removed.md","blob":"absent"}],"subject":"proposal:sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"},"applicability":{"mode":"subject","subject":"proposal:sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"},"topics":["architecture","memory"],"evidence":["git:dddddddddddddddddddddddddddddddddddddddd","event:sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"]}}`
 	if string(payload) != want {
 		t.Fatalf("memory payload changed:\n got %s\nwant %s", payload, want)
 	}
-	if got, wantID := memoryID(payload), "sha256:d742835b38d3ed11849f20afd6529592b6212ad1fbdeb93cd4de309352557a76"; got != wantID {
+	if got, wantID := memoryID(payload), "sha256:15248026b2eb5606315d3d9fd3e74dedafc2de3a7ecf27375ca4f3a42df9c733"; got != wantID {
 		t.Fatalf("memory ID = %q, want %q", got, wantID)
 	}
 }
 
 func TestMemoryWireConstants(t *testing.T) {
-	if memoryProtocolVersion != "nh-memory/0" || maxMemoryContentBytes != 65_536 || maxMemoryTopics != 32 || maxMemoryEvidence != 64 {
+	if memoryProtocolVersion != "hn-memory/0" || maxMemoryContentBytes != 65_536 || maxMemoryTopics != 32 || maxMemoryEvidence != 64 {
 		t.Fatal("public memory wire constants changed")
 	}
 	if maxMemoryPaths != 128 || maxMemoryPathBytes != 4_096 || maxMemoryTotalPathBytes != 65_536 {
@@ -143,7 +143,7 @@ func TestMemoryWireOperationAndKindFixtures(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got, want := memoryID(supersedePayload), "sha256:fc659e18b8f6f7d16ed2850aa8807b050e0d2dd3019381b086078946cfd2ee54"; got != want {
+	if got, want := memoryID(supersedePayload), "sha256:7d464720358ab2914c6b534d0cfcb125b85544285bbd7acb31e61e537b762f8f"; got != want {
 		t.Fatalf("supersede ID = %q, want %q", got, want)
 	}
 
@@ -175,8 +175,8 @@ func TestMemoryStrictDecodeRejectsNoncanonicalAndHostileJSON(t *testing.T) {
 		"unknown record":   bytes.Replace(payload, []byte(`"record":{"kind":`), []byte(`"record":{"unknown":true,"kind":`), 1),
 		"unknown anchor":   bytes.Replace(payload, []byte(`"anchor":{"commit":`), []byte(`"anchor":{"unknown":true,"commit":`), 1),
 		"unknown handoff":  nil,
-		"duplicate":        bytes.Replace(payload, []byte(`{"protocol":"nh-memory/0",`), []byte(`{"protocol":"nh-memory/0","protocol":"nh-memory/0",`), 1),
-		"reordered":        bytes.Replace(payload, []byte(`{"protocol":"nh-memory/0","operation":"record",`), []byte(`{"operation":"record","protocol":"nh-memory/0",`), 1),
+		"duplicate":        bytes.Replace(payload, []byte(`{"protocol":"hn-memory/0",`), []byte(`{"protocol":"hn-memory/0","protocol":"hn-memory/0",`), 1),
+		"reordered":        bytes.Replace(payload, []byte(`{"protocol":"hn-memory/0","operation":"record",`), []byte(`{"operation":"record","protocol":"hn-memory/0",`), 1),
 	}
 	handoff := validMemoryEnvelopeFixture(memoryOperationRecord)
 	handoffRecord := validMemoryRecordFixture(memoryKindHandoff)
@@ -202,7 +202,7 @@ func TestMemoryEventValidationMutations(t *testing.T) {
 		name   string
 		mutate func(*MemoryEnvelope)
 	}{
-		{"protocol", func(e *MemoryEnvelope) { e.Protocol = "nh-memory/1" }},
+		{"protocol", func(e *MemoryEnvelope) { e.Protocol = "hn-memory/1" }},
 		{"actor", func(e *MemoryEnvelope) { e.Actor = strings.Repeat("A", 64) }},
 		{"actor name", func(e *MemoryEnvelope) { e.ActorName = "bad\nname" }},
 		{"key", func(e *MemoryEnvelope) { e.PublicKey = "bad" }},
@@ -567,7 +567,7 @@ func TestMemoryEverySignedFieldTamperFailsClosed(t *testing.T) {
 		t.Fatal(err)
 	}
 	mutations := []func(*MemoryEnvelope){
-		func(e *MemoryEnvelope) { e.Protocol = "nh-memory/1" },
+		func(e *MemoryEnvelope) { e.Protocol = "hn-memory/1" },
 		func(e *MemoryEnvelope) { e.Actor = strings.Repeat("1", 64) },
 		func(e *MemoryEnvelope) { e.ActorName = "Another display name" },
 		func(e *MemoryEnvelope) {
@@ -635,7 +635,7 @@ func TestMemoryConstructorCopiesIdentityAndUsesUTC(t *testing.T) {
 
 func TestMemoryIDAndDefaultStreamAreFullAndDeterministic(t *testing.T) {
 	identity := deterministicMemoryIdentity()
-	if got, want := defaultMemoryStream(identity.Actor), "sha256:d5c42b67775cd9520bb0089b495230aad66693ef5385fe3ab766a2d5afec2076"; got != want {
+	if got, want := defaultMemoryStream(identity.Actor), "sha256:f298f9e0f0a75b23be66e545312634172c9f0c207ebc99725c680aebe17ed5ce"; got != want {
 		t.Fatalf("default stream = %q, want %q", got, want)
 	}
 	for _, valid := range []string{fullMemoryID("0"), fullMemoryID("a")} {
@@ -678,11 +678,11 @@ func TestMemoryWirePreservesLegacyCollaborationBytesAndID(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := `{"protocol":"nh/0","kind":"issue.open","actor":"actor","actorName":"Alice","publicKey":"key","sequence":1,"timestamp":"2026-08-30T00:00:00Z","title":"Issue","body":"Body"}`
+	want := `{"protocol":"hn/0","kind":"issue.open","actor":"actor","actorName":"Alice","publicKey":"key","sequence":1,"timestamp":"2026-08-30T00:00:00Z","title":"Issue","body":"Body"}`
 	if string(payload) != want {
 		t.Fatalf("legacy payload changed:\n got %s\nwant %s", payload, want)
 	}
-	if got, wantID := eventID(payload), "sha256:86d61551b5233d9bf0ae98eb506abb53a3406d7622c7c66b1a34c2f244812873"; got != wantID {
+	if got, wantID := eventID(payload), "sha256:d976a3f3c6930d342ee42a2e254a0ab20ff47ae2ac3baa0a0d40fd9ed203554a"; got != wantID {
 		t.Fatalf("legacy ID = %q, want %q", got, wantID)
 	}
 }

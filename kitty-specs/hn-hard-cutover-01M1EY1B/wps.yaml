@@ -1,0 +1,131 @@
+work_packages:
+  - id: WP01
+    title: "Cut over runtime and executable tests"
+    dependencies: []
+    owned_files:
+      - "*.go"
+      - ".gitignore"
+    requirement_refs:
+      - FR-001
+      - FR-002
+      - FR-003
+      - FR-004
+      - FR-005
+      - FR-006
+      - FR-007
+      - FR-009
+      - FR-013
+      - NFR-001
+      - NFR-002
+      - NFR-003
+      - NFR-005
+      - C-001
+      - C-002
+      - C-003
+      - C-005
+    plan_concern_refs:
+      - IC-01
+      - IC-02
+    agent_profile: "implementer-ivan"
+    role: "implementer"
+    agent: "codex"
+    model: ""
+    subtasks:
+      - T001
+      - T002
+      - T003
+      - T004
+      - T005
+      - T006
+      - T007
+    prompt_file: "tasks/WP01-cut-over-runtime-and-executable-tests.md"
+
+  - id: WP02
+    title: "Bootstrap active policy, documentation, and charter"
+    dependencies:
+      - WP01
+    owned_files:
+      - ".hn/policy.json"
+      - ".hn/pipelines/test.json"
+      - "README.md"
+      - "docs/**"
+      - ".kittify/charter/**"
+    requirement_refs:
+      - FR-004
+      - FR-008
+      - FR-009
+      - FR-010
+      - FR-012
+      - FR-013
+      - NFR-003
+      - NFR-004
+      - NFR-005
+      - C-002
+      - C-003
+      - C-004
+      - C-005
+    plan_concern_refs:
+      - IC-03
+      - IC-04
+    agent_profile: "curator-carla"
+    role: "curator"
+    agent: "codex"
+    model: ""
+    subtasks:
+      - T008
+      - T009
+      - T010
+      - T011
+      - T012
+      - T013
+      - T014
+    prompt_file: "tasks/WP02-bootstrap-active-policy-documentation-and-charter.md"
+
+  - id: WP03
+    title: "Prove, govern, and publish the hard cutover"
+    dependencies:
+      - WP01
+      - WP02
+    owned_files:
+      - "kitty-specs/hn-hard-cutover-01M1EY1B/namespace-verification.md"
+    requirement_refs:
+      - FR-001
+      - FR-002
+      - FR-003
+      - FR-004
+      - FR-005
+      - FR-006
+      - FR-007
+      - FR-008
+      - FR-009
+      - FR-010
+      - FR-011
+      - FR-012
+      - FR-013
+      - NFR-001
+      - NFR-002
+      - NFR-003
+      - NFR-004
+      - NFR-005
+      - NFR-006
+      - C-001
+      - C-002
+      - C-003
+      - C-004
+      - C-005
+    plan_concern_refs:
+      - IC-04
+      - IC-05
+    agent_profile: "reviewer-renata"
+    role: "reviewer"
+    agent: "codex"
+    model: ""
+    subtasks:
+      - T015
+      - T016
+      - T017
+      - T018
+      - T019
+      - T020
+      - T021
+    prompt_file: "tasks/WP03-prove-govern-and-publish-the-hard-cutover.md"

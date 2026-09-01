@@ -1,0 +1,13 @@
+{
+  "wp_id": "WP03",
+  "captured_at": "2026-09-01T15:58:11Z",
+  "base_branch": "feat/hubnot-product-rename",
+  "base_commit": "7b2e25d12ea32bfbfcaf055655f4d707207c9539",
+  "test_runner": "pytest",
+  "total": 0,
+  "passed": 0,
+  "failed": 0,
+  "skipped": 0,
+  "failures": [],
+  "source_identity": "GateCoverageScopeSource/junit_xml"
+}

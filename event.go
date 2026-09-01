@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-const protocolVersion = "nh/0"
+const protocolVersion = "hn/0"
 
 type Event struct {
 	Protocol     string   `json:"protocol"`

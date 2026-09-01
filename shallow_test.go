@@ -34,14 +34,14 @@ func TestShallowDependencyGapNamesExactMissingObjectAndRecovery(t *testing.T) {
 		OwnerKind:   replicationProposal,
 		OwnerID:     "sha256:" + strings.Repeat("a", 64),
 		Remote:      "origin",
-		RequiredRef: "refs/nh/proposals/" + strings.Repeat("a", 64),
+		RequiredRef: "refs/hn/proposals/" + strings.Repeat("a", 64),
 	})
 	var gap *ShallowDependencyGap
 	if !errors.As(err, &gap) {
 		t.Fatalf("error = %v, want ShallowDependencyGap", err)
 	}
 	text := err.Error()
-	for _, exact := range []string{base, "base commit", "origin", "refs/nh/proposals/" + strings.Repeat("a", 64), "nh sync origin --recover-shallow"} {
+	for _, exact := range []string{base, "base commit", "origin", "refs/hn/proposals/" + strings.Repeat("a", 64), "hn sync origin --recover-shallow"} {
 		if !strings.Contains(text, exact) {
 			t.Fatalf("gap diagnostic omitted %q: %s", exact, text)
 		}
@@ -115,7 +115,7 @@ func TestShallowAcceptedFactsPreservePresentMalformedSignedEvent(t *testing.T) {
 	clone := filepath.Join(root, "clone")
 	mustGit(t, "init", "-q", "-b", "main", publisher)
 	mustGit(t, "-C", publisher, "config", "user.name", "Publisher")
-	mustGit(t, "-C", publisher, "config", "user.email", "publisher@nh.invalid")
+	mustGit(t, "-C", publisher, "config", "user.email", "publisher@hn.invalid")
 	mustGit(t, "-C", publisher, "commit", "--allow-empty", "-q", "-m", "base")
 	mustGit(t, "-C", publisher, "commit", "--allow-empty", "-q", "-m", "visible")
 	withTestDirectory(t, publisher)
@@ -147,14 +147,14 @@ func TestShallowAcceptedFactsPreservePresentMalformedSignedEvent(t *testing.T) {
 	mustGit(t, "clone", "-q", "--depth", "1", "file://"+remote, clone)
 	withTestDirectory(t, clone)
 	mustGit(t, "fetch", "-q", "--depth", "1", "origin", actorRef(actor.Actor)+":"+acceptedActorRef("origin", actor.Actor))
-	beforeRefs := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh")
+	beforeRefs := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn")
 	beforeShallow := readShallowBytes(t)
 	err = guardShallowEventClosure("proposal status")
 	var gap *ShallowDependencyGap
 	if err == nil || errors.As(err, &gap) || !strings.Contains(err.Error(), "signature") {
 		t.Fatalf("malformed present signed event = %v, want ordinary verification error", err)
 	}
-	if got := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh"); got != beforeRefs {
+	if got := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn"); got != beforeRefs {
 		t.Fatalf("malformed event changed refs:\nbefore=%s\nafter=%s", beforeRefs, got)
 	}
 	if got := readShallowBytes(t); !bytes.Equal(got, beforeShallow) {
@@ -169,23 +169,23 @@ func TestPolicyCommandsClassifyMissingExactCommitsAndPreserveMalformedPolicy(t *
 	clone := filepath.Join(root, "clone")
 	mustGit(t, "init", "-q", "-b", "main", seed)
 	mustGit(t, "-C", seed, "config", "user.name", "Seed")
-	mustGit(t, "-C", seed, "config", "user.email", "seed@nh.invalid")
-	if err := os.MkdirAll(filepath.Join(seed, ".nh"), 0o755); err != nil {
+	mustGit(t, "-C", seed, "config", "user.email", "seed@hn.invalid")
+	if err := os.MkdirAll(filepath.Join(seed, ".hn"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	policy := `{"version":"nh.policy/0","maintainers":["` + strings.Repeat("a", 64) + `"],"proposals":{"requiredApprovals":0,"requiredAccepts":1,"trustedReviewers":[],"allowAuthorApproval":false},"pipelines":{}}`
-	if err := os.WriteFile(filepath.Join(seed, ".nh", "policy.json"), []byte(policy), 0o644); err != nil {
+	policy := `{"version":"hn.policy/0","maintainers":["` + strings.Repeat("a", 64) + `"],"proposals":{"requiredApprovals":0,"requiredAccepts":1,"trustedReviewers":[],"allowAuthorApproval":false},"pipelines":{}}`
+	if err := os.WriteFile(filepath.Join(seed, ".hn", "policy.json"), []byte(policy), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	mustGit(t, "-C", seed, "add", ".nh/policy.json")
+	mustGit(t, "-C", seed, "add", ".hn/policy.json")
 	mustGit(t, "-C", seed, "commit", "-q", "-m", "policy base")
 	missingBase := strings.TrimSpace(string(mustGitOutputAt(t, seed, "rev-parse", "HEAD")))
-	missingPolicyBlob := strings.TrimSpace(string(mustGitOutputAt(t, seed, "rev-parse", missingBase+":.nh/policy.json")))
+	missingPolicyBlob := strings.TrimSpace(string(mustGitOutputAt(t, seed, "rev-parse", missingBase+":.hn/policy.json")))
 	visiblePolicy := strings.Replace(policy, strings.Repeat("a", 64), strings.Repeat("c", 64), 1)
-	if err := os.WriteFile(filepath.Join(seed, ".nh", "policy.json"), []byte(visiblePolicy), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(seed, ".hn", "policy.json"), []byte(visiblePolicy), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	mustGit(t, "-C", seed, "add", ".nh/policy.json")
+	mustGit(t, "-C", seed, "add", ".hn/policy.json")
 	mustGit(t, "-C", seed, "commit", "-q", "-m", "visible policy")
 	mustGit(t, "clone", "-q", "--bare", seed, remote)
 	mustGit(t, "clone", "-q", "--depth", "1", "file://"+remote, clone)
@@ -219,15 +219,15 @@ func TestPolicyCommandsClassifyMissingExactCommitsAndPreserveMalformedPolicy(t *
 
 	malformed := filepath.Join(root, "malformed")
 	mustGit(t, "clone", "-q", clone, malformed)
-	if err := os.MkdirAll(filepath.Join(malformed, ".nh"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(malformed, ".hn"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(malformed, ".nh", "policy.json"), []byte("{not-json"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(malformed, ".hn", "policy.json"), []byte("{not-json"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	mustGit(t, "-C", malformed, "config", "user.name", "Malformed")
-	mustGit(t, "-C", malformed, "config", "user.email", "malformed@nh.invalid")
-	mustGit(t, "-C", malformed, "add", ".nh/policy.json")
+	mustGit(t, "-C", malformed, "config", "user.email", "malformed@hn.invalid")
+	mustGit(t, "-C", malformed, "add", ".hn/policy.json")
 	mustGit(t, "-C", malformed, "commit", "-q", "-m", "malformed policy")
 	withTestDirectory(t, malformed)
 	err = cmdPolicyShow([]string{"HEAD"})
@@ -244,15 +244,15 @@ func TestProposalCommandsClassifyRealMissingBaseCodeAndMergeAncestry(t *testing.
 	clone := filepath.Join(root, "clone")
 	mustGit(t, "init", "-q", "-b", "main", seed)
 	mustGit(t, "-C", seed, "config", "user.name", "Seed")
-	mustGit(t, "-C", seed, "config", "user.email", "seed@nh.invalid")
-	if err := os.MkdirAll(filepath.Join(seed, ".nh"), 0o755); err != nil {
+	mustGit(t, "-C", seed, "config", "user.email", "seed@hn.invalid")
+	if err := os.MkdirAll(filepath.Join(seed, ".hn"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	policy := `{"version":"nh.policy/0","maintainers":["` + strings.Repeat("b", 64) + `"],"proposals":{"requiredApprovals":0,"requiredAccepts":1,"trustedReviewers":[],"allowAuthorApproval":false},"pipelines":{}}`
-	if err := os.WriteFile(filepath.Join(seed, ".nh", "policy.json"), []byte(policy), 0o644); err != nil {
+	policy := `{"version":"hn.policy/0","maintainers":["` + strings.Repeat("b", 64) + `"],"proposals":{"requiredApprovals":0,"requiredAccepts":1,"trustedReviewers":[],"allowAuthorApproval":false},"pipelines":{}}`
+	if err := os.WriteFile(filepath.Join(seed, ".hn", "policy.json"), []byte(policy), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	mustGit(t, "-C", seed, "add", ".nh/policy.json")
+	mustGit(t, "-C", seed, "add", ".hn/policy.json")
 	mustGit(t, "-C", seed, "commit", "-q", "-m", "missing historical base")
 	missingCommit := strings.TrimSpace(string(mustGitOutputAt(t, seed, "rev-parse", "HEAD")))
 	mustGit(t, "-C", seed, "commit", "--allow-empty", "-q", "-m", "visible candidate head")
@@ -283,7 +283,7 @@ func TestProposalCommandsClassifyRealMissingBaseCodeAndMergeAncestry(t *testing.
 	if err != nil {
 		t.Fatal(err)
 	}
-	beforeRefs := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh")
+	beforeRefs := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn")
 	beforeHead := mustGitText(t, "rev-parse", "HEAD")
 	for _, test := range []struct {
 		name string
@@ -300,10 +300,10 @@ func TestProposalCommandsClassifyRealMissingBaseCodeAndMergeAncestry(t *testing.
 			if !errors.As(err, &gap) || gap.Kind != test.kind || gap.MissingID != missingCommit {
 				t.Fatalf("error = %v, want %s gap %s", err, test.kind, missingCommit)
 			}
-			if gap.OwnerKind != replicationProposal || gap.OwnerID == "" || !strings.Contains(gap.RequiredRef, "refs/nh/proposals/") {
+			if gap.OwnerKind != replicationProposal || gap.OwnerID == "" || !strings.Contains(gap.RequiredRef, "refs/hn/proposals/") {
 				t.Fatalf("object gap lacks candidate supplier: %#v", gap)
 			}
-			if got := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh"); got != beforeRefs {
+			if got := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn"); got != beforeRefs {
 				t.Fatalf("command advanced refs:\nbefore=%s\nafter=%s", beforeRefs, got)
 			}
 			if got := mustGitText(t, "rev-parse", "HEAD"); got != beforeHead {
@@ -330,7 +330,7 @@ func TestExactMergeAncestryNamesFirstMissingIntermediateParent(t *testing.T) {
 	clone := filepath.Join(root, "clone")
 	mustGit(t, "init", "-q", "-b", "main", seed)
 	mustGit(t, "-C", seed, "config", "user.name", "Seed")
-	mustGit(t, "-C", seed, "config", "user.email", "seed@nh.invalid")
+	mustGit(t, "-C", seed, "config", "user.email", "seed@hn.invalid")
 	mustGit(t, "-C", seed, "commit", "--allow-empty", "-q", "-m", "base")
 	base := strings.TrimSpace(string(mustGitOutputAt(t, seed, "rev-parse", "HEAD")))
 	mustGit(t, "-C", seed, "commit", "--allow-empty", "-q", "-m", "hidden intermediate")
@@ -403,22 +403,22 @@ func TestRunRequestClassifiesRealMissingPipelineBlobBeforeEventAppend(t *testing
 	clone := filepath.Join(root, "clone")
 	mustGit(t, "init", "-q", "-b", "main", seed)
 	mustGit(t, "-C", seed, "config", "user.name", "Seed")
-	mustGit(t, "-C", seed, "config", "user.email", "seed@nh.invalid")
+	mustGit(t, "-C", seed, "config", "user.email", "seed@hn.invalid")
 	runner := strings.Repeat("d", 64)
 	writeTestPolicy(t, seed, PolicyDocument{
 		Version: policyVersion, Maintainers: []string{runner},
 		Proposals: ProposalPolicy{RequiredAccepts: 1},
 		Pipelines: map[string]PipelinePolicy{"check": {RequiredResults: 1, TrustedRunners: []string{runner}}},
 	})
-	mustGit(t, "-C", seed, "add", ".nh/policy.json")
+	mustGit(t, "-C", seed, "add", ".hn/policy.json")
 	mustGit(t, "-C", seed, "commit", "-q", "-m", "visible policy base")
 	base := strings.TrimSpace(string(mustGitOutputAt(t, seed, "rev-parse", "HEAD")))
 	mustGit(t, "-C", seed, "switch", "-q", "-c", "candidate")
 	writeTestPipeline(t, seed)
-	mustGit(t, "-C", seed, "add", ".nh/pipelines/test.json")
+	mustGit(t, "-C", seed, "add", ".hn/pipelines/test.json")
 	mustGit(t, "-C", seed, "commit", "-q", "-m", "candidate pipeline")
 	head := strings.TrimSpace(string(mustGitOutputAt(t, seed, "rev-parse", "HEAD")))
-	pipelineBlob := strings.TrimSpace(string(mustGitOutputAt(t, seed, "rev-parse", head+":.nh/pipelines/test.json")))
+	pipelineBlob := strings.TrimSpace(string(mustGitOutputAt(t, seed, "rev-parse", head+":.hn/pipelines/test.json")))
 	mustGit(t, "-C", seed, "switch", "-q", "main")
 	mustGit(t, "clone", "-q", "--bare", seed, remote)
 	mustGit(t, "clone", "-q", "--depth", "1", "file://"+remote, clone)
@@ -434,7 +434,7 @@ func TestRunRequestClassifiesRealMissingPipelineBlobBeforeEventAppend(t *testing
 	if err := createProposalRef(proposal.ID, head); err != nil {
 		t.Fatal(err)
 	}
-	beforeRefs := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh")
+	beforeRefs := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn")
 	err = cmdRunRequest([]string{proposal.ID, "test"})
 	var gap *ShallowDependencyGap
 	if !errors.As(err, &gap) || gap.Kind != shallowPipelineDefinition || gap.MissingID != pipelineBlob {
@@ -443,7 +443,7 @@ func TestRunRequestClassifiesRealMissingPipelineBlobBeforeEventAppend(t *testing
 	if gap.OwnerKind != replicationProposal || gap.OwnerID != proposal.ID || gap.RequiredRef != proposalRef(proposal.ID) {
 		t.Fatalf("pipeline gap has inaccurate candidate supplier: %#v", gap)
 	}
-	if got := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh"); got != beforeRefs {
+	if got := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn"); got != beforeRefs {
 		t.Fatalf("pipeline gap appended an event or changed a ref:\nbefore=%s\nafter=%s", beforeRefs, got)
 	}
 }
@@ -455,7 +455,7 @@ func TestShallowActorPredecessorGapUsesSignedFullEventID(t *testing.T) {
 	clone := filepath.Join(root, "clone")
 	mustGit(t, "init", "-q", "-b", "main", publisher)
 	mustGit(t, "-C", publisher, "config", "user.name", "Publisher")
-	mustGit(t, "-C", publisher, "config", "user.email", "publisher@nh.invalid")
+	mustGit(t, "-C", publisher, "config", "user.email", "publisher@hn.invalid")
 	mustGit(t, "-C", publisher, "commit", "--allow-empty", "-q", "-m", "base")
 	withTestDirectory(t, publisher)
 	actor := testIdentity(t, "Shallow Actor")
@@ -489,7 +489,7 @@ func TestShallowActorPredecessorGapUsesSignedFullEventID(t *testing.T) {
 	if gap.Kind != shallowActorPredecessor || gap.MissingID != storedFirst.ID || gap.OwnerID != actor.Actor {
 		t.Fatalf("gap = %#v, want predecessor %s owned by %s", gap, storedFirst.ID, actor.Actor)
 	}
-	for _, exact := range []string{storedFirst.ID, actor.Actor, actorRef(actor.Actor), "nh sync origin --recover-shallow"} {
+	for _, exact := range []string{storedFirst.ID, actor.Actor, actorRef(actor.Actor), "hn sync origin --recover-shallow"} {
 		if !strings.Contains(err.Error(), exact) {
 			t.Fatalf("diagnostic omitted %q: %v", exact, err)
 		}
@@ -506,7 +506,7 @@ func TestSelectedShallowRecoveryReusesSavedSelectionAndIsIdempotent(t *testing.T
 	clone := filepath.Join(root, "clone")
 	mustGit(t, "init", "-q", "-b", "main", publisher)
 	mustGit(t, "-C", publisher, "config", "user.name", "Publisher")
-	mustGit(t, "-C", publisher, "config", "user.email", "publisher@nh.invalid")
+	mustGit(t, "-C", publisher, "config", "user.email", "publisher@hn.invalid")
 	mustGit(t, "-C", publisher, "commit", "--allow-empty", "-q", "-m", "base")
 	withTestDirectory(t, publisher)
 	selected := testIdentity(t, "Selected Actor")
@@ -540,7 +540,7 @@ func TestSelectedShallowRecoveryReusesSavedSelectionAndIsIdempotent(t *testing.T
 	mustGit(t, "clone", "-q", "--depth", "1", "file://"+remote, clone)
 	withTestDirectory(t, clone)
 	mustGit(t, "config", "user.name", "Receiver")
-	mustGit(t, "config", "user.email", "receiver@nh.invalid")
+	mustGit(t, "config", "user.email", "receiver@hn.invalid")
 	mustGit(t, "fetch", "-q", "--depth", "1", "origin", actorRef(selected.Actor)+":"+acceptedActorRef("origin", selected.Actor))
 	selection := ReplicationSelection{
 		Version: replicationSelectionVersion,
@@ -580,11 +580,11 @@ func TestSelectedShallowRecoveryReusesSavedSelectionAndIsIdempotent(t *testing.T
 	if err != nil || !bytes.Equal(selectionBefore, selectionAfter) {
 		t.Fatalf("narrow recovery changed saved multi-selection bytes: err=%v", err)
 	}
-	before := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh/remotes")
+	before := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn/remotes")
 	if err := recoverSelectedShallow("origin"); err != nil {
 		t.Fatalf("idempotent retry failed: %v", err)
 	}
-	after := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh/remotes")
+	after := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn/remotes")
 	if after != before {
 		t.Fatalf("idempotent retry changed accepted refs:\nbefore=%s\nafter=%s", before, after)
 	}
@@ -597,7 +597,7 @@ func TestProductionRecoveryRerunsCompleteProposalStatusScope(t *testing.T) {
 	clone := filepath.Join(root, "clone")
 	mustGit(t, "init", "-q", "-b", "main", publisher)
 	mustGit(t, "-C", publisher, "config", "user.name", "Publisher")
-	mustGit(t, "-C", publisher, "config", "user.email", "publisher@nh.invalid")
+	mustGit(t, "-C", publisher, "config", "user.email", "publisher@hn.invalid")
 	withTestDirectory(t, publisher)
 	author := testIdentity(t, "Scoped Recovery Author")
 	writeTestPolicy(t, publisher, PolicyDocument{
@@ -607,7 +607,7 @@ func TestProductionRecoveryRerunsCompleteProposalStatusScope(t *testing.T) {
 			"check": {RequiredResults: 1, TrustedRunners: []string{author.Actor}},
 		},
 	})
-	mustGit(t, "add", ".nh/policy.json")
+	mustGit(t, "add", ".hn/policy.json")
 	mustGit(t, "commit", "-q", "-m", "base policy requires absent pipeline")
 	base := mustGitText(t, "rev-parse", "HEAD")
 	mustGit(t, "commit", "--allow-empty", "-q", "-m", "candidate head")
@@ -641,7 +641,7 @@ func TestProductionRecoveryRerunsCompleteProposalStatusScope(t *testing.T) {
 	if !errors.As(err, &gap) || gap.Kind != shallowBaseCommit || gap.MissingID != base {
 		t.Fatalf("initial status = %v, want base gap %s", err, base)
 	}
-	beforeRefs := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh/remotes")
+	beforeRefs := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn/remotes")
 	beforeShallow := readShallowBytes(t)
 	selectionPath, pathErr := replicationSelectionPath("origin")
 	if pathErr != nil {
@@ -666,7 +666,7 @@ func TestProductionRecoveryRerunsCompleteProposalStatusScope(t *testing.T) {
 	if !errors.As(visibilityErr, &visibilityGap) || visibilityGap.Kind != shallowBaseCommit || visibilityGap.MissingID != base {
 		t.Fatalf("uncommitted raw base changed trust visibility: %v", visibilityErr)
 	}
-	if got := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh/remotes"); got != beforeRefs {
+	if got := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn/remotes"); got != beforeRefs {
 		t.Fatalf("post-copy failure changed accepted refs:\nbefore=%s\nafter=%s", beforeRefs, got)
 	}
 	if got := readShallowBytes(t); !bytes.Equal(got, beforeShallow) {
@@ -686,7 +686,7 @@ func TestProductionRecoveryRerunsCompleteProposalStatusScope(t *testing.T) {
 	if _, statErr := os.Stat(gapPath); statErr != nil {
 		t.Fatalf("full-scope failure cleared durable retry context: %v", statErr)
 	}
-	afterFirst := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh/remotes")
+	afterFirst := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn/remotes")
 	if afterFirst != beforeRefs {
 		t.Fatalf("same-head base recovery changed accepted ref values:\nbefore=%s\nafter=%s", beforeRefs, afterFirst)
 	}
@@ -694,14 +694,14 @@ func TestProductionRecoveryRerunsCompleteProposalStatusScope(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), "pipeline \"check\" does not exist") {
 		t.Fatalf("idempotent production retry = %v, want same fresh full-scope failure", err)
 	}
-	if got := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh/remotes"); got != afterFirst {
+	if got := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn/remotes"); got != afterFirst {
 		t.Fatalf("already-satisfied primitive caused another promotion:\nbefore=%s\nafter=%s", afterFirst, got)
 	}
 }
 
 func TestShallowGapStopsTrustSensitiveCommandsBeforeAdvancement(t *testing.T) {
 	fixture := setupShallowRecoveryFixture(t, defaultReplicationBudgets())
-	beforeRefs := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh")
+	beforeRefs := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn")
 	beforeHead := mustGitText(t, "rev-parse", "HEAD")
 	missing := "sha256:" + strings.Repeat("d", 64)
 	commands := []struct {
@@ -721,7 +721,7 @@ func TestShallowGapStopsTrustSensitiveCommandsBeforeAdvancement(t *testing.T) {
 			if !errors.As(err, &gap) || gap.Kind != shallowActorPredecessor || gap.MissingID != fixture.first.ID {
 				t.Fatalf("error = %v, want exact predecessor gap %s", err, fixture.first.ID)
 			}
-			if got := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh"); got != beforeRefs {
+			if got := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn"); got != beforeRefs {
 				t.Fatalf("command advanced refs:\nbefore=%s\nafter=%s", beforeRefs, got)
 			}
 			if got := mustGitText(t, "rev-parse", "HEAD"); got != beforeHead {
@@ -733,7 +733,7 @@ func TestShallowGapStopsTrustSensitiveCommandsBeforeAdvancement(t *testing.T) {
 
 func TestShallowCommandsClassifyRealUnfetchedEventFacts(t *testing.T) {
 	fixture := setupUnfetchedEventFixture(t)
-	beforeRefs := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh")
+	beforeRefs := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn")
 	beforeHead := mustGitText(t, "rev-parse", "HEAD")
 	tests := []struct {
 		name    string
@@ -760,10 +760,10 @@ func TestShallowCommandsClassifyRealUnfetchedEventFacts(t *testing.T) {
 			if !errors.As(err, &gap) || gap.Kind != test.kind || gap.MissingID != test.missing {
 				t.Fatalf("error = %v, want %s gap %s", err, test.kind, test.missing)
 			}
-			if !strings.Contains(gap.Recovery, "actor history") || strings.Contains(gap.RequiredRef, "refs/nh/proposals") {
+			if !strings.Contains(gap.Recovery, "actor history") || strings.Contains(gap.RequiredRef, "refs/hn/proposals") {
 				t.Fatalf("event gap guessed a candidate-code supplier: %#v", gap)
 			}
-			if got := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh"); got != beforeRefs {
+			if got := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn"); got != beforeRefs {
 				t.Fatalf("command advanced refs:\nbefore=%s\nafter=%s", beforeRefs, got)
 			}
 			if got := mustGitText(t, "rev-parse", "HEAD"); got != beforeHead {
@@ -787,7 +787,7 @@ func setupUnfetchedEventFixture(t *testing.T) unfetchedEventFixture {
 	clone := filepath.Join(root, "clone")
 	mustGit(t, "init", "-q", "-b", "main", publisher)
 	mustGit(t, "-C", publisher, "config", "user.name", "Publisher")
-	mustGit(t, "-C", publisher, "config", "user.email", "publisher@nh.invalid")
+	mustGit(t, "-C", publisher, "config", "user.email", "publisher@hn.invalid")
 	mustGit(t, "-C", publisher, "commit", "--allow-empty", "-q", "-m", "base")
 	base := strings.TrimSpace(string(mustGitOutputAt(t, publisher, "rev-parse", "HEAD")))
 	mustGit(t, "-C", publisher, "commit", "--allow-empty", "-q", "-m", "head")
@@ -827,7 +827,7 @@ func setupUnfetchedEventFixture(t *testing.T) unfetchedEventFixture {
 	resultEvent.Log = eventID(log)
 	resultEvent.Backend = "sandbox"
 	resultEvent.Platform = "test/test"
-	resultEvent.Runner = "nh/test"
+	resultEvent.Runner = "hn/test"
 	result, err := appendEventWithAttachments(resultEvent, actor, map[string][]byte{"log.txt": log})
 	if err != nil {
 		t.Fatal(err)
@@ -847,7 +847,7 @@ func TestMergeClassifiesRealMissingDecisionEvidenceBeforeAdvancement(t *testing.
 	clone := filepath.Join(root, "clone")
 	mustGit(t, "init", "-q", "-b", "main", publisher)
 	mustGit(t, "-C", publisher, "config", "user.name", "Publisher")
-	mustGit(t, "-C", publisher, "config", "user.email", "publisher@nh.invalid")
+	mustGit(t, "-C", publisher, "config", "user.email", "publisher@hn.invalid")
 	mustGit(t, "-C", publisher, "commit", "--allow-empty", "-q", "-m", "base")
 	base := strings.TrimSpace(string(mustGitOutputAt(t, publisher, "rev-parse", "HEAD")))
 	mustGit(t, "-C", publisher, "commit", "--allow-empty", "-q", "-m", "candidate")
@@ -888,7 +888,7 @@ func TestMergeClassifiesRealMissingDecisionEvidenceBeforeAdvancement(t *testing.
 	for _, identity := range []*Identity{proposalActor, mergeActor} {
 		mustGit(t, "fetch", "-q", "--depth", "1", "origin", actorRef(identity.Actor)+":"+acceptedActorRef("origin", identity.Actor))
 	}
-	beforeRefs := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh")
+	beforeRefs := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn")
 	beforeHead := mustGitText(t, "rev-parse", "HEAD")
 	err = cmdMerge([]string{proposal.ID})
 	var gap *ShallowDependencyGap
@@ -898,7 +898,7 @@ func TestMergeClassifiesRealMissingDecisionEvidenceBeforeAdvancement(t *testing.
 	if !strings.Contains(gap.Recovery, "actor history") || gap.OwnerID != "" || gap.RequiredRef != "" {
 		t.Fatalf("unknown decision supplier guidance guessed a ref: %#v", gap)
 	}
-	if got := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh"); got != beforeRefs {
+	if got := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn"); got != beforeRefs {
 		t.Fatalf("missing decision changed refs:\nbefore=%s\nafter=%s", beforeRefs, got)
 	}
 	if got := mustGitText(t, "rev-parse", "HEAD"); got != beforeHead {
@@ -912,13 +912,13 @@ func TestUnselectedShallowSupplierRequiresExactSelectionAction(t *testing.T) {
 		t.Fatalf("recover selected fixture actor: %v", err)
 	}
 	mustGit(t, "fetch", "-q", "--depth", "1", "origin", actorRef(fixture.unselected.Actor)+":"+acceptedActorRef("origin", fixture.unselected.Actor))
-	beforeRefs := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh/remotes")
+	beforeRefs := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn/remotes")
 	err := guardShallowEventClosure("proposal status")
 	var gap *ShallowDependencyGap
 	if !errors.As(err, &gap) || gap.MissingID != fixture.unselectedFirst.ID || gap.OwnerID != fixture.unselected.Actor {
 		t.Fatalf("error = %v, want real unselected predecessor %s", err, fixture.unselectedFirst.ID)
 	}
-	for _, exact := range []string{"nh replication select origin --actor " + fixture.unselected.Actor, "preserve existing selectors and budgets", actorRef(fixture.unselected.Actor)} {
+	for _, exact := range []string{"hn replication select origin --actor " + fixture.unselected.Actor, "preserve existing selectors and budgets", actorRef(fixture.unselected.Actor)} {
 		if !strings.Contains(err.Error(), exact) {
 			t.Fatalf("unselected diagnostic omitted %q: %v", exact, err)
 		}
@@ -929,7 +929,7 @@ func TestUnselectedShallowSupplierRequiresExactSelectionAction(t *testing.T) {
 	if err := recoverSelectedShallow("origin"); err == nil || !strings.Contains(err.Error(), "is not in the saved exact selection") {
 		t.Fatalf("unselected recovery = %v, want exact-selection block", err)
 	}
-	if got := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh/remotes"); got != beforeRefs {
+	if got := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn/remotes"); got != beforeRefs {
 		t.Fatalf("unselected recovery changed refs:\nbefore=%s\nafter=%s", beforeRefs, got)
 	}
 }
@@ -949,13 +949,13 @@ func TestShallowRecoveryHonorsApplicableBudgetsBeforeAcceptance(t *testing.T) {
 			budgets := defaultReplicationBudgets()
 			test.limit(&budgets)
 			fixture := setupShallowRecoveryFixture(t, budgets)
-			before := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh/remotes")
+			before := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn/remotes")
 			beforeShallow := readShallowBytes(t)
 			err := recoverSelectedShallow("origin")
 			if err == nil || !strings.Contains(err.Error(), "failed for one or more exact selections") {
 				t.Fatalf("over-budget recovery returned %v", err)
 			}
-			after := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh/remotes")
+			after := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn/remotes")
 			if after != before {
 				t.Fatalf("over-budget recovery advanced accepted refs:\nbefore=%s\nafter=%s", before, after)
 			}
@@ -976,7 +976,7 @@ func TestShallowRecoveryHonorsAttachmentBudgetBeforeAcceptance(t *testing.T) {
 	clone := filepath.Join(root, "clone")
 	mustGit(t, "init", "-q", "-b", "main", publisher)
 	mustGit(t, "-C", publisher, "config", "user.name", "Publisher")
-	mustGit(t, "-C", publisher, "config", "user.email", "publisher@nh.invalid")
+	mustGit(t, "-C", publisher, "config", "user.email", "publisher@hn.invalid")
 	withTestDirectory(t, publisher)
 	actor := testIdentity(t, "Attachment Budget Actor")
 	writeTestPolicy(t, publisher, PolicyDocument{
@@ -987,7 +987,7 @@ func TestShallowRecoveryHonorsAttachmentBudgetBeforeAcceptance(t *testing.T) {
 		},
 	})
 	writeTestPipeline(t, publisher)
-	mustGit(t, "add", ".nh")
+	mustGit(t, "add", ".hn")
 	mustGit(t, "commit", "-q", "-m", "pipeline base")
 	base := mustGitText(t, "rev-parse", "HEAD")
 	mustGit(t, "commit", "--allow-empty", "-q", "-m", "pipeline code")
@@ -1020,7 +1020,7 @@ func TestShallowRecoveryHonorsAttachmentBudgetBeforeAcceptance(t *testing.T) {
 	resultEvent.Subject, resultEvent.Pipeline = request.ID, "test"
 	resultEvent.Commit, resultEvent.Definition = code, definition
 	resultEvent.Outcome, resultEvent.Log = "passed", eventID(log)
-	resultEvent.Backend, resultEvent.Platform, resultEvent.Runner = "host", "test/test", "nh/test"
+	resultEvent.Backend, resultEvent.Platform, resultEvent.Runner = "host", "test/test", "hn/test"
 	result, err := appendEventWithAttachments(resultEvent, actor, map[string][]byte{"log.txt": log})
 	if err != nil {
 		t.Fatal(err)
@@ -1049,13 +1049,13 @@ func TestShallowRecoveryHonorsAttachmentBudgetBeforeAcceptance(t *testing.T) {
 	if !errors.As(gapErr, &gap) || gap.MissingID != request.ID {
 		t.Fatalf("attachment fixture gap = %v, want request %s", gapErr, request.ID)
 	}
-	beforeRefs := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh/remotes")
+	beforeRefs := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn/remotes")
 	beforeShallow := readShallowBytes(t)
 	err = recoverSelectedShallow("origin")
 	if err == nil || !strings.Contains(err.Error(), "failed for one or more exact selections") {
 		t.Fatalf("attachment-over-budget recovery = %v", err)
 	}
-	if got := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh/remotes"); got != beforeRefs {
+	if got := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn/remotes"); got != beforeRefs {
 		t.Fatalf("attachment budget advanced accepted refs:\nbefore=%s\nafter=%s", beforeRefs, got)
 	}
 	if got := readShallowBytes(t); !bytes.Equal(got, beforeShallow) {
@@ -1082,7 +1082,7 @@ func TestShallowRecoveryInterruptionsPreserveAcceptedRefs(t *testing.T) {
 	for _, phase := range phases {
 		t.Run(phase.name, func(t *testing.T) {
 			fixture := setupShallowRecoveryFixture(t, defaultReplicationBudgets())
-			before := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh/remotes")
+			before := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn/remotes")
 			beforeHead := mustGitText(t, "rev-parse", "HEAD")
 			beforeShallow := readShallowBytes(t)
 			selectionPath, err := replicationSelectionPath("origin")
@@ -1104,7 +1104,7 @@ func TestShallowRecoveryInterruptionsPreserveAcceptedRefs(t *testing.T) {
 			if recoveryErr == nil {
 				t.Fatal("interrupted recovery succeeded")
 			}
-			after := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh/remotes")
+			after := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn/remotes")
 			if after != before {
 				t.Fatalf("interruption advanced accepted refs:\nbefore=%s\nafter=%s", before, after)
 			}
@@ -1135,7 +1135,7 @@ func TestShallowRecoveryInterruptionsPreserveAcceptedRefs(t *testing.T) {
 				if !strings.Contains(recoveryErr.Error(), "unreferenced object residue may remain") {
 					t.Fatalf("post-copy error falsely implied physical rollback: %v", recoveryErr)
 				}
-				if visible := mustGitText(t, "for-each-ref", "--format=%(refname)", "--contains", fixture.first.Commit, "refs/nh/remotes"); visible != "" {
+				if visible := mustGitText(t, "for-each-ref", "--format=%(refname)", "--contains", fixture.first.Commit, "refs/hn/remotes"); visible != "" {
 					t.Fatalf("uncommitted object residue became reachable from accepted roots: %s", visible)
 				}
 			} else if objectErr == nil {
@@ -1154,7 +1154,7 @@ func TestShallowRecoveryBoundaryReleaseFailureIsTruthfulAndRetryable(t *testing.
 	if !errors.As(baselineErr, &baselineGap) {
 		t.Fatalf("baseline = %v, want gap", baselineErr)
 	}
-	beforeRefs := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh/remotes")
+	beforeRefs := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn/remotes")
 	beforeShallow := readShallowBytes(t)
 	selectionPath, err := replicationSelectionPath("origin")
 	if err != nil {
@@ -1174,7 +1174,7 @@ func TestShallowRecoveryBoundaryReleaseFailureIsTruthfulAndRetryable(t *testing.
 	for _, exact := range []string{
 		"ref transaction committed", "0 ref value change(s)", acceptedActorRef("origin", fixture.actor.Actor) + "=same-head",
 		"required objects were imported", "shallow boundary release failed", "injected shallow marker write failure",
-		"accepted fact projection remains fail-closed", "retry nh sync origin --recover-shallow",
+		"accepted fact projection remains fail-closed", "retry hn sync origin --recover-shallow",
 	} {
 		if err == nil || !strings.Contains(err.Error(), exact) {
 			t.Fatalf("post-promotion release error omitted %q: %v", exact, err)
@@ -1183,7 +1183,7 @@ func TestShallowRecoveryBoundaryReleaseFailureIsTruthfulAndRetryable(t *testing.
 	if strings.Contains(err.Error(), "accepted refs advanced") {
 		t.Fatalf("post-promotion release error was not truthful: %v", err)
 	}
-	if got := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh/remotes"); got != beforeRefs {
+	if got := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn/remotes"); got != beforeRefs {
 		t.Fatalf("same-head recovery unexpectedly changed refs:\nbefore=%s\nafter=%s", beforeRefs, got)
 	}
 	if got := readShallowBytes(t); !bytes.Equal(got, beforeShallow) {
@@ -1269,7 +1269,7 @@ func setupShallowRecoveryFixture(t *testing.T, budgets ReplicationBudgets) shall
 	clone := filepath.Join(root, "clone")
 	mustGit(t, "init", "-q", "-b", "main", publisher)
 	mustGit(t, "-C", publisher, "config", "user.name", "Publisher")
-	mustGit(t, "-C", publisher, "config", "user.email", "publisher@nh.invalid")
+	mustGit(t, "-C", publisher, "config", "user.email", "publisher@hn.invalid")
 	mustGit(t, "-C", publisher, "commit", "--allow-empty", "-q", "-m", "base")
 	withTestDirectory(t, publisher)
 	actor := testIdentity(t, "Selected Recovery Actor")
@@ -1353,7 +1353,7 @@ func depthOneRepository(t *testing.T) (root, clone, base, head string) {
 	clone = filepath.Join(root, "clone")
 	mustGit(t, "init", "-q", "-b", "main", seed)
 	mustGit(t, "-C", seed, "config", "user.name", "Seed")
-	mustGit(t, "-C", seed, "config", "user.email", "seed@nh.invalid")
+	mustGit(t, "-C", seed, "config", "user.email", "seed@hn.invalid")
 	mustGit(t, "-C", seed, "commit", "--allow-empty", "-q", "-m", "base")
 	base = strings.TrimSpace(string(mustGitOutputAt(t, seed, "rev-parse", "HEAD")))
 	mustGit(t, "-C", seed, "commit", "--allow-empty", "-q", "-m", "head")

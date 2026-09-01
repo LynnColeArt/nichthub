@@ -23,7 +23,7 @@ func appendRevisionRunResult(t *testing.T, runner *Identity, request *StoredEven
 	event.Log = eventID(log)
 	event.Backend = "host"
 	event.Platform = "test/test"
-	event.Runner = "nh/test"
+	event.Runner = "hn/test"
 	stored, err := appendEventWithAttachments(event, runner, map[string][]byte{"log.txt": log})
 	if err != nil {
 		t.Fatal(err)
@@ -98,7 +98,7 @@ func TestRevisionEvidenceAndLineageGovernance(t *testing.T) {
 
 	mustGit(t, "init", "-q", "-b", "main")
 	mustGit(t, "config", "user.name", "Test")
-	mustGit(t, "config", "user.email", "test@nh.invalid")
+	mustGit(t, "config", "user.email", "test@hn.invalid")
 	alice, _, err := createIdentity("Alice")
 	if err != nil {
 		t.Fatal(err)
@@ -117,23 +117,23 @@ func TestRevisionEvidenceAndLineageGovernance(t *testing.T) {
 			"check": {RequiredResults: 1, TrustedRunners: []string{bob.Actor}},
 		},
 	})
-	if err := os.MkdirAll(filepath.Join(root, ".nh", "pipelines"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(root, ".hn", "pipelines"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	pipeline := []byte("{\"version\":\"nh.pipeline/0\",\"steps\":[{\"name\":\"Check\",\"command\":\"true\"}]}\n")
-	if err := os.WriteFile(filepath.Join(root, ".nh", "pipelines", "check.json"), pipeline, 0o644); err != nil {
+	pipeline := []byte("{\"version\":\"hn.pipeline/0\",\"steps\":[{\"name\":\"Check\",\"command\":\"true\"}]}\n")
+	if err := os.WriteFile(filepath.Join(root, ".hn", "pipelines", "check.json"), pipeline, 0o644); err != nil {
 		t.Fatal(err)
 	}
-	mustGit(t, "add", ".nh")
+	mustGit(t, "add", ".hn")
 	mustGit(t, "commit", "-q", "-m", "base policy and pipeline")
 	base := mustGitText(t, "rev-parse", "HEAD")
 	mustGit(t, "commit", "--allow-empty", "-q", "-m", "predecessor head")
 	predecessorHead := mustGitText(t, "rev-parse", "HEAD")
-	revisedPipeline := []byte("{\"version\":\"nh.pipeline/0\",\"steps\":[{\"name\":\"Revised check\",\"command\":\"true\"}]}\n")
-	if err := os.WriteFile(filepath.Join(root, ".nh", "pipelines", "check.json"), revisedPipeline, 0o644); err != nil {
+	revisedPipeline := []byte("{\"version\":\"hn.pipeline/0\",\"steps\":[{\"name\":\"Revised check\",\"command\":\"true\"}]}\n")
+	if err := os.WriteFile(filepath.Join(root, ".hn", "pipelines", "check.json"), revisedPipeline, 0o644); err != nil {
 		t.Fatal(err)
 	}
-	mustGit(t, "add", ".nh/pipelines/check.json")
+	mustGit(t, "add", ".hn/pipelines/check.json")
 	mustGit(t, "commit", "-q", "-m", "revision head pipeline")
 	revisionHead := mustGitText(t, "rev-parse", "HEAD")
 	mustGit(t, "commit", "--allow-empty", "-q", "-m", "sibling head")
@@ -411,7 +411,7 @@ func TestProposalMergeConflictAbortsWithRevisionGuidance(t *testing.T) {
 
 	mustGit(t, "init", "-q", "-b", "main")
 	mustGit(t, "config", "user.name", "Test")
-	mustGit(t, "config", "user.email", "test@nh.invalid")
+	mustGit(t, "config", "user.email", "test@hn.invalid")
 	alice, _, err := createIdentity("Alice")
 	if err != nil {
 		t.Fatal(err)
@@ -429,7 +429,7 @@ func TestProposalMergeConflictAbortsWithRevisionGuidance(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(root, "conflict.txt"), []byte("base\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	mustGit(t, "add", ".nh/policy.json", "conflict.txt")
+	mustGit(t, "add", ".hn/policy.json", "conflict.txt")
 	mustGit(t, "commit", "-q", "-m", "base")
 	base := mustGitText(t, "rev-parse", "HEAD")
 	mustGit(t, "switch", "-q", "-c", "proposal")
@@ -468,7 +468,7 @@ func TestProposalMergeConflictAbortsWithRevisionGuidance(t *testing.T) {
 	appendRevisionDecision(t, alice, proposal.ID, policy, nil)
 
 	err = cmdMerge([]string{proposal.ID})
-	if err == nil || !strings.Contains(err.Error(), proposal.ID) || !strings.Contains(err.Error(), "nh proposal revise "+proposal.ID) {
+	if err == nil || !strings.Contains(err.Error(), proposal.ID) || !strings.Contains(err.Error(), "hn proposal revise "+proposal.ID) {
 		t.Fatalf("merge conflict error = %v, want exact proposal and revision guidance", err)
 	}
 	if afterHead := mustGitText(t, "rev-parse", "HEAD"); afterHead != beforeHead {

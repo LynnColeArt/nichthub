@@ -12,7 +12,7 @@ and independently verifiable, and does not depend on a particular forge.
 
 ## Engineering constraints
 
-- Implement the native `nh` CLI in Go, preferring the standard library and
+- Implement the native `hn` CLI in Go, preferring the standard library and
   narrow, explicit interfaces.
 - Keep Git as the content store and transport. Do not introduce a mandatory
   service, service database, GitHub workflow, or Docker dependency.
@@ -45,3 +45,30 @@ data take priority over premature performance optimization.
 The first governed mission is proposal revision and conflict recovery: preserve
 the original proposal, link it to a new resolved head, and reevaluate all
 approval and CI evidence against that exact revision.
+
+## Terminology Canon
+
+`Hubnot` is the product and Go module name. `hn` is the only active executable
+and short protocol namespace; active storage uses `.hn/**`, `.git/hn/**`, and
+`refs/hn/*`, with `HN_*` environment variables and `hn` wire-version prefixes.
+The former short namespace appears only in immutable or explicitly dated
+historical evidence and is never an alias or compatibility surface.
+
+Project-owned governance directives use `HN-001` through `HN-005`. External
+doctrine identifiers such as `DIRECTIVE_037` retain their upstream names.
+
+## Regression Vigilance
+
+A namespace change must update runtime constants, executable tests, active
+configuration, maintained documentation, and charter terminology together.
+Before review, search each derived old-token form and classify every survivor
+against the mission occurrence map. Frozen signed facts, journals, legacy
+configuration, and dated evidence must remain byte-identical.
+
+## Code Review Checklist
+
+Review exact namespace values across code, tests, active configuration, and
+current documentation; verify private keys and generated binaries are absent
+from the diff; recompute frozen-evidence digests; run formatting, static,
+focused, and full tests appropriate to the change; and require every remaining
+legacy token to have a specific occurrence-map classification.

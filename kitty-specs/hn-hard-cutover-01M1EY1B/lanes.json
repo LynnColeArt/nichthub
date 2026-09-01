@@ -1,0 +1,74 @@
+{
+  "version": 1,
+  "mission_slug": "hn-hard-cutover-01M1EY1B",
+  "mission_id": "01M1EY1B8GYQ4JNP14JK6F7YN0",
+  "mission_branch": "kitty/mission-hn-hard-cutover-01M1EY1B",
+  "target_branch": "feat/hn-hard-cutover",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        "*.go",
+        ".gitignore"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup",
+        "tests",
+        "tracker-integration"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-b",
+      "wp_ids": [
+        "WP02"
+      ],
+      "write_scope": [
+        ".hn/pipelines/test.json",
+        ".hn/policy.json",
+        ".kittify/charter/**",
+        "README.md",
+        "docs/**"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup",
+        "tracker-integration"
+      ],
+      "depends_on_lanes": [
+        "lane-a"
+      ],
+      "parallel_group": 1
+    },
+    {
+      "lane_id": "lane-planning",
+      "wp_ids": [
+        "WP03"
+      ],
+      "write_scope": [
+        "kitty-specs/hn-hard-cutover-01M1EY1B/namespace-verification.md"
+      ],
+      "predicted_surfaces": [
+        "planning"
+      ],
+      "depends_on_lanes": [
+        "lane-a",
+        "lane-b"
+      ],
+      "parallel_group": 2
+    }
+  ],
+  "computed_at": "2026-09-01T17:06:01.176539+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [
+    "WP03"
+  ],
+  "planning_commit_sha": "977e5744921cc5564831fa753dc00182bf53b411"
+}

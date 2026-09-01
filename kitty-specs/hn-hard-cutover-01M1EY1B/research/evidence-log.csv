@@ -1,0 +1,7 @@
+evidence_id,source_id,finding,implication
+E-001,S-001,"Active Go code embeds nh in refs, paths, wire constants, diagnostics, runner labels, and environment variables","All runtime categories require coordinated replacement"
+E-002,S-002,"README and current protocol documents prescribe nh commands and namespaces","Documentation must change with executable behavior"
+E-003,S-003,"Completed missions, journals, and self-hosting reports record immutable historical nh facts","These paths must be explicit do-not-change exceptions"
+E-004,S-004,"The public remote already stores signed refs/nh facts and no users depend on compatibility","Preserve old refs but start independent refs/hn histories"
+E-005,S-005,"The checked-in .nh pipeline is required by the pre-cutover executor to attest the exact final candidate","Keep .nh frozen while adding active .hn configuration"
+E-006,S-006,"QA found the security-critical core and race suite sound at commit 7dcfbc1","Rename must retain full QA and security-invariant verification"

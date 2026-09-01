@@ -30,7 +30,7 @@ func inIdentityTestRepository(t *testing.T) string {
 	})
 	mustGit(t, "init", "-q", "-b", "main")
 	mustGit(t, "config", "user.name", "Identity Test")
-	mustGit(t, "config", "user.email", "identity-test@nh.invalid")
+	mustGit(t, "config", "user.email", "identity-test@hn.invalid")
 	mustGit(t, "commit", "--allow-empty", "-q", "-m", "base")
 	return root
 }
@@ -658,10 +658,10 @@ func TestRotationRetryConvergesWhenCleanupWasDurable(t *testing.T) {
 
 func TestIdentityInspectionAndTrackedFilesDoNotExposePrivateKey(t *testing.T) {
 	inIdentityTestRepository(t)
-	if err := os.MkdirAll(".nh", 0o755); err != nil {
+	if err := os.MkdirAll(".hn", 0o755); err != nil {
 		t.Fatal(err)
 	}
-	const trackedFixture = ".nh/identity.json"
+	const trackedFixture = ".hn/identity.json"
 	if err := os.WriteFile(trackedFixture, []byte("tracked identity-path sentinel\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}

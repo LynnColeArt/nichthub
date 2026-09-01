@@ -3,9 +3,13 @@
 This document records the format implemented by the operational alpha. It is a
 testable sketch, not a compatibility promise. Existing version-0 event payloads
 and event IDs were not changed when identity continuity was added. Agent memory
-is the separate additive `nh-memory/0` protocol documented in
-[memory-v0.md](memory-v0.md); memory records are not inserted into `nh/0`
+is the separate additive `hn-memory/0` protocol documented in
+[memory-v0.md](memory-v0.md); memory records are not inserted into `hn/0`
 actor chains or event kinds.
+
+`hn/0` is a breaking namespace reset, not a compatible spelling of `nh/0`.
+The runtime accepts and writes only `hn` wire versions and `refs/hn/*`; legacy
+wire bytes and `refs/nh/*` may remain immutable evidence but are ignored.
 
 ## Actor identity
 
@@ -28,7 +32,7 @@ version-0 field order is:
 
 ```json
 {
-  "protocol": "nh/0",
+  "protocol": "hn/0",
   "kind": "issue.open",
   "actor": "<full-public-key-fingerprint>",
   "actorName": "Alice",
@@ -54,7 +58,7 @@ version-0 field order is:
   "log": "<full-log-digest>",
   "backend": "sandbox",
   "platform": "linux/amd64",
-  "runner": "nh/<version>",
+  "runner": "hn/<version>",
   "policy": "<full-policy-digest>",
   "evidence": ["<full-evidence-event-id>"]
 }
@@ -73,7 +77,7 @@ event_id = "sha256:" + hex(sha256(exact_event_payload_bytes))
 ```
 
 The signature is Ed25519 over those exact payload bytes. Verification does not
-reserialize JSON. Every accepted event must have protocol `nh/0`, a positive
+reserialize JSON. Every accepted event must have protocol `hn/0`, a positive
 sequence, a valid RFC 3339 timestamp, a public key whose fingerprint equals
 `actor`, and a valid signature. Full event IDs have the form
 `sha256:<64-lowercase-hex>`.
@@ -173,8 +177,8 @@ an independent protocol chain.
 Public roots are:
 
 ```text
-refs/nh/actors/<full-actor-fingerprint>
-refs/nh/proposals/<candidate-event-sha256-without-prefix>
+refs/hn/actors/<full-actor-fingerprint>
+refs/hn/proposals/<candidate-event-sha256-without-prefix>
 ```
 
 The candidate ref points to the exact signed `head` commit, making the proposed
@@ -183,8 +187,8 @@ code reachable for transport and garbage collection. A mismatch fails closed.
 Accepted remote-tracking roots are local:
 
 ```text
-refs/nh/remotes/<remote>/actors/<full-actor-fingerprint>
-refs/nh/remotes/<remote>/proposals/<candidate-event-sha256-without-prefix>
+refs/hn/remotes/<remote>/actors/<full-actor-fingerprint>
+refs/hn/remotes/<remote>/proposals/<candidate-event-sha256-without-prefix>
 ```
 
 Actor chains begin at sequence 1, increase by one, and match both Git parents
@@ -215,10 +219,10 @@ Git action.
 
 ## Synchronization
 
-`nh replication select` records full per-remote actor/candidate selectors and
-positive budgets below `.git/nh/`. A saved selection is authoritative. With no
+`hn replication select` records full per-remote actor/candidate selectors and
+positive budgets below `.git/hn/`. A saved selection is authoritative. With no
 saved selection, version 0 uses bounded compatibility-all: it enumerates only
-advertised `refs/nh/actors/*` and `refs/nh/proposals/*`, then applies the same
+advertised `refs/hn/actors/*` and `refs/hn/proposals/*`, then applies the same
 quarantine, budgets, validation, and promotion transaction.
 
 Each selected ref is fetched with its own exact refspec into a generated bare
@@ -232,7 +236,7 @@ quotas. [Replication v0](replication-v0.md) defines the transaction and shallow
 recovery boundary in detail.
 
 Publication uses ordinary explicit Git pushes of local actor and candidate
-refs. `nh sync` never publishes the repository's primary branch; use a
+refs. `hn sync` never publishes the repository's primary branch; use a
 separate explicit `git push` for that outcome.
 
 ## Known limits

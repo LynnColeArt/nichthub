@@ -30,7 +30,7 @@ func TestProposalRevisionSyncAndConvergence(t *testing.T) {
 	}
 	mustGit(t, "-C", seed, "init", "-q", "-b", "main")
 	mustGit(t, "-C", seed, "config", "user.name", "Seed")
-	mustGit(t, "-C", seed, "config", "user.email", "seed@nh.invalid")
+	mustGit(t, "-C", seed, "config", "user.email", "seed@hn.invalid")
 	mustGit(t, "-C", seed, "commit", "--allow-empty", "-q", "-m", "seed")
 	mustGit(t, "clone", "-q", "--bare", seed, remote)
 	mustGit(t, "clone", "-q", remote, aliceDirectory)
@@ -40,7 +40,7 @@ func TestProposalRevisionSyncAndConvergence(t *testing.T) {
 		t.Fatal(err)
 	}
 	mustGit(t, "config", "user.name", "Alice")
-	mustGit(t, "config", "user.email", "alice@nh.invalid")
+	mustGit(t, "config", "user.email", "alice@hn.invalid")
 	alice, _, err := createIdentity("Alice")
 	if err != nil {
 		t.Fatal(err)
@@ -55,7 +55,7 @@ func TestProposalRevisionSyncAndConvergence(t *testing.T) {
 		},
 		Pipelines: map[string]PipelinePolicy{},
 	})
-	mustGit(t, "add", ".nh/policy.json")
+	mustGit(t, "add", ".hn/policy.json")
 	mustGit(t, "commit", "-q", "-m", "policy")
 	mustGit(t, "push", "-q", "origin", "main")
 	base := mustGitText(t, "rev-parse", "main")
@@ -86,7 +86,7 @@ func TestProposalRevisionSyncAndConvergence(t *testing.T) {
 		t.Fatal(err)
 	}
 	mustGit(t, "config", "user.name", "Bob")
-	mustGit(t, "config", "user.email", "bob@nh.invalid")
+	mustGit(t, "config", "user.email", "bob@hn.invalid")
 	if _, _, err := createIdentity("Bob"); err != nil {
 		t.Fatal(err)
 	}
@@ -199,12 +199,12 @@ func TestProposalRevisionSyncAndConvergence(t *testing.T) {
 		t.Fatalf("revision review leaked to predecessor: %#v", reviews)
 	}
 
-	remoteRefs := strings.Fields(mustGitText(t, "--git-dir="+remote, "for-each-ref", "--format=%(refname)", "refs/nh"))
+	remoteRefs := strings.Fields(mustGitText(t, "--git-dir="+remote, "for-each-ref", "--format=%(refname)", "refs/hn"))
 	proposalRefCount := 0
 	for _, ref := range remoteRefs {
 		switch {
-		case strings.HasPrefix(ref, "refs/nh/actors/"):
-		case strings.HasPrefix(ref, "refs/nh/proposals/"):
+		case strings.HasPrefix(ref, "refs/hn/actors/"):
+		case strings.HasPrefix(ref, "refs/hn/proposals/"):
 			proposalRefCount++
 		default:
 			t.Fatalf("sync introduced unexpected remote ref namespace %s", ref)
@@ -213,9 +213,9 @@ func TestProposalRevisionSyncAndConvergence(t *testing.T) {
 	if proposalRefCount != 4 {
 		t.Fatalf("remote proposal refs = %d, want root, legacy, and two revisions", proposalRefCount)
 	}
-	trackingRefs := strings.Fields(mustGitText(t, "for-each-ref", "--format=%(refname)", "refs/nh/remotes/origin"))
+	trackingRefs := strings.Fields(mustGitText(t, "for-each-ref", "--format=%(refname)", "refs/hn/remotes/origin"))
 	for _, ref := range trackingRefs {
-		if !strings.HasPrefix(ref, "refs/nh/remotes/origin/actors/") && !strings.HasPrefix(ref, "refs/nh/remotes/origin/proposals/") {
+		if !strings.HasPrefix(ref, "refs/hn/remotes/origin/actors/") && !strings.HasPrefix(ref, "refs/hn/remotes/origin/proposals/") {
 			t.Fatalf("sync introduced unexpected tracking ref namespace %s", ref)
 		}
 	}

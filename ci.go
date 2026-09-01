@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	pipelineVersion = "nh.pipeline/0"
+	pipelineVersion = "hn.pipeline/0"
 	maxPipelineSize = 1 << 20
 	maxArchiveSize  = 256 << 20
 	maxRunLogSize   = 1 << 20
@@ -72,7 +72,7 @@ func loadPipeline(commit, name string) (PipelineDefinition, []byte, string, erro
 	if err := replicationPendingError(gitDir, commit); err != nil {
 		return PipelineDefinition{}, nil, "", err
 	}
-	path := ".nh/pipelines/" + name + ".json"
+	path := ".hn/pipelines/" + name + ".json"
 	encoded, err := gitOutput("show", commit+":"+path)
 	if err != nil {
 		return PipelineDefinition{}, nil, "", fmt.Errorf("pipeline %q does not exist at commit %s", name, shortOID(commit))
@@ -160,26 +160,26 @@ func safeRelativePath(path string) bool {
 
 func cmdRun(args []string) error {
 	if len(args) == 0 {
-		return usageError("usage: nh run <request|list|show|execute|logs>")
+		return usageError("usage: hn run <request|list|show|execute|logs>")
 	}
 	switch args[0] {
 	case "request":
 		return cmdRunRequest(args[1:])
 	case "list":
 		if len(args) != 1 {
-			return usageError("usage: nh run list")
+			return usageError("usage: hn run list")
 		}
 		return cmdRunList()
 	case "show":
 		if len(args) != 2 {
-			return usageError("usage: nh run show REQUEST")
+			return usageError("usage: hn run show REQUEST")
 		}
 		return cmdRunShow(args[1])
 	case "execute":
 		return cmdRunExecute(args[1:])
 	case "logs":
 		if len(args) != 2 {
-			return usageError("usage: nh run logs RESULT")
+			return usageError("usage: hn run logs RESULT")
 		}
 		return cmdRunLogs(args[1])
 	default:
@@ -189,7 +189,10 @@ func cmdRun(args []string) error {
 
 func cmdRunRequest(args []string) error {
 	if len(args) != 2 {
-		return usageError("usage: nh run request PROPOSAL PIPELINE")
+		return usageError("usage: hn run request PROPOSAL PIPELINE")
+	}
+	if err := requireFullEventID(args[0]); err != nil {
+		return err
 	}
 	if err := prepareShallowVerification(shallowVerificationScope{Operation: "run request", Subject: args[0], Pipeline: args[1]}); err != nil {
 		return err
@@ -391,9 +394,12 @@ func cmdRunLogs(query string) error {
 
 func cmdRunExecute(args []string) error {
 	if len(args) < 1 {
-		return usageError("usage: nh run execute REQUEST [--backend sandbox|host] [--allow-unsafe-host-execution] [--rerun]")
+		return usageError("usage: hn run execute REQUEST [--backend sandbox|host] [--allow-unsafe-host-execution] [--rerun]")
 	}
 	query := args[0]
+	if err := requireFullEventID(query); err != nil {
+		return err
+	}
 	flags := quietFlags("run execute")
 	backendName := flags.String("backend", "sandbox", "execution backend: sandbox or host")
 	allowHost := flags.Bool("allow-unsafe-host-execution", false, "execute untrusted repository code without isolation")
@@ -402,7 +408,7 @@ func cmdRunExecute(args []string) error {
 		return err
 	}
 	if flags.NArg() != 0 {
-		return usageError("usage: nh run execute REQUEST [--backend sandbox|host] [--allow-unsafe-host-execution] [--rerun]")
+		return usageError("usage: hn run execute REQUEST [--backend sandbox|host] [--allow-unsafe-host-execution] [--rerun]")
 	}
 	backend, err := selectBackend(*backendName, *allowHost)
 	if err != nil {
@@ -487,7 +493,7 @@ func executeRunRequest(ctx context.Context, events []StoredEvent, request *Store
 	event.Log = eventID(result.Log)
 	event.Backend = backend.Name()
 	event.Platform = runtime.GOOS + "/" + runtime.GOARCH
-	event.Runner = "nh/" + version
+	event.Runner = "hn/" + version
 	stored, err := appendEventWithAttachments(event, identity, map[string][]byte{"log.txt": result.Log})
 	if err != nil {
 		return nil, err
@@ -504,8 +510,8 @@ func executePipeline(parentContext context.Context, commit, pipelineName string,
 		return executionResult{}, err
 	}
 	defer os.RemoveAll(root)
-	home := filepath.Join(root, ".nh-runner-home")
-	temp := filepath.Join(root, ".nh-runner-tmp")
+	home := filepath.Join(root, ".hn-runner-home")
+	temp := filepath.Join(root, ".hn-runner-tmp")
 	if err := os.MkdirAll(home, 0o700); err != nil {
 		return executionResult{}, err
 	}
@@ -519,7 +525,7 @@ func executePipeline(parentContext context.Context, commit, pipelineName string,
 	exitCode := 0
 	environment := runnerEnvironment(home, temp, commit, os.Getenv("PATH"))
 	if backend.Name() == "sandbox" {
-		environment = runnerEnvironment("/home/nh", "/tmp", commit, sandboxPath())
+		environment = runnerEnvironment("/home/hn", "/tmp", commit, sandboxPath())
 	}
 	fmt.Fprintf(logs, "Hubnot pipeline %s\nCommit %s\nBackend %s\n", pipelineName, commit, backend.Name())
 	for index, step := range pipeline.Steps {
@@ -553,7 +559,7 @@ func runnerEnvironment(home, temp, commit, path string) []string {
 		"HOME=" + home,
 		"TMPDIR=" + temp,
 		"CI=true",
-		"NH_COMMIT=" + commit,
+		"HN_COMMIT=" + commit,
 		"LANG=C.UTF-8",
 	}
 }
@@ -606,7 +612,7 @@ func extractCommit(commit string) (string, error) {
 	if len(archive) > maxArchiveSize {
 		return "", fmt.Errorf("run archive exceeds %d bytes", maxArchiveSize)
 	}
-	root, err := os.MkdirTemp("", "nh-run-")
+	root, err := os.MkdirTemp("", "hn-run-")
 	if err != nil {
 		return "", err
 	}

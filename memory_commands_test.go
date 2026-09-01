@@ -359,7 +359,7 @@ func TestMemoryRecallFilterProvenanceClassification(t *testing.T) {
 }
 
 func TestMemoryCommandRoutingAndInputAmbiguity(t *testing.T) {
-	if err := run([]string{"memory"}); err == nil || !strings.Contains(err.Error(), "usage: nh memory") {
+	if err := run([]string{"memory"}); err == nil || !strings.Contains(err.Error(), "usage: hn memory") {
 		t.Fatalf("memory route error = %v", err)
 	}
 	if _, err := parseMemoryRecordArgs(memoryOperationRecord, []string{"--input", "request.json", "--kind", "decision", "content"}); err == nil {
@@ -369,7 +369,7 @@ func TestMemoryCommandRoutingAndInputAmbiguity(t *testing.T) {
 
 func TestMemoryCommandInvalidAndOversizedInputAppendsNothing(t *testing.T) {
 	withMemoryCommandRepository(t, func(head string, _ *Identity) {
-		before := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh/memory")
+		before := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn/memory")
 		if err := cmdMemory([]string{"record", "--input", "request.json", "--kind", "decision", "--json"}); err == nil {
 			t.Fatal("ambiguous record input succeeded")
 		}
@@ -380,7 +380,7 @@ func TestMemoryCommandInvalidAndOversizedInputAppendsNothing(t *testing.T) {
 		if err := cmdMemory([]string{"record", "--input", path, "--json"}); err == nil || !strings.Contains(err.Error(), "exceeds") {
 			t.Fatalf("oversized record input error = %v", err)
 		}
-		after := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh/memory")
+		after := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn/memory")
 		if after != before {
 			t.Fatalf("failed input mutated memory refs: before=%q after=%q at=%s", before, after, head)
 		}
@@ -516,12 +516,12 @@ func TestMemoryCommandPreservesLegacyCollaborationBytesIDsAndProjection(t *testi
 		}
 		beforePayload := append([]byte(nil), stored.Payload...)
 		beforeID := stored.ID
-		beforeRefs := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh/actors", "refs/nh/proposals")
+		beforeRefs := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn/actors", "refs/hn/proposals")
 		beforeList, err := captureTestOutput(t, func() error { return run([]string{"issue", "list"}) })
 		if err != nil {
 			t.Fatal(err)
 		}
-		if refs := mustGitText(t, "for-each-ref", "--format=%(refname)", "refs/nh/memory", "refs/nh/remotes"); refs != "" {
+		if refs := mustGitText(t, "for-each-ref", "--format=%(refname)", "refs/hn/memory", "refs/hn/remotes"); refs != "" {
 			t.Fatalf("collaboration-only repository unexpectedly has memory refs: %q", refs)
 		}
 		indexPath, err := memoryIndexPath()
@@ -547,7 +547,7 @@ func TestMemoryCommandPreservesLegacyCollaborationBytesIDsAndProjection(t *testi
 		if after[0].ID != beforeID || !bytes.Equal(after[0].Payload, beforePayload) || afterList != beforeList {
 			t.Fatalf("memory changed collaboration bytes, ID, or behavior")
 		}
-		if refs := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh/actors", "refs/nh/proposals"); refs != beforeRefs {
+		if refs := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn/actors", "refs/hn/proposals"); refs != beforeRefs {
 			t.Fatalf("memory changed collaboration refs:\nbefore=%s\nafter=%s", beforeRefs, refs)
 		}
 	})
@@ -868,11 +868,11 @@ func TestMemoryCommandHandoffInputConflictsFailWithoutRefMutation(t *testing.T) 
 		}
 		for _, test := range cases {
 			t.Run(test.name, func(t *testing.T) {
-				before := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh/memory")
+				before := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn/memory")
 				if _, err := captureTestOutput(t, func() error { return run(test.args) }); err == nil {
 					t.Fatalf("conflicting handoff input succeeded: %v", test.args)
 				}
-				after := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/nh/memory")
+				after := mustGitText(t, "for-each-ref", "--format=%(refname) %(objectname)", "refs/hn/memory")
 				if after != before {
 					t.Fatalf("failed handoff mutated refs: before=%q after=%q", before, after)
 				}
@@ -892,7 +892,7 @@ func TestMemoryCommandHandoffCompiledBlackBoxDocumentedForm(t *testing.T) {
 	}
 	runOperationalGit(t, repository, "init", "-q", "-b", "main")
 	runOperationalGit(t, repository, "config", "user.name", "Handoff Black Box")
-	runOperationalGit(t, repository, "config", "user.email", "handoff@nh.invalid")
+	runOperationalGit(t, repository, "config", "user.email", "handoff@hn.invalid")
 	runOperationalCommand(t, binary, repository, "init", "--name", "Handoff Black Box")
 	runOperationalGit(t, repository, "commit", "--allow-empty", "-q", "-m", "handoff base")
 	head := runOperationalGit(t, repository, "rev-parse", "HEAD")
@@ -1067,14 +1067,14 @@ func withMemoryCommandRepository(t *testing.T, runTest func(string, *Identity)) 
 	withMemoryRepository(t, func() {
 		identity := testIdentity(t, "Memory Agent")
 		writeActiveTestIdentity(t, identity)
-		policy := `{"version":"nh.policy/0","maintainers":["` + identity.Actor + `"],"proposals":{"requiredApprovals":0,"requiredAccepts":1,"trustedReviewers":[],"allowAuthorApproval":false},"pipelines":{},"memory":{"trustedActors":["` + identity.Actor + `"],"trustedKinds":["assumption","attempt","decision","handoff","observation","verification"]}}` + "\n"
-		if err := os.MkdirAll(".nh", 0o755); err != nil {
+		policy := `{"version":"hn.policy/0","maintainers":["` + identity.Actor + `"],"proposals":{"requiredApprovals":0,"requiredAccepts":1,"trustedReviewers":[],"allowAuthorApproval":false},"pipelines":{},"memory":{"trustedActors":["` + identity.Actor + `"],"trustedKinds":["assumption","attempt","decision","handoff","observation","verification"]}}` + "\n"
+		if err := os.MkdirAll(".hn", 0o755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(".nh/policy.json", []byte(policy), 0o644); err != nil {
+		if err := os.WriteFile(".hn/policy.json", []byte(policy), 0o644); err != nil {
 			t.Fatal(err)
 		}
-		mustGit(t, "add", ".nh/policy.json")
+		mustGit(t, "add", ".hn/policy.json")
 		mustGit(t, "commit", "-q", "-m", "memory policy")
 		runTest(mustGitText(t, "rev-parse", "HEAD"), identity)
 	})

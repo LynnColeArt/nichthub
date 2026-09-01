@@ -1,11 +1,15 @@
 # Governance v0
 
 Hubnot policy answers which verified signed claims count for a project. It is
-a normal versioned file at `.nh/policy.json`:
+a normal versioned file at `.hn/policy.json`:
+
+The active policy starts with fresh `hn` actor fingerprints. Roles are never
+imported from `.nh/policy.json`, `.git/nh/**`, or `refs/nh/*`; those paths can
+remain as historical evidence but provide no authority to this protocol.
 
 ```json
 {
-  "version": "nh.policy/0",
+  "version": "hn.policy/0",
   "maintainers": ["<full-actor-fingerprint>"],
   "proposals": {
     "requiredApprovals": 1,
@@ -30,7 +34,7 @@ versions are rejected. Policy files are limited to 1 MiB.
 ## Inspect policy
 
 ```sh
-nh policy show [REV]
+hn policy show [REV]
 ```
 
 The revision defaults to `HEAD` and resolves to one full commit object ID. The
@@ -45,11 +49,15 @@ command runs the canonical parser and validator and prints:
 
 Trust-bearing actor IDs are never shortened in this output.
 
+Trust-bearing commands also require complete `sha256:<64-hex>` event IDs.
+Prefixes are display conveniences and are rejected before event lookup, even
+when a local prefix would happen to be unambiguous.
+
 ## Validate an amendment
 
 ```sh
-nh policy check --base REV --head REV
-nh policy check --base REV --file PATH
+hn policy check --base REV --head REV
+hn policy check --base REV --file PATH
 ```
 
 Exactly one of `--head` and `--file` is required. Both the base and proposed
@@ -71,19 +79,19 @@ Pipeline names and actor IDs are sorted. A malformed side is identified as
 
 A policy amendment introduces no administrator event or mutable control plane.
 It is a normal immutable proposal candidate whose `head` changes
-`.nh/policy.json`:
+`.hn/policy.json`:
 
 ```sh
-nh policy check --base main --file .nh/policy.json
-git add .nh/policy.json
+hn policy check --base main --file .hn/policy.json
+git add .hn/policy.json
 git commit -m "amend collaboration policy"
-nh policy check --base main --head HEAD
-nh proposal open --base main --head HEAD \
+hn policy check --base main --head HEAD
+hn proposal open --base main --head HEAD \
   --body "Governed only by the signed base policy." \
   "Amend collaboration policy"
 ```
 
-When valid policy bytes differ, `nh proposal open` prints both full digests and
+When valid policy bytes differ, `hn proposal open` prints both full digests and
 states which base digest governs. The proposed policy becomes relevant only to
 later candidates whose signed base commit contains those bytes. A candidate
 cannot add a permissive actor or lower a threshold and then use that proposed
@@ -95,7 +103,7 @@ A candidate signs both a base and a head commit. Its governance policy is
 always loaded from:
 
 ```text
-<signed-base-commit>:.nh/policy.json
+<signed-base-commit>:.hn/policy.json
 ```
 
 The SHA-256 protocol ID of those exact bytes is signed by decisions and merge
@@ -115,7 +123,7 @@ non-authoritative inputs:
 
 ## Readiness and exact evidence
 
-`nh proposal status <full-candidate-id>` independently derives readiness from
+`hn proposal status <full-candidate-id>` independently derives readiness from
 accepted repository data:
 
 1. the candidate code ref exists and equals the signed head;
@@ -141,7 +149,7 @@ The required number of distinct current acceptances must be present.
 
 ## Merge and conflict recovery
 
-`nh merge <full-candidate-id>` requires:
+`hn merge <full-candidate-id>` requires:
 
 - a clean worktree on a named branch;
 - a current branch descended from the signed base;
@@ -155,9 +163,19 @@ signed `proposal.merged` event binding the candidate, proposed head, resulting
 merge commit, exact base-policy digest, and acceptance decision IDs.
 
 The merge commit and merge event exist locally before either publication step.
-Publish collaboration refs with `nh sync`; publish the primary branch with an
+Publish collaboration refs with `hn sync`; publish the primary branch with an
 ordinary explicit `git push`. Either action can be retried without rewriting
 the signed fact.
+
+If Git created the merge commit but event creation or append failed, rerun
+`hn merge <full-candidate-id>`. When the proposal head is already contained,
+the repair path reloads and verifies current facts, policy, readiness,
+acceptance evidence, maintainer authority, and lineage. It records the missing
+event only when exactly one first-parent merge commit since the signed base
+directly names the proposal head as a parent. It refuses stale evidence,
+ambiguous or non-direct containment, an existing merge fact, and shallow data
+until the exact dependencies have been recovered. It never performs another
+code merge during repair.
 
 On a Git conflict, Hubnot aborts the merge and restores the previously clean
 worktree. Resolve the code with Git and publish a new immutable

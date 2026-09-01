@@ -60,8 +60,8 @@ func TestReplicationSelectionRoundTripAndRejectsAmbiguity(t *testing.T) {
 	if info.Mode().Perm() != 0o600 {
 		t.Fatalf("selection mode = %o, want 600", info.Mode().Perm())
 	}
-	if !strings.HasPrefix(path, filepath.Join(root, ".git", "nh")+string(os.PathSeparator)) {
-		t.Fatalf("selection escaped .git/nh: %s", path)
+	if !strings.HasPrefix(path, filepath.Join(root, ".git", "hn")+string(os.PathSeparator)) {
+		t.Fatalf("selection escaped .git/hn: %s", path)
 	}
 	shown, err := captureTestOutput(t, func() error { return cmdReplication([]string{"show", "origin"}) })
 	if err != nil {
@@ -207,7 +207,7 @@ func TestSelectedReplicationQuarantinesAndPromotesIndependently(t *testing.T) {
 	t.Cleanup(func() { _ = os.Chdir(original) })
 	mustGit(t, "-C", seed, "init", "-q", "-b", "main")
 	mustGit(t, "-C", seed, "config", "user.name", "Seed")
-	mustGit(t, "-C", seed, "config", "user.email", "seed@nh.invalid")
+	mustGit(t, "-C", seed, "config", "user.email", "seed@hn.invalid")
 	mustGit(t, "-C", seed, "commit", "--allow-empty", "-q", "-m", "base")
 	mustGit(t, "clone", "-q", "--bare", seed, remote)
 	mustGit(t, "clone", "-q", remote, receiver)
@@ -300,7 +300,7 @@ func TestSelectedReplicationQuarantinesAndPromotesIndependently(t *testing.T) {
 	observedQuarantine := false
 	replicationAfterFetchHook = func() error {
 		observedQuarantine = true
-		refs := strings.Fields(mustGitText(t, "for-each-ref", "--format=%(refname)", "refs/nh/remotes/origin"))
+		refs := strings.Fields(mustGitText(t, "for-each-ref", "--format=%(refname)", "refs/hn/remotes/origin"))
 		if !reflect.DeepEqual(refs, []string{acceptedActorRef("origin", bob.Actor)}) {
 			t.Fatalf("accepted refs changed before promotion: %v", refs)
 		}
@@ -344,7 +344,7 @@ func TestSelectedReplicationQuarantinesAndPromotesIndependently(t *testing.T) {
 		t.Fatalf("promoted valid actor is not usable: %v", err)
 	}
 	gitDir := mustGitText(t, "rev-parse", "--absolute-git-dir")
-	transactionFiles, err := filepath.Glob(filepath.Join(gitDir, "nh", "replication", "transactions", "*.json"))
+	transactionFiles, err := filepath.Glob(filepath.Join(gitDir, "hn", "replication", "transactions", "*.json"))
 	if err != nil || len(transactionFiles) != 1 {
 		t.Fatalf("transaction records = %v, err=%v", transactionFiles, err)
 	}
@@ -355,7 +355,7 @@ func TestSelectedReplicationQuarantinesAndPromotesIndependently(t *testing.T) {
 	if strings.Contains(string(record), root) || !strings.Contains(string(record), mismatch.ID) || !strings.Contains(string(record), replicationPromoted) {
 		t.Fatalf("transaction record leaked paths or omitted exact outcomes:\n%s", record)
 	}
-	quarantines, err := filepath.Glob(filepath.Join(gitDir, "nh", "replication", "quarantine", "txn-*"))
+	quarantines, err := filepath.Glob(filepath.Join(gitDir, "hn", "replication", "quarantine", "txn-*"))
 	if err != nil || len(quarantines) != 0 {
 		t.Fatalf("quarantine was not cleaned: %v, err=%v", quarantines, err)
 	}
@@ -394,7 +394,7 @@ func inReplicationTestRepository(t *testing.T) string {
 	t.Cleanup(func() { _ = os.Chdir(original) })
 	mustGit(t, "init", "-q", "-b", "main")
 	mustGit(t, "config", "user.name", "Test")
-	mustGit(t, "config", "user.email", "test@nh.invalid")
+	mustGit(t, "config", "user.email", "test@hn.invalid")
 	mustGit(t, "commit", "--allow-empty", "-q", "-m", "base")
 	return root
 }
@@ -437,7 +437,7 @@ func TestReplicationRejectsSignedMergeWithWrongProposalHeadIndependently(t *test
 	t.Cleanup(func() { _ = os.Chdir(original) })
 	mustGit(t, "-C", publisher, "init", "-q", "-b", "main")
 	mustGit(t, "-C", publisher, "config", "user.name", "Publisher")
-	mustGit(t, "-C", publisher, "config", "user.email", "publisher@nh.invalid")
+	mustGit(t, "-C", publisher, "config", "user.email", "publisher@hn.invalid")
 	if err := os.Chdir(publisher); err != nil {
 		t.Fatal(err)
 	}
@@ -447,7 +447,7 @@ func TestReplicationRejectsSignedMergeWithWrongProposalHeadIndependently(t *test
 		Proposals: ProposalPolicy{RequiredAccepts: 1, AllowAuthorApproval: true},
 		Pipelines: map[string]PipelinePolicy{},
 	})
-	mustGit(t, "add", ".nh/policy.json")
+	mustGit(t, "add", ".hn/policy.json")
 	mustGit(t, "commit", "-q", "-m", "policy")
 	base := mustGitText(t, "rev-parse", "HEAD")
 	mustGit(t, "commit", "--allow-empty", "-q", "-m", "candidate")
@@ -562,13 +562,13 @@ func TestReplicationErrorsNeverDiscloseTransportOrSetupSecrets(t *testing.T) {
 		t.Cleanup(func() { _ = os.Chdir(original) })
 		mustGit(t, "init", "-q", "-b", "main")
 		mustGit(t, "config", "user.name", "Test")
-		mustGit(t, "config", "user.email", "test@nh.invalid")
+		mustGit(t, "config", "user.email", "test@hn.invalid")
 		mustGit(t, "commit", "--allow-empty", "-q", "-m", "base")
 		remote := filepath.Join(t.TempDir(), "empty.git")
 		mustGit(t, "init", "--bare", "-q", remote)
 		mustGit(t, "remote", "add", "review", remote)
 		gitDir := mustGitText(t, "rev-parse", "--absolute-git-dir")
-		if err := os.WriteFile(filepath.Join(gitDir, "nh"), []byte("not a directory"), 0o600); err != nil {
+		if err := os.WriteFile(filepath.Join(gitDir, "hn"), []byte("not a directory"), 0o600); err != nil {
 			t.Fatal(err)
 		}
 		_, err = runReplicationTransaction(ReplicationSelection{
@@ -679,7 +679,7 @@ func TestReplicationTransactionPhaseFailuresAreSanitizedAndAtomic(t *testing.T) 
 		assertRefValue(t, acceptedActorRef(selection.Remote, actor.Actor), stored.Commit)
 		mustGit(t, "cat-file", "-e", stored.Commit+"^{object}")
 		gitDir := mustGitText(t, "rev-parse", "--absolute-git-dir")
-		record, readErr := os.ReadFile(filepath.Join(gitDir, "nh", "replication", "transactions", result.ID+".json"))
+		record, readErr := os.ReadFile(filepath.Join(gitDir, "hn", "replication", "transactions", result.ID+".json"))
 		if readErr != nil {
 			t.Fatal(readErr)
 		}
@@ -704,7 +704,7 @@ func TestReplicationRejectsHostileValidationLayersIndependently(t *testing.T) {
 	t.Cleanup(func() { _ = os.Chdir(original) })
 	mustGit(t, "-C", publisher, "init", "-q", "-b", "main")
 	mustGit(t, "-C", publisher, "config", "user.name", "Publisher")
-	mustGit(t, "-C", publisher, "config", "user.email", "publisher@nh.invalid")
+	mustGit(t, "-C", publisher, "config", "user.email", "publisher@hn.invalid")
 	mustGit(t, "-C", publisher, "commit", "--allow-empty", "-q", "-m", "base")
 	if err := os.Chdir(publisher); err != nil {
 		t.Fatal(err)
@@ -892,7 +892,7 @@ func setupSingleActorReplication(t *testing.T) (ReplicationSelection, *Identity,
 	t.Cleanup(func() { _ = os.Chdir(original) })
 	mustGit(t, "-C", publisher, "init", "-q", "-b", "main")
 	mustGit(t, "-C", publisher, "config", "user.name", "Publisher")
-	mustGit(t, "-C", publisher, "config", "user.email", "publisher@nh.invalid")
+	mustGit(t, "-C", publisher, "config", "user.email", "publisher@hn.invalid")
 	mustGit(t, "-C", publisher, "commit", "--allow-empty", "-q", "-m", "base")
 	if err := os.Chdir(publisher); err != nil {
 		t.Fatal(err)
@@ -950,7 +950,7 @@ func TestReplicationTransactionBudgetBoundaries(t *testing.T) {
 	t.Cleanup(func() { _ = os.Chdir(original) })
 	mustGit(t, "-C", publisher, "init", "-q", "-b", "main")
 	mustGit(t, "-C", publisher, "config", "user.name", "Budget Publisher")
-	mustGit(t, "-C", publisher, "config", "user.email", "budget@nh.invalid")
+	mustGit(t, "-C", publisher, "config", "user.email", "budget@hn.invalid")
 	if err := os.Chdir(publisher); err != nil {
 		t.Fatal(err)
 	}

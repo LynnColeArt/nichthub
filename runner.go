@@ -21,7 +21,7 @@ type runnerOptions struct {
 
 func cmdRunner(args []string) error {
 	if len(args) == 0 {
-		return usageError("usage: nh runner <once|watch> --accept-pipeline NAME --accept-actor ACTOR")
+		return usageError("usage: hn runner <once|watch> --accept-pipeline NAME --accept-actor ACTOR")
 	}
 	switch args[0] {
 	case "once":
@@ -116,7 +116,7 @@ func runnerOnceContext(ctx context.Context, options runnerOptions) (bool, error)
 		fmt.Printf("Runner accepted request %s from %s for pipeline %s\n", shortID(request.ID), shortID(request.Event.Actor), oneLine(request.Event.Pipeline))
 		stored, err := executeRunRequest(ctx, events, request, identity, options.Backend, false)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "nh runner: skipped %s: %v\n", shortID(request.ID), err)
+			fmt.Fprintf(os.Stderr, "hn runner: skipped %s: %v\n", shortID(request.ID), err)
 			if firstError == nil {
 				firstError = err
 			}
@@ -148,7 +148,7 @@ func runnerWatch(options runnerOptions) error {
 				fmt.Println("Runner stopped.")
 				return nil
 			}
-			fmt.Fprintf(os.Stderr, "nh runner: %v\n", err)
+			fmt.Fprintf(os.Stderr, "hn runner: %v\n", err)
 			ran = false
 		}
 		if ran {

@@ -8,7 +8,7 @@ claims qualify as authority.
 ## Save a per-remote selection
 
 ```sh
-nh replication select [REMOTE] \
+hn replication select [REMOTE] \
   [--actor <full-64-hex-actor>]... \
   [--proposal <full-sha256-candidate-event-id>]... \
   [--memory <full-sha256-stream-id>]... \
@@ -19,7 +19,7 @@ nh replication select [REMOTE] \
   [--max-attachment-bytes N] \
   [--max-total-bytes N]
 
-nh replication show [REMOTE]
+hn replication show [REMOTE]
 ```
 
 The remote defaults to `origin`. Actor, candidate, and memory-stream selectors
@@ -29,7 +29,7 @@ actor, candidate, or memory stream. An actor/candidate-only selection imports
 zero memory; memory selection is independent transport authorization.
 
 Selections are sorted and saved as owner-only local state below
-`.git/nh/replication/selections/`; they are never committed or published.
+`.git/hn/replication/selections/`; they are never committed or published.
 `show` reports whether the selection was explicitly saved, whether
 compatibility-all is active, every full selected ID, and every budget.
 
@@ -44,8 +44,8 @@ When flags are omitted, the saved budget defaults are:
 | `max-total-bytes` | 1,073,741,824 (1 GiB) |
 
 No saved selection means version-0 bounded compatibility-all. The client
-enumerates advertised `refs/nh/actors/*`, `refs/nh/proposals/*`, and
-`refs/nh/memory/*/*`, accepts only well-formed ref names, and sends every
+enumerates advertised `refs/hn/actors/*`, `refs/hn/proposals/*`, and
+`refs/hn/memory/*/*`, accepts only well-formed ref names, and sends every
 discovered ref through the same quarantine, budgets, validation, and promotion
 path. A memory stream ID must resolve to one unambiguous actor owner. An
 explicit saved selection remains authoritative until replaced.
@@ -55,19 +55,19 @@ explicit saved selection remains authoritative until replaced.
 For each selected actor, Hubnot requests exactly:
 
 ```text
-+refs/nh/actors/<full-actor>:refs/nh/quarantine/actors/<full-actor>
++refs/hn/actors/<full-actor>:refs/hn/quarantine/actors/<full-actor>
 ```
 
 For each selected candidate, it requests exactly:
 
 ```text
-+refs/nh/proposals/<candidate-hash>:refs/nh/quarantine/proposals/<candidate-hash>
++refs/hn/proposals/<candidate-hash>:refs/hn/quarantine/proposals/<candidate-hash>
 ```
 
 For each selected memory stream, it requests exactly the one advertised owner:
 
 ```text
-+refs/nh/memory/<full-actor>/<stream-hash>:refs/nh/quarantine/memory/<full-actor>/<stream-hash>
++refs/hn/memory/<full-actor>/<stream-hash>:refs/hn/quarantine/memory/<full-actor>/<stream-hash>
 ```
 
 The destination refs live inside a generated separate bare repository, not the
@@ -97,9 +97,9 @@ main object database. The transaction then:
 Accepted roots are:
 
 ```text
-refs/nh/remotes/<remote>/actors/<full-actor>
-refs/nh/remotes/<remote>/proposals/<candidate-hash>
-refs/nh/remotes/<remote>/memory/<full-actor>/<stream-hash>
+refs/hn/remotes/<remote>/actors/<full-actor>
+refs/hn/remotes/<remote>/proposals/<candidate-hash>
+refs/hn/remotes/<remote>/memory/<full-actor>/<stream-hash>
 ```
 
 `collectEvents` projects only local actor refs and these accepted remote refs.
@@ -136,7 +136,7 @@ memory, or disk quotas.
 
 ## Per-selection failure isolation
 
-`nh sync` reports one outcome per full selected actor/candidate/stream ID. A
+`hn sync` reports one outcome per full selected actor/candidate/stream ID. A
 memory outcome has `kind=memory` and the full stream ID:
 
 - `promoted` — selected data validated and its accepted ref committed;
@@ -166,14 +166,14 @@ prefix is substituted.
 
 ## Publication is separate from import
 
-After import, `nh sync [REMOTE]` uses ordinary explicit Git pushes to publish
-all local `refs/nh/actors/*` histories, locally present
-`refs/nh/proposals/*` candidate refs, and local `refs/nh/memory/*/*` streams.
-Remote histories accepted under `refs/nh/remotes/*` are not republished as
+After import, `hn sync [REMOTE]` uses ordinary explicit Git pushes to publish
+all local `refs/hn/actors/*` histories, locally present
+`refs/hn/proposals/*` candidate refs, and local `refs/hn/memory/*/*` streams.
+Remote histories accepted under `refs/hn/remotes/*` are not republished as
 local facts. The command does not push a primary branch:
 
 ```sh
-nh sync origin
+hn sync origin
 git push origin main:main
 ```
 
@@ -201,7 +201,7 @@ fails with a durable diagnostic containing:
 Recovery is explicit:
 
 ```sh
-nh replication select origin \
+hn replication select origin \
   --actor <full-supplying-actor> \
   --proposal <full-supplying-candidate> \
   --memory <full-supplying-stream> \
@@ -210,7 +210,7 @@ nh replication select origin \
   --max-object-bytes 16777216 \
   --max-attachment-bytes 1048576 \
   --max-total-bytes 268435456
-nh sync origin --recover-shallow
+hn sync origin --recover-shallow
 ```
 
 Recovery requires an explicitly saved exact selection; compatibility-all is
@@ -228,7 +228,7 @@ after successful recovery is an idempotent accepted-projection verification.
 
 Selections, generated quarantine repositories, transaction receipts, pending
 anchors, unaccepted-object records, and shallow-gap records live below
-`.git/nh/replication/` or `.git/nh/`. Directories require mode `0700`; state
+`.git/hn/replication/` or `.git/hn/`. Directories require mode `0700`; state
 files require mode `0600`; symlinks, unexpected entries, unknown JSON fields,
 oversized records, missing matching anchors/receipts, and unsafe modes fail
 closed.

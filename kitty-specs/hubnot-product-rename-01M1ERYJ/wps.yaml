@@ -1,0 +1,103 @@
+work_packages:
+  - id: WP01
+    title: "Rename runtime and module identity"
+    dependencies: []
+    owned_files:
+      - ".gitignore"
+      - "go.mod"
+      - "main.go"
+      - "ci.go"
+      - "replication.go"
+      - "memory_commands_test.go"
+      - "policy_commands_test.go"
+    requirement_refs:
+      - FR-001
+      - FR-002
+      - FR-003
+      - FR-007
+      - FR-010
+      - NFR-001
+      - NFR-002
+      - C-002
+      - C-003
+    plan_concern_refs:
+      - IC-01
+      - IC-02
+    subtasks:
+      - T001
+      - T002
+      - T003
+      - T004
+    prompt_file: "tasks/WP01-rename-runtime-and-module-identity.md"
+    agent_profile: "implementer-ivan"
+    role: "implementer"
+    agent: "codex"
+    model: ""
+
+  - id: WP02
+    title: "Rename documentation and active project metadata"
+    dependencies: []
+    owned_files:
+      - "README.md"
+      - "docs/**"
+      - ".kittify/config.yaml"
+      - ".kittify/charter/charter.md"
+      - ".kittify/charter/interview/answers.yaml"
+      - ".kittify/glossaries/team_domain.yaml"
+    requirement_refs:
+      - FR-001
+      - FR-004
+      - FR-005
+      - FR-006
+      - FR-007
+      - FR-008
+      - FR-009
+      - NFR-003
+      - C-001
+      - C-002
+      - C-003
+    plan_concern_refs:
+      - IC-01
+      - IC-02
+    subtasks:
+      - T005
+      - T006
+      - T007
+      - T008
+    prompt_file: "tasks/WP02-rename-documentation-and-active-project-metadata.md"
+    agent_profile: "curator-carla"
+    role: "curator"
+    agent: "codex"
+    model: ""
+
+  - id: WP03
+    title: "Prove compatibility and public cutover"
+    dependencies:
+      - WP01
+      - WP02
+    owned_files:
+      - "kitty-specs/hubnot-product-rename-01M1ERYJ/rename-verification.md"
+    requirement_refs:
+      - FR-004
+      - FR-007
+      - FR-008
+      - NFR-001
+      - NFR-002
+      - NFR-003
+      - NFR-004
+      - C-001
+      - C-002
+      - C-003
+    plan_concern_refs:
+      - IC-02
+      - IC-03
+    subtasks:
+      - T009
+      - T010
+      - T011
+      - T012
+    prompt_file: "tasks/WP03-prove-compatibility-and-public-cutover.md"
+    agent_profile: "researcher-robbie"
+    role: "researcher"
+    agent: "codex"
+    model: ""

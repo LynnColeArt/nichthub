@@ -1,0 +1,109 @@
+{
+  "mission_slug": "hubnot-product-rename-01M1ERYJ",
+  "mission_number": "",
+  "mission_type": "software-dev",
+  "overall_verdict": "pass",
+  "criteria": [
+    {
+      "criterion_id": "FR-001",
+      "description": "Verify FR-001 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "rename-verification.md#occurrence-classification",
+      "pass_fail": "pass",
+      "verified_by": "codex",
+      "verified_at": "2026-09-01T16:29:26.889633+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-002",
+      "description": "Verify FR-002 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "rename-verification.md#release-gates",
+      "pass_fail": "pass",
+      "verified_by": "codex",
+      "verified_at": "2026-09-01T16:29:29.989761+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-003",
+      "description": "Verify FR-003 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "rename-verification.md#credential-free-fresh-clone",
+      "pass_fail": "pass",
+      "verified_by": "codex",
+      "verified_at": "2026-09-01T16:29:32.935596+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-004",
+      "description": "Verify FR-004 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "rename-verification.md#governed-public-cutover",
+      "pass_fail": "pass",
+      "verified_by": "codex",
+      "verified_at": "2026-09-01T16:29:36.905274+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-005",
+      "description": "Verify FR-005 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "rename-verification.md#occurrence-classification",
+      "pass_fail": "pass",
+      "verified_by": "codex",
+      "verified_at": "2026-09-01T16:29:40.679205+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-006",
+      "description": "Verify FR-006 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "rename-verification.md#occurrence-classification",
+      "pass_fail": "pass",
+      "verified_by": "codex",
+      "verified_at": "2026-09-01T16:29:43.739081+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-007",
+      "description": "Verify FR-007 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "rename-verification.md#frozen-namespace-inventory",
+      "pass_fail": "pass",
+      "verified_by": "codex",
+      "verified_at": "2026-09-01T16:29:46.783721+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-008",
+      "description": "Verify FR-008 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "rename-verification.md#immutable-evidence",
+      "pass_fail": "pass",
+      "verified_by": "codex",
+      "verified_at": "2026-09-01T16:29:49.783663+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-009",
+      "description": "Verify FR-009 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "rename-verification.md#frozen-namespace-inventory",
+      "pass_fail": "pass",
+      "verified_by": "codex",
+      "verified_at": "2026-09-01T16:29:53.737456+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-010",
+      "description": "Verify FR-010 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "rename-verification.md#release-gates",
+      "pass_fail": "pass",
+      "verified_by": "codex",
+      "verified_at": "2026-09-01T16:29:57.271461+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    }
+  ],
+  "negative_invariants": []
+}

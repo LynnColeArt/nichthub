@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	policyVersion = "nh.policy/0"
+	policyVersion = "hn.policy/0"
 	maxPolicySize = 1 << 20
 )
 
@@ -21,7 +21,7 @@ type PolicyDocument struct {
 	Memory      *MemoryPolicy             `json:"memory,omitempty"`
 }
 
-// MemoryPolicy is deliberately optional so repositories with an nh.policy/0
+// MemoryPolicy is deliberately optional so repositories with an hn.policy/0
 // document predating memory remain valid. Absence is not implicit trust.
 type MemoryPolicy struct {
 	TrustedActors []string `json:"trustedActors"`
@@ -76,9 +76,9 @@ func loadPolicy(commit string) (PolicyDocument, []byte, string, error) {
 	if err := replicationPendingError(gitDir, commit); err != nil {
 		return PolicyDocument{}, nil, "", err
 	}
-	encoded, err := gitOutput("show", commit+":.nh/policy.json")
+	encoded, err := gitOutput("show", commit+":.hn/policy.json")
 	if err != nil {
-		return PolicyDocument{}, nil, "", fmt.Errorf("no .nh/policy.json at commit %s", commit)
+		return PolicyDocument{}, nil, "", fmt.Errorf("no .hn/policy.json at commit %s", commit)
 	}
 	policy, digest, err := parsePolicyBytes(encoded)
 	if err != nil {
@@ -477,6 +477,9 @@ func proposalStatus(evaluation *ProposalEvaluation) string {
 }
 
 func cmdProposalStatus(query string) error {
+	if err := requireFullEventID(query); err != nil {
+		return err
+	}
 	if err := prepareShallowVerification(shallowVerificationScope{Operation: "proposal status", Subject: query}); err != nil {
 		return err
 	}
