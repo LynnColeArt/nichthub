@@ -1,0 +1,7 @@
+source_id,source_type,location,description
+S-001,repository,"*.go and *_test.go","Manual pre-edit runtime and test occurrence inventory"
+S-002,repository,"README.md and docs/*.md excluding historical reports","Active user and protocol contract inventory"
+S-003,repository,"kitty-specs/**; kitty-ops/**; .kittify/canonical-events.jsonl; docs/self-hosting-alpha.md","Historical provenance inventory"
+S-004,git,"origin and local refs/nh/*","Existing public append-only collaboration evidence"
+S-005,repository,".nh/policy.json and .nh/pipelines/test.json","Final legacy governance inputs"
+S-006,user-provided,"Nichthub QA Review — Technical, 2026-09-01","Independent build, race, security, and contract review"
