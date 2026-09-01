@@ -424,6 +424,13 @@ func resolveEvent(events []StoredEvent, query string) (*StoredEvent, error) {
 	return match, nil
 }
 
+func requireFullEventID(query string) error {
+	if !validEventID(query) {
+		return fmt.Errorf("event ID must be full and valid (sha256:<64-hex>)")
+	}
+	return nil
+}
+
 func validateActorChains(events []StoredEvent) error {
 	byActor := make(map[string][]StoredEvent)
 	for _, event := range events {

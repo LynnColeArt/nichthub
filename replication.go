@@ -20,7 +20,7 @@ const (
 	replicationMemory   = "memory"
 )
 
-var errShallowRecoveryUnavailable = errors.New("selected shallow recovery is not available until WP05")
+var errShallowRecoverySelectionRequired = errors.New("selected shallow recovery requires an exact saved selection")
 
 type ReplicationBudgets struct {
 	MaxEvents          int64 `json:"maxEvents"`

@@ -112,6 +112,9 @@ func cmdIssueComment(args []string) error {
 		return usageError("usage: hn issue comment ISSUE [--body TEXT] [TEXT]")
 	}
 	subjectQuery := args[0]
+	if err := requireFullEventID(subjectQuery); err != nil {
+		return err
+	}
 	flags := quietFlags("issue comment")
 	bodyFlag := flags.String("body", "", "comment body")
 	if err := flags.Parse(args[1:]); err != nil {

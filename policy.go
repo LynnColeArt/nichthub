@@ -477,6 +477,9 @@ func proposalStatus(evaluation *ProposalEvaluation) string {
 }
 
 func cmdProposalStatus(query string) error {
+	if err := requireFullEventID(query); err != nil {
+		return err
+	}
 	if err := prepareShallowVerification(shallowVerificationScope{Operation: "proposal status", Subject: query}); err != nil {
 		return err
 	}

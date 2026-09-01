@@ -40,8 +40,14 @@ type bubblewrapBackend struct {
 }
 
 func newBubblewrapBackend() bubblewrapBackend {
-	binary, _ := exec.LookPath("bwrap")
-	return bubblewrapBackend{binary: binary}
+	for _, directory := range sandboxSystemDirectories() {
+		candidate := filepath.Join(directory, "bwrap")
+		info, err := os.Stat(candidate)
+		if err == nil && info.Mode().IsRegular() && info.Mode().Perm()&0o111 != 0 {
+			return bubblewrapBackend{binary: candidate}
+		}
+	}
+	return bubblewrapBackend{}
 }
 
 func (backend bubblewrapBackend) Name() string { return "sandbox" }
@@ -129,19 +135,17 @@ func pipelineWorkingDirectory(root, relative string) string {
 	return filepath.Join(root, filepath.Clean(relative))
 }
 
+func sandboxSystemDirectories() []string {
+	return []string{
+		"/usr/local/sbin",
+		"/usr/local/bin",
+		"/usr/sbin",
+		"/usr/bin",
+		"/sbin",
+		"/bin",
+	}
+}
+
 func sandboxPath() string {
-	seen := make(map[string]bool)
-	directories := make([]string, 0)
-	for _, directory := range filepath.SplitList(os.Getenv("PATH")) {
-		cleaned := filepath.Clean(directory)
-		allowed := cleaned == "/bin" || cleaned == "/sbin" || cleaned == "/usr" || strings.HasPrefix(cleaned, "/usr/")
-		if allowed && !seen[cleaned] {
-			seen[cleaned] = true
-			directories = append(directories, cleaned)
-		}
-	}
-	if len(directories) == 0 {
-		return "/usr/local/bin:/usr/bin:/bin"
-	}
-	return strings.Join(directories, string(os.PathListSeparator))
+	return strings.Join(sandboxSystemDirectories(), string(os.PathListSeparator))
 }

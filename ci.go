@@ -191,6 +191,9 @@ func cmdRunRequest(args []string) error {
 	if len(args) != 2 {
 		return usageError("usage: hn run request PROPOSAL PIPELINE")
 	}
+	if err := requireFullEventID(args[0]); err != nil {
+		return err
+	}
 	if err := prepareShallowVerification(shallowVerificationScope{Operation: "run request", Subject: args[0], Pipeline: args[1]}); err != nil {
 		return err
 	}
@@ -394,6 +397,9 @@ func cmdRunExecute(args []string) error {
 		return usageError("usage: hn run execute REQUEST [--backend sandbox|host] [--allow-unsafe-host-execution] [--rerun]")
 	}
 	query := args[0]
+	if err := requireFullEventID(query); err != nil {
+		return err
+	}
 	flags := quietFlags("run execute")
 	backendName := flags.String("backend", "sandbox", "execution backend: sandbox or host")
 	allowHost := flags.Bool("allow-unsafe-host-execution", false, "execute untrusted repository code without isolation")

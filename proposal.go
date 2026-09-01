@@ -46,6 +46,9 @@ func cmdProposalRevise(args []string) error {
 		return usageError("usage: hn proposal revise PREDECESSOR --base REV --head REV [--body TEXT]")
 	}
 	predecessorQuery := args[0]
+	if err := requireFullEventID(predecessorQuery); err != nil {
+		return err
+	}
 	flags := quietFlags("proposal revise")
 	baseRevision := flags.String("base", "", "base Git revision")
 	headRevision := flags.String("head", "", "revised Git revision")
@@ -413,6 +416,9 @@ func cmdReview(args []string) error {
 		return usageError("usage: hn review PROPOSAL <--approve|--request-changes> [--body TEXT]")
 	}
 	proposalQuery := args[0]
+	if err := requireFullEventID(proposalQuery); err != nil {
+		return err
+	}
 	flags := quietFlags("review")
 	approve := flags.Bool("approve", false, "approve the proposal")
 	requestChanges := flags.Bool("request-changes", false, "request changes")

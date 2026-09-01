@@ -1903,7 +1903,7 @@ func recoverSelectedShallow(remote string) error {
 		return err
 	}
 	if !explicit || selection.All {
-		return fmt.Errorf("%w: save an exact actor/proposal/memory selection and positive budgets for remote %s", errShallowRecoveryUnavailable, remote)
+		return fmt.Errorf("%w: save an exact actor/proposal/memory selection and positive budgets for remote %s", errShallowRecoverySelectionRequired, remote)
 	}
 	selectionPath, err := replicationSelectionPath(remote)
 	if err != nil {
