@@ -23,6 +23,9 @@ requirement_refs:
 planning_base_branch: feat/hn-hard-cutover
 merge_target_branch: feat/hn-hard-cutover
 branch_strategy: Planning artifacts for this mission were generated on feat/hn-hard-cutover. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/hn-hard-cutover unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-hn-hard-cutover-01M1EY1B
+base_commit: 7fac139f0dbf98f7c00d5f02a1870281d39c5ef5
+created_at: '2026-09-01T17:08:58.833234+00:00'
 subtasks:
 - T001
 - T002
