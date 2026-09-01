@@ -66,14 +66,16 @@ historical records rather than seeing event journals rewritten after the fact.
 **Why this priority**: Append-only and exact-byte history is a core project
 claim.
 
-**Independent Test**: Compare canonical event journals and signed collaboration
-refs before and after the rename; their object IDs and bytes are identical.
+**Independent Test**: Compare canonical event journals and every pre-mission
+signed collaboration event before and after the rename; journal bytes and
+existing event object IDs are unchanged, while actor refs may only fast-forward
+through new governed events.
 
 **Acceptance Scenarios**:
 
 1. **Given** append-only Spec Kitty event journals and signed `refs/nh/*`
    facts, **when** the rename lands, **then** those historical bytes are not
-   edited or replaced.
+   edited or replaced and ref movement is append-only.
 2. **Given** current prose derived from older work, **when** it describes the
    product rather than a literal historical value, **then** it uses Hubnot.
 3. **Given** a literal historical path, slug, event payload, or immutable
@@ -106,7 +108,7 @@ refs before and after the rename; their object IDs and bytes are identical.
 | FR-005 | Active metadata | Change active project configuration, charter prose, and glossary terminology to Hubnot. | High | Open |
 | FR-006 | Current docs | Rename product references in README, protocol guides, operating guides, and current prose mission artifacts. | High | Open |
 | FR-007 | Compatibility namespaces | Preserve `nh`, `.nh`, `refs/nh/*`, `nh/0`, `nh.pipeline/0`, `nh.policy/0`, and `nh-memory/0`. | High | Open |
-| FR-008 | Historical integrity | Preserve canonical event journals, signed collaboration histories, literal historical slugs, and exact historical filesystem paths. | High | Open |
+| FR-008 | Historical integrity | Preserve canonical event journals, every existing signed collaboration event and its object ID, literal historical slugs, and exact historical filesystem paths; governance refs may only fast-forward. | High | Open |
 | FR-009 | Accurate runner example | Replace the obsolete branded runner example with the implementation's `nh/<version>` form. | Medium | Open |
 | FR-010 | Generated artifact hygiene | Stop treating a build artifact named after the former product as the current product artifact. | Medium | Open |
 
@@ -145,8 +147,9 @@ refs before and after the rename; their object IDs and bytes are identical.
   current project metadata contain zero unclassified former-name occurrences.
 - **SC-002**: All classified compatibility namespace strings are byte-identical
   before and after the rename.
-- **SC-003**: All canonical event journals and signed collaboration refs retain
-  their pre-mission bytes and object IDs.
+- **SC-003**: All canonical event journals retain their pre-mission bytes; every
+  pre-mission signed event remains byte-identical and reachable, with no
+  collaboration ref rewrite or non-fast-forward movement.
 - **SC-004**: Full test, race, vet, build, formatting, and diff gates pass.
 - **SC-005**: The public `origin` advertises the renamed URL and a
   credential-free fresh clone can build and execute acceptance tests.

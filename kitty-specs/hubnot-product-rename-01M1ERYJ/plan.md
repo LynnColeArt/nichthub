@@ -60,15 +60,17 @@ the renamed remote.
 
 ## Implementation Strategy
 
-1. Capture baseline object IDs for excluded tracked journals and all local
-   collaboration refs.
+1. Capture baseline blob IDs for excluded tracked journals and the complete set
+   of reachable pre-mission signed event IDs.
 2. Rename active source, module, docs, charter/configuration, test fixtures,
    and current repository URLs according to the occurrence map.
 3. Replace `.gitignore`'s obsolete generated binary basename and remove only
    the ignored local generated binary with that basename.
 4. Audit every remaining case-insensitive source-term occurrence and classify
    it as an approved historical/map exception; reject any active occurrence.
-5. Verify excluded journal blobs and collaboration refs are byte/OID identical.
+5. Verify excluded journal blobs are byte-identical and every pre-mission signed
+   event is still byte-identical and reachable; any actor-ref movement must be
+   an append-only fast-forward caused by governed mission facts.
 6. Run formatting, diff, build, vet, uncached tests, race tests, and compiled
    operational acceptance scenarios with host Git configuration disabled.
 7. Review the aggregate diff, then land through the existing `nh` governance
