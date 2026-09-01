@@ -18,7 +18,7 @@ that must never enter a memory implicitly.
 
 Only `nh memory record`, `handoff`, `supersede`, `retract`, and `challenge`
 append memory, and only from explicit command flags, one explicit content
-argument, or strict versioned JSON input. Nichthub does not inspect a chat,
+argument, or strict versioned JSON input. Hubnot does not inspect a chat,
 terminal history, environment, clipboard, home directory, credential helper,
 or unrelated working-tree file. Operators and adapters must remove secrets
 before deliberately supplying content; a signature preserves a leaked secret

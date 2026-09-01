@@ -1,11 +1,11 @@
-# Nichthub Project Charter
+# Hubnot Project Charter
 
 This is the human-readable companion to the authoritative runtime charter in
 `.kittify/charter/charter.yaml`.
 
 ## Purpose
 
-Nichthub supplies the collaboration layer Git deliberately does not: portable
+Hubnot supplies the collaboration layer Git deliberately does not: portable
 issues, proposals, reviews, policy decisions, CI requests and attestations. Its
 central promise is that this state travels with a repository, remains signed
 and independently verifiable, and does not depend on a particular forge.
@@ -31,7 +31,7 @@ runner-isolation, policy, or recovery changes update the relevant documentation
 in the same mission.
 
 Every work package is reviewed before approval. A mission uses a focused branch
-and Spec Kitty execution lanes. As Nichthub gains the necessary capabilities,
+and Spec Kitty execution lanes. As Hubnot gains the necessary capabilities,
 we also dogfood its signed proposal, review, CI, decision, and merge path; that
 demonstrates interoperability, but self-approval is not independent trust.
 

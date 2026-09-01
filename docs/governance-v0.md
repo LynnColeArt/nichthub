@@ -1,6 +1,6 @@
 # Governance v0
 
-Nichthub policy answers which verified signed claims count for a project. It is
+Hubnot policy answers which verified signed claims count for a project. It is
 a normal versioned file at `.nh/policy.json`:
 
 ```json
@@ -159,7 +159,7 @@ Publish collaboration refs with `nh sync`; publish the primary branch with an
 ordinary explicit `git push`. Either action can be retried without rewriting
 the signed fact.
 
-On a Git conflict, Nichthub aborts the merge and restores the previously clean
+On a Git conflict, Hubnot aborts the merge and restores the previously clean
 worktree. Resolve the code with Git and publish a new immutable
 `proposal.revise` candidate with explicit base and head commits. The original,
 siblings, and their evidence remain inspectable. The revision requires new

@@ -1,6 +1,6 @@
 # Agent Memory Protocol v0
 
-Nichthub memory is deliberate, signed project cognition carried by Git. It is
+Hubnot memory is deliberate, signed project cognition carried by Git. It is
 a separate additive protocol, `nh-memory/0`; memory is not an `nh/0`
 collaboration event and does not alter existing event IDs or actor histories.
 The implementation is repository-local and experimental.
@@ -127,7 +127,7 @@ Machine record and handoff requests are strict version-0 JSON. For handoff
 input, `--at` and `--applies` supply omitted anchor/applicability context; if
 the JSON also supplies either field it must match exactly. Other record flags
 cannot be combined with `--input`. Unknown or duplicate fields, conflicts,
-invalid UTF-8, and oversized input fail before append. Nichthub reads only
+invalid UTF-8, and oversized input fail before append. Hubnot reads only
 explicitly supplied fields; it does not capture prompts, responses, terminal
 history, environment, clipboard, credentials, or unrelated working-tree files.
 

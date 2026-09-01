@@ -1,6 +1,6 @@
 # Hosted Git compatibility
 
-Nichthub needs an ordinary Git remote to accept, advertise, and transfer
+Hubnot needs an ordinary Git remote to accept, advertise, and transfer
 objects reachable through `refs/nh/*`. This document records direct
 observations only; it does not infer support for providers or configurations
 that were not tested. Hosting UI/API state is not evidence.
@@ -20,7 +20,7 @@ ordinary Git transport. The three-run operational scenario and focused hostile
 fixtures directly establish:
 
 - separate actor and candidate refs are advertised and exact-fetched;
-- actor and candidate objects cross the remote without a Nichthub service;
+- actor and candidate objects cross the remote without a Hubnot service;
 - explicit selections exclude unselected refs;
 - valid selections can promote while invalid, mismatched, over-budget, and
   dependency-missing selections remain absent from accepted refs;
@@ -62,7 +62,7 @@ refs/nh/actors/e675ea17...
 Ordinary `git push`, `git ls-remote`, and explicit Git fetch established:
 
 1. a new actor ref was accepted and advertised unchanged;
-2. a fresh clone fetched actor history only after Nichthub supplied an
+2. a fresh clone fetched actor history only after Hubnot supplied an
    explicit custom refspec;
 3. a second actor published a separate signed comment history;
 4. the first clone fetched it and reconstructed both verified events;
@@ -74,7 +74,7 @@ not claim those newer surfaces for the private-repository configuration.
 ## GitHub.com public operational-alpha observation
 
 Before the operational-alpha public mutation on 2026-08-30, ordinary Git
-advertisement for `https://github.com/LynnColeArt/nichthub.git` returned:
+advertisement for `https://github.com/LynnColeArt/hubnot.git` returned:
 
 ```text
 refs/heads/main e8b0955a3d10b5677fb0dfaba42580f8f4473080
@@ -111,7 +111,7 @@ The complete event, policy, object, and commit record is in
 ## GitHub.com public agent-memory observation
 
 On 2026-08-31, the public endpoint
-`https://github.com/LynnColeArt/nichthub.git` was exercised using ordinary
+`https://github.com/LynnColeArt/hubnot.git` was exercised using ordinary
 `git` and `nh` commands only. No provider API, UI state, Docker operation,
 service, model API, copied keyring, or copied index participated.
 

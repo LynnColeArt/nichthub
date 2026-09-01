@@ -128,14 +128,14 @@ The same focused test also preserves the exact standalone legacy fixture ID
 
 The automated proof used zero public network mutations, zero hosting-provider
 API calls, zero Docker operations, and zero copied private identity. It reset
-home, credential-helper, askpass, token, and Nichthub test environment surfaces
+home, credential-helper, askpass, token, and Hubnot test environment surfaces
 for subprocesses. Run-specific random actor/event IDs are intentionally not
 recorded; the assertions above and stable fixture IDs are reproducible.
 
 ## Public staged proof
 
 Observed on 2026-08-30 against the public ordinary-Git endpoint
-`https://github.com/LynnColeArt/nichthub.git`. The same two-stage sequence first
+`https://github.com/LynnColeArt/hubnot.git`. The same two-stage sequence first
 passed against a fresh disposable bare remote. The public run then used the
 reviewed explicit source and destination refs below. No wildcard, deletion,
 force push, hosting-provider API, or hosting-provider UI supplied evidence.
@@ -240,7 +240,7 @@ is required because it is referenced by the maintainer history; omitting it
 correctly reports a missing dependency.
 
 ```sh
-git clone --depth 1 https://github.com/LynnColeArt/nichthub.git verify
+git clone --depth 1 https://github.com/LynnColeArt/hubnot.git verify
 cd verify
 nh replication select origin \
   --actor 36944394addccd027292abc8183f332af8b4590925291ee8f1e8d8f09446b7dd \
@@ -284,7 +284,7 @@ binary:
 git ls-remote --symref origin HEAD
 git ls-remote origin 'refs/heads/main' 'refs/nh/actors/*' 'refs/nh/proposals/*'
 
-git clone --depth 1 https://github.com/LynnColeArt/nichthub.git verify
+git clone --depth 1 https://github.com/LynnColeArt/hubnot.git verify
 cd verify
 nh replication select origin \
   --actor 36944394addccd027292abc8183f332af8b4590925291ee8f1e8d8f09446b7dd \
