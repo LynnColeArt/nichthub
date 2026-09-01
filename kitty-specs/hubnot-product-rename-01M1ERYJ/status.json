@@ -87,6 +87,9 @@
       "last_event_id": "01M1EWB30QCNCFJ2J0AFH24YAH",
       "last_transition_at": "2026-09-01T16:20:22.679243+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for review: occurrence classification, immutable-history proof, full release gates, governed public landing, and credential-free clone all pass"
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 2156508,
