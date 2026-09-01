@@ -1,0 +1,36 @@
+{
+  "version": "hn.policy/0",
+  "maintainers": [
+    "c0e4143b0897648b596bc2532617b8bfacf43a9ff3af9252bffba00e66f037c1"
+  ],
+  "proposals": {
+    "requiredApprovals": 1,
+    "requiredAccepts": 1,
+    "trustedReviewers": [
+      "9ac37fcf040d234642188434dc28ddc5c0729e6a410d31dcf6ce9cb60ee4d74a"
+    ],
+    "allowAuthorApproval": false
+  },
+  "pipelines": {
+    "test": {
+      "requiredResults": 1,
+      "trustedRunners": [
+        "9ac37fcf040d234642188434dc28ddc5c0729e6a410d31dcf6ce9cb60ee4d74a"
+      ]
+    }
+  },
+  "memory": {
+    "trustedActors": [
+      "9ac37fcf040d234642188434dc28ddc5c0729e6a410d31dcf6ce9cb60ee4d74a",
+      "c0e4143b0897648b596bc2532617b8bfacf43a9ff3af9252bffba00e66f037c1"
+    ],
+    "trustedKinds": [
+      "assumption",
+      "attempt",
+      "decision",
+      "handoff",
+      "observation",
+      "verification"
+    ]
+  }
+}

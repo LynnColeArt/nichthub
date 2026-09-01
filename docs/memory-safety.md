@@ -16,7 +16,7 @@ that must never enter a memory implicitly.
 
 ## Capture boundary
 
-Only `nh memory record`, `handoff`, `supersede`, `retract`, and `challenge`
+Only `hn memory record`, `handoff`, `supersede`, `retract`, and `challenge`
 append memory, and only from explicit command flags, one explicit content
 argument, or strict versioned JSON input. Hubnot does not inspect a chat,
 terminal history, environment, clipboard, home directory, credential helper,
@@ -26,7 +26,7 @@ rather than protecting it.
 
 Private actor keys, active-identity state, replication selections, quarantine,
 transaction journals, indexes, embeddings, and adapter caches belong below
-`.git/nh/` or outside the repository. They must not be committed or copied into
+`.git/hn/` or outside the repository. They must not be committed or copied into
 a verifier. Memory streams embed only the public key required for verification.
 
 ## Import boundary
@@ -35,7 +35,7 @@ Remote memory is not a recall source while quarantined. Exact selected refs are
 fetched into a separate bare repository, measured, and checked for ref-owner
 agreement, strict two-file trees, payload hash, signature, stream continuity,
 record bounds, lifecycle relationships, anchors, and evidence. Only validated
-roots are promoted atomically to `refs/nh/remotes/<remote>/memory/*`.
+roots are promoted atomically to `refs/hn/remotes/<remote>/memory/*`.
 
 Selection is transport authorization, not policy trust. Missing, malformed,
 over-budget, interrupted, and unselected streams remain distinct outcomes. A
