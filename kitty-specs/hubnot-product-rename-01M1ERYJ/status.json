@@ -1,7 +1,7 @@
 {
-  "event_count": 3,
-  "last_event_id": "01M1ESTNS7A4JHH2V901X3W6SM",
-  "materialized_at": "2026-09-01T15:36:27.687381+00:00",
+  "event_count": 5,
+  "last_event_id": "01M1ETAYVCW9EWXC27E0JRNJPC",
+  "materialized_at": "2026-09-01T15:45:21.260016+00:00",
   "mission_number": "",
   "mission_slug": "hubnot-product-rename-01M1ERYJ",
   "mission_type": "software-dev",
@@ -12,17 +12,20 @@
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 0,
+    "in_progress": 1,
     "in_review": 0,
-    "planned": 3
+    "planned": 2
   },
   "work_packages": {
     "WP01": {
-      "actor": "finalize-tasks",
+      "actor": "codex",
+      "agent": "codex",
       "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01M1ESTHXFQWRMNRBD90MCWE4A",
-      "last_transition_at": "2026-09-01T15:36:23.727033+00:00"
+      "lane": "in_progress",
+      "last_event_id": "01M1ETAYVCW9EWXC27E0JRNJPC",
+      "last_transition_at": "2026-09-01T15:45:21.260016+00:00",
+      "shell_pid": 2156508,
+      "shell_pid_created_at": "1788012444.72"
     },
     "WP02": {
       "actor": "finalize-tasks",
